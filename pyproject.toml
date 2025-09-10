@@ -1,0 +1,25 @@
+[project]
+name = "sinotrade-api"
+version = "0.1.0"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "shioaji",
+    "python-dotenv",
+    "cachetools",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "httpx",
+    "pytest-httpserver",
+    "ruff",
+    "black",
+]
+
+[tool.ruff]
+line-length = 88
+
+[tool.black]
+line-length = 88

@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+shioaji
+python-dotenv
+cachetools
+
+[dev]
+pytest
+httpx
+pytest-httpserver
+ruff
+black
