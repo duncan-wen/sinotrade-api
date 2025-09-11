@@ -1,12 +1,13 @@
 # src/services/shioaji_service.py
 
-import os
 import atexit
+import os
+from typing import Any, Optional, Union
+
 import shioaji as sj
-from shioaji import TickSTKv1, TickFOPv1, Exchange
-from loguru import logger
 from dotenv import load_dotenv
-from typing import Union, Optional
+from loguru import logger
+from shioaji import Exchange, TickFOPv1, TickSTKv1
 
 from src.models.domain import Quote, SimulatedOrder
 from src.services.cache_service import set_cached_quote
@@ -15,12 +16,12 @@ load_dotenv()
 
 
 class ShioajiService:
-    def __init__(self):
+    def __init__(self) -> None:
         self.api = sj.Shioaji(simulation=True)  # Always use simulation for now
         self._login()
         self._setup_callbacks()
 
-    def __del__(self):
+    def __del__(self) -> None:
         """當物件被垃圾回收時自動登出"""
         try:
             if hasattr(self, "api") and self.api:
@@ -29,7 +30,7 @@ class ShioajiService:
         except Exception as e:
             logger.error(f"Error during logout in __del__: {e}")
 
-    def logout(self):
+    def logout(self) -> None:
         """手動登出方法"""
         try:
             if self.api:
@@ -46,7 +47,7 @@ class ShioajiService:
         interval: str = "1m",
         limit: int = 100,
         use_kbar_api: bool = False,
-    ) -> list:
+    ) -> list[dict[str, Any]]:
         """
         獲取歷史 K 線資料
 
@@ -61,10 +62,10 @@ class ShioajiService:
             logger.error(f"Cannot find contract for symbol: {symbol}")
             return []
 
-        # 策略選擇：
-        # 1. 日線：優先使用官方 KBar API
-        # 2. 周線/月線：從日線資料聚合 (效能較好)
-        # 3. 其他：從 Ticks 聚合 (精確度最高)
+        # 策略選擇:
+        # 1. 日線:優先使用官方 KBar API
+        # 2. 周線/月線:從日線資料聚合 (效能較好)
+        # 3. 其他:從 Ticks 聚合 (精確度最高)
 
         if use_kbar_api and interval == "1d":
             return self._get_kbars_from_api(contract, symbol, limit)
@@ -75,10 +76,11 @@ class ShioajiService:
         else:
             return self._get_klines_from_ticks(contract, symbol, interval, limit)
 
-    def _get_kbars_from_api(self, contract, symbol: str, limit: int) -> list:
+    def _get_kbars_from_api(self, contract: Any, symbol: str, limit: int) -> list[dict[str, Any]]:
         """使用官方 KBar API 獲取日線資料 (效能較好)"""
         try:
             from datetime import datetime, timedelta
+
             import pandas as pd
 
             end_date = datetime.now()
@@ -116,20 +118,21 @@ class ShioajiService:
             return []
 
     def _get_klines_from_daily_aggregation(
-        self, contract, symbol: str, interval: str, limit: int
-    ) -> list:
+        self, contract: Any, symbol: str, interval: str, limit: int
+    ) -> list[dict[str, Any]]:
         """從日線資料聚合生成周線/月線 (效能較好)"""
         try:
             from datetime import datetime, timedelta
+
             import pandas as pd
 
             # 周線和月線需要更多的日線資料
             if interval == "1w":
-                # 周線：獲取足夠的日線資料 (每周5個交易日)
+                # 周線:獲取足夠的日線資料 (每周5個交易日)
                 daily_limit = limit * 7 + 20  # 多取一些緩衝
                 start_date = datetime.now() - timedelta(weeks=limit + 8)
             elif interval == "1M":
-                # 月線：獲取足夠的日線資料 (每月約22個交易日)
+                # 月線:獲取足夠的日線資料 (每月約22個交易日)
                 daily_limit = limit * 30 + 30  # 多取一些緩衝
                 start_date = datetime.now() - timedelta(days=limit * 35 + 60)
             else:
@@ -165,10 +168,10 @@ class ShioajiService:
 
             # 重新採樣聚合
             if interval == "1w":
-                # 周線：從週一到週日 (W-MON 表示週日結束)
+                # 周線:從週一到週日 (W-MON 表示週日結束)
                 resampler = df.resample("W-SUN")
             elif interval == "1M":
-                # 月線：月末結束
+                # 月線:月末結束
                 resampler = df.resample("M")
             else:
                 return []
@@ -205,11 +208,12 @@ class ShioajiService:
             return []
 
     def _get_klines_from_ticks(
-        self, contract, symbol: str, interval: str, limit: int
-    ) -> list:
+        self, contract: Any, symbol: str, interval: str, limit: int
+    ) -> list[dict[str, Any]]:
         """從 Ticks 聚合生成 K 線 (支援所有時間間隔)"""
         try:
             from datetime import datetime, timedelta
+
             import pandas as pd
 
             # 計算查詢時間範圍
@@ -333,14 +337,14 @@ class ShioajiService:
             logger.error(f"Failed to get klines from ticks: {e}")
             return []
 
-    def _login(self):
-        api_key = os.getenv("API_KEY")
-        secret_key = os.getenv("SECRET_KEY")
+    def _login(self) -> None:
+        api_key = os.getenv("SHIOAJI_API_KEY")
+        secret_key = os.getenv("SHIOAJI_SECRET_KEY")
         if not api_key or not secret_key:
             raise ValueError("API_KEY and SECRET_KEY must be set in .env file")
         self.api.login(api_key=api_key, secret_key=secret_key)
 
-    def _setup_callbacks(self):
+    def _setup_callbacks(self) -> None:
         """設置各種商品類型的 callback"""
         self.api.quote.set_on_tick_stk_v1_callback(self._on_stock_tick)
         self.api.quote.set_on_tick_fop_v1_callback(self._on_futures_options_tick)
@@ -349,7 +353,7 @@ class ShioajiService:
         self, symbol: str
     ) -> Optional[Union[sj.contracts.Stock, sj.contracts.Future, sj.contracts.Option]]:
         """
-        智能獲取合約，支持多種格式：
+        智能獲取合約,支持多種格式:
         - 股票: "2330", "TSE2330"
         - 期貨: "TXFA3", "TXF202509" 或自動獲取最近月份
         - 選擇權: "TXO18000R3", "TXO20230618000P"
@@ -380,7 +384,7 @@ class ShioajiService:
                         logger.info(f"Found futures contract: {contract.symbol}")
                         return contract
 
-                # 如果只是期貨類別，獲取最近月份合約
+                # 如果只是期貨類別,獲取最近月份合約
                 if symbol.startswith("TXF"):
                     # 獲取 TXF 最近月份合約
                     txf_contracts = [
@@ -415,7 +419,7 @@ class ShioajiService:
         logger.error(f"Contract not found for symbol: {symbol}")
         return None
 
-    def subscribe_quote(self, symbol: str, callback=None):
+    def subscribe_quote(self, symbol: str, callback: Any = None) -> bool:
         """Subscribes to a real-time quote for a given symbol."""
         contract = self._get_contract(symbol)
         if not contract:
@@ -434,7 +438,7 @@ class ShioajiService:
             logger.error(f"Failed to subscribe to {symbol}: {e}")
             return False
 
-    def _on_stock_tick(self, exchange: Exchange, tick: TickSTKv1):
+    def _on_stock_tick(self, exchange: Exchange, tick: TickSTKv1) -> None:
         """處理股票 tick 資料"""
         logger.info(f"Received stock tick: {tick.code} - {tick.close}")
 
@@ -447,13 +451,13 @@ class ShioajiService:
             ask_price=tick.ask_price[0] if tick.ask_price else 0,
             bid_volume=tick.bid_volume[0] if tick.bid_volume else 0,
             ask_volume=tick.ask_volume[0] if tick.ask_volume else 0,
-            avg_price=getattr(tick, "avg_price", None),
+            avg_price=float(getattr(tick, "avg_price", 0)),
             underlying_price=None,  # 股票沒有標的價格
         )
 
         set_cached_quote(quote.symbol, quote)
 
-    def _on_futures_options_tick(self, exchange: Exchange, tick: TickFOPv1):
+    def _on_futures_options_tick(self, exchange: Exchange, tick: TickFOPv1) -> None:
         """處理期貨和選擇權 tick 資料"""
         logger.info(f"Received F/O tick: {tick.code} - {tick.close}")
 
@@ -466,7 +470,7 @@ class ShioajiService:
             ask_price=tick.ask_price[0] if tick.ask_price else 0,
             bid_volume=tick.bid_volume[0] if tick.bid_volume else 0,
             ask_volume=tick.ask_volume[0] if tick.ask_volume else 0,
-            avg_price=getattr(tick, "avg_price", None),
+            avg_price=float(getattr(tick, "avg_price", 0)),
             underlying_price=getattr(tick, "underlying_price", None),
         )
 
@@ -516,7 +520,7 @@ shioaji_service = ShioajiService()
 
 
 # 確保程式結束時自動登出
-def cleanup_shioaji():
+def cleanup_shioaji() -> None:
     """程式結束時的清理函數"""
     try:
         shioaji_service.logout()

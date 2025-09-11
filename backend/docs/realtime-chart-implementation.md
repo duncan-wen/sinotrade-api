@@ -1,6 +1,6 @@
 # 即時 K 線圖實作指南
 
-本文檔詳細說明如何建立即時 K 線圖系統，包含 WebSocket 傳輸和前端圖表整合。
+本文檔詳細說明如何建立即時 K 線圖系統,包含 WebSocket 傳輸和前端圖表整合。
 
 ## 🔄 資料傳輸架構
 
@@ -41,42 +41,42 @@ class RealtimeQuoteClient {
         this.maxReconnectAttempts = 5;
         this.reconnectDelay = 1000;
     }
-    
+
     generateClientId() {
         return `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
-    
+
     connect() {
         return new Promise((resolve, reject) => {
             try {
                 this.ws = new WebSocket(`${this.baseUrl}/ws/quotes/${this.clientId}`);
-                
+
                 this.ws.onopen = () => {
                     console.log('WebSocket 連接成功');
                     this.reconnectAttempts = 0;
                     resolve();
                 };
-                
+
                 this.ws.onmessage = (event) => {
                     this.handleMessage(JSON.parse(event.data));
                 };
-                
+
                 this.ws.onclose = () => {
                     console.log('WebSocket 連接關閉');
                     this.handleReconnect();
                 };
-                
+
                 this.ws.onerror = (error) => {
                     console.error('WebSocket 錯誤:', error);
                     reject(error);
                 };
-                
+
             } catch (error) {
                 reject(error);
             }
         });
     }
-    
+
     handleMessage(message) {
         switch (message.type) {
             case 'quote':
@@ -92,7 +92,7 @@ class RealtimeQuoteClient {
                 console.log('未知消息類型:', message);
         }
     }
-    
+
     handleQuote(quoteData) {
         const symbol = quoteData.symbol;
         if (this.subscribers.has(symbol)) {
@@ -105,19 +105,19 @@ class RealtimeQuoteClient {
             });
         }
     }
-    
+
     handleKline(klineData) {
         // 處理 K 線數據
         console.log('收到 K 線更新:', klineData);
     }
-    
+
     subscribe(symbol, callback) {
         // 添加回調函數
         if (!this.subscribers.has(symbol)) {
             this.subscribers.set(symbol, []);
         }
         this.subscribers.get(symbol).push(callback);
-        
+
         // 發送訂閱請求
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify({
@@ -126,7 +126,7 @@ class RealtimeQuoteClient {
             }));
         }
     }
-    
+
     unsubscribe(symbol, callback = null) {
         if (callback && this.subscribers.has(symbol)) {
             const callbacks = this.subscribers.get(symbol);
@@ -137,8 +137,8 @@ class RealtimeQuoteClient {
         } else {
             this.subscribers.delete(symbol);
         }
-        
-        // 如果沒有回調函數了，取消訂閱
+
+        // 如果沒有回調函數了,取消訂閱
         if (!this.subscribers.has(symbol) || this.subscribers.get(symbol).length === 0) {
             if (this.ws && this.ws.readyState === WebSocket.OPEN) {
                 this.ws.send(JSON.stringify({
@@ -148,12 +148,12 @@ class RealtimeQuoteClient {
             }
         }
     }
-    
+
     handleReconnect() {
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
             console.log(`嘗試重新連接... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-            
+
             setTimeout(() => {
                 this.connect().then(() => {
                     // 重新訂閱所有股票
@@ -164,7 +164,7 @@ class RealtimeQuoteClient {
             }, this.reconnectDelay * this.reconnectAttempts);
         }
     }
-    
+
     resubscribeAll() {
         this.subscribers.forEach((callbacks, symbol) => {
             if (callbacks.length > 0) {
@@ -175,7 +175,7 @@ class RealtimeQuoteClient {
             }
         });
     }
-    
+
     disconnect() {
         if (this.ws) {
             this.ws.close();
@@ -204,14 +204,14 @@ class RealtimeChart {
         this.chart = null;
         this.klineData = [];
         this.currentKline = null;
-        
+
         this.initChart();
         this.connectWebSocket();
     }
-    
+
     initChart() {
         const ctx = this.canvas.getContext('2d');
-        
+
         this.chart = new Chart(ctx, {
             type: 'candlestick', // 需要 chartjs-chart-financial 插件
             data: {
@@ -262,29 +262,29 @@ class RealtimeChart {
             }
         });
     }
-    
+
     async connectWebSocket() {
         try {
             await realtimeClient.connect();
-            
+
             // 訂閱即時報價
             realtimeClient.subscribe(this.symbol, (quote) => {
                 this.updateCurrentKline(quote);
             });
-            
+
             // 載入歷史 K 線數據
             await this.loadHistoricalData();
-            
+
         } catch (error) {
             console.error('連接 WebSocket 失敗:', error);
         }
     }
-    
+
     async loadHistoricalData() {
         try {
             const response = await fetch(`/api/klines/${this.symbol}?limit=100&interval=1m`);
             const historicalData = await response.json();
-            
+
             this.klineData = historicalData.map(kline => ({
                 x: new Date(kline.timestamp),
                 o: kline.open,    // 開盤價
@@ -293,15 +293,15 @@ class RealtimeChart {
                 c: kline.close,   // 收盤價
                 v: kline.volume   // 成交量
             }));
-            
+
             this.chart.data.datasets[0].data = this.klineData;
             this.chart.update('none'); // 不使用動畫以提高效能
-            
+
         } catch (error) {
             console.error('載入歷史數據失敗:', error);
         }
     }
-    
+
     updateCurrentKline(quote) {
         const timestamp = new Date(quote.timestamp);
         const currentMinute = new Date(
@@ -313,7 +313,7 @@ class RealtimeChart {
             0,
             0
         );
-        
+
         // 檢查是否需要新的 K 線
         if (!this.currentKline || this.currentKline.x.getTime() !== currentMinute.getTime()) {
             // 新的 K 線
@@ -325,10 +325,10 @@ class RealtimeChart {
                 c: quote.close,  // 收盤價
                 v: quote.volume  // 成交量
             };
-            
+
             this.klineData.push(this.currentKline);
-            
-            // 限制數據點數量，避免記憶體過度使用
+
+            // 限制數據點數量,避免記憶體過度使用
             if (this.klineData.length > 200) {
                 this.klineData.shift();
             }
@@ -339,12 +339,12 @@ class RealtimeChart {
             this.currentKline.c = quote.close;
             this.currentKline.v += quote.volume;
         }
-        
+
         // 更新圖表
         this.chart.data.datasets[0].data = this.klineData;
         this.chart.update('none'); // 即時更新不使用動畫
     }
-    
+
     destroy() {
         realtimeClient.unsubscribe(this.symbol);
         if (this.chart) {
@@ -373,7 +373,7 @@ export default RealtimeChart;
     <div style="width: 800px; height: 400px; margin: 20px auto;">
         <canvas id="realtimeChart"></canvas>
     </div>
-    
+
     <div style="text-align: center; margin: 20px;">
         <select id="symbolSelect">
             <option value="2330">台積電 (2330)</option>
@@ -383,33 +383,33 @@ export default RealtimeChart;
         <button id="connectBtn">連接</button>
         <button id="disconnectBtn">斷開</button>
     </div>
-    
+
     <script type="module">
         import RealtimeChart from './src/components/RealtimeChart.js';
-        
+
         let currentChart = null;
-        
+
         const symbolSelect = document.getElementById('symbolSelect');
         const connectBtn = document.getElementById('connectBtn');
         const disconnectBtn = document.getElementById('disconnectBtn');
-        
+
         connectBtn.addEventListener('click', () => {
             const symbol = symbolSelect.value;
-            
+
             if (currentChart) {
                 currentChart.destroy();
             }
-            
+
             currentChart = new RealtimeChart('realtimeChart', symbol);
         });
-        
+
         disconnectBtn.addEventListener('click', () => {
             if (currentChart) {
                 currentChart.destroy();
                 currentChart = null;
             }
         });
-        
+
         // 默認載入台積電
         currentChart = new RealtimeChart('realtimeChart', '2330');
     </script>
@@ -433,11 +433,11 @@ class ShioajiService:
     def __init__(self):
         # ... 原有初始化程式碼
         self.quote_callbacks: List[Callable] = []
-        
+
     def add_quote_callback(self, callback: Callable):
         """添加報價回調函數"""
         self.quote_callbacks.append(callback)
-        
+
     def _on_stock_tick(self, exchange: Exchange, tick: TickSTKv1):
         """處理股票 tick 資料並廣播"""
         quote = Quote(
@@ -455,10 +455,10 @@ class ShioajiService:
             avg_price=getattr(tick, "avg_price", None),
             underlying_price=None,
         )
-        
+
         # 存儲到快取
         set_cached_quote(quote.symbol, quote)
-        
+
         # 廣播給所有回調函數
         for callback in self.quote_callbacks:
             try:
@@ -511,10 +511,10 @@ class OptimizedChart extends RealtimeChart {
         this.lastUpdateTime = 0;
         this.updateInterval = 50; // 最多每 50ms 更新一次
     }
-    
+
     updateCurrentKline(quote) {
         super.updateCurrentKline(quote);
-        
+
         // 限制更新頻率
         const now = Date.now();
         if (!this.updatePending && now - this.lastUpdateTime > this.updateInterval) {
@@ -536,14 +536,14 @@ class OptimizedChart extends RealtimeChart {
 class KlineAggregator:
     def __init__(self):
         self.current_klines = {}  # symbol -> current kline
-        
+
     def update_kline(self, quote: Quote):
         symbol = quote.symbol
         minute_timestamp = self.get_minute_timestamp(quote.timestamp)
-        
+
         if symbol not in self.current_klines:
             self.current_klines[symbol] = {}
-            
+
         if minute_timestamp not in self.current_klines[symbol]:
             # 新的 K 線
             self.current_klines[symbol][minute_timestamp] = {
@@ -561,7 +561,7 @@ class KlineAggregator:
             kline["low"] = min(kline["low"], quote.close)
             kline["close"] = quote.close
             kline["volume"] += quote.volume
-        
+
         return self.current_klines[symbol][minute_timestamp]
 ```
 
@@ -569,26 +569,26 @@ class KlineAggregator:
 
 ## 🎯 總結建議
 
-### 對於你的專案，我建議：
+### 對於你的專案,我建議:
 
-1. **第一階段**：實作 WebSocket 基本功能
+1. **第一階段**:實作 WebSocket 基本功能
    - 即時報價推送
    - 簡單的價格圖表
 
-2. **第二階段**：添加 K 線圖功能
+2. **第二階段**:添加 K 線圖功能
    - 分鐘 K 線聚合
    - 歷史數據載入
 
-3. **第三階段**：效能優化
+3. **第三階段**:效能優化
    - 數據壓縮
    - 更新頻率控制
    - 連接管理優化
 
-### 技術選型：
-- **後端**：FastAPI + WebSocket
-- **前端**：Chart.js + WebSocket API
-- **數據格式**：JSON
-- **連接管理**：自動重連 + 訂閱管理
+### 技術選型:
+- **後端**:FastAPI + WebSocket
+- **前端**:Chart.js + WebSocket API
+- **數據格式**:JSON
+- **連接管理**:自動重連 + 訂閱管理
 
 這樣的架構可以提供低延遲（10-50ms）的即時 K 線圖體驗！
 

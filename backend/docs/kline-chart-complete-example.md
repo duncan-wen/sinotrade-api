@@ -84,14 +84,14 @@ class RealtimeKlineChart {
         this.ws = null;
         this.clientId = 'client_' + Math.random().toString(36).substr(2, 9);
         this.klineData = [];
-        
+
         this.initChart();
         this.loadHistoricalData();
     }
 
     initChart() {
         const ctx = this.canvas.getContext('2d');
-        
+
         this.chart = new Chart(ctx, {
             type: 'candlestick',
             data: {
@@ -105,7 +105,7 @@ class RealtimeKlineChart {
                     },
                     backgroundColor: {
                         up: '#26a69a',
-                        down: '#ef5350', 
+                        down: '#ef5350',
                         unchanged: '#666'
                     }
                 }]
@@ -155,12 +155,12 @@ class RealtimeKlineChart {
     async loadHistoricalData() {
         try {
             this.updateStatus('載入歷史資料...');
-            
+
             const response = await fetch(
                 `/api/klines/${this.symbol}?interval=${this.interval}&limit=100`
             );
             const result = await response.json();
-            
+
             if (result.error) {
                 throw new Error(result.error);
             }
@@ -178,12 +178,12 @@ class RealtimeKlineChart {
             // 更新圖表
             this.chart.data.datasets[0].data = this.klineData;
             this.chart.update('none');
-            
+
             this.updateStatus(`已載入 ${this.klineData.length} 根歷史 K 線`);
-            
-            // 載入完歷史資料後，建立 WebSocket 連接
+
+            // 載入完歷史資料後,建立 WebSocket 連接
             this.connectWebSocket();
-            
+
         } catch (error) {
             console.error('載入歷史資料失敗:', error);
             this.updateStatus(`載入失敗: ${error.message}`);
@@ -196,12 +196,12 @@ class RealtimeKlineChart {
         }
 
         this.updateStatus('建立即時連接...');
-        
+
         this.ws = new WebSocket(`ws://localhost:8000/ws/klines/${this.clientId}`);
-        
+
         this.ws.onopen = () => {
             this.updateStatus('即時連接已建立');
-            
+
             // 訂閱 K 線更新
             this.ws.send(JSON.stringify({
                 type: 'subscribe_kline',
@@ -212,16 +212,16 @@ class RealtimeKlineChart {
 
         this.ws.onmessage = (event) => {
             const message = JSON.parse(event.data);
-            
+
             switch (message.type) {
                 case 'historical_klines':
-                    // 如果需要，可以在這裡處理歷史資料
+                    // 如果需要,可以在這裡處理歷史資料
                     break;
-                    
+
                 case 'kline':
                     this.updateKline(message.data);
                     break;
-                    
+
                 case 'tick':
                     // 也可以在前端直接處理 tick 資料
                     this.updateFromTick(message.data);
@@ -230,7 +230,7 @@ class RealtimeKlineChart {
         };
 
         this.ws.onclose = () => {
-            this.updateStatus('連接已斷開，嘗試重新連接...');
+            this.updateStatus('連接已斷開,嘗試重新連接...');
             setTimeout(() => this.connectWebSocket(), 3000);
         };
 
@@ -252,14 +252,14 @@ class RealtimeKlineChart {
 
         // 檢查是否是更新現有 K 線還是新增
         const lastKline = this.klineData[this.klineData.length - 1];
-        
+
         if (lastKline && lastKline.x.getTime() === newKline.x.getTime()) {
             // 更新現有 K 線
             this.klineData[this.klineData.length - 1] = newKline;
         } else {
             // 新增 K 線
             this.klineData.push(newKline);
-            
+
             // 限制資料點數量
             if (this.klineData.length > 200) {
                 this.klineData.shift();
@@ -269,7 +269,7 @@ class RealtimeKlineChart {
         // 更新圖表
         this.chart.data.datasets[0].data = this.klineData;
         this.chart.update('none');
-        
+
         this.updateStatus(`最新價格: ${newKline.c} (${new Date().toLocaleTimeString()})`);
     }
 
@@ -277,11 +277,11 @@ class RealtimeKlineChart {
         // 如果需要從 tick 資料直接更新（前端聚合）
         const timestamp = new Date(tickData.timestamp);
         const price = tickData.price;
-        
+
         // 對齊到分鐘
         const minuteTime = new Date(
             timestamp.getFullYear(),
-            timestamp.getMonth(), 
+            timestamp.getMonth(),
             timestamp.getDate(),
             timestamp.getHours(),
             timestamp.getMinutes(),
@@ -289,7 +289,7 @@ class RealtimeKlineChart {
         );
 
         const lastKline = this.klineData[this.klineData.length - 1];
-        
+
         if (!lastKline || lastKline.x.getTime() !== minuteTime.getTime()) {
             // 新的分鐘 K 線
             const newKline = {
@@ -300,9 +300,9 @@ class RealtimeKlineChart {
                 c: price,
                 v: tickData.volume
             };
-            
+
             this.klineData.push(newKline);
-            
+
             if (this.klineData.length > 200) {
                 this.klineData.shift();
             }
@@ -323,10 +323,10 @@ class RealtimeKlineChart {
         this.klineData = [];
         this.chart.data.datasets[0].data = [];
         this.chart.update('none');
-        
+
         // 重新載入資料
         this.loadHistoricalData();
-        
+
         // 更新標題
         this.chart.options.plugins.title.text = `${this.symbol} 即時 K 線圖 (${this.interval})`;
         this.chart.update('none');
@@ -353,10 +353,10 @@ class RealtimeKlineChart {
 
 ### 1. 獲取歷史 K 線
 ```bash
-# 獲取台積電 1分鐘 K 線，最近 100 根
+# 獲取台積電 1分鐘 K 線,最近 100 根
 curl "http://localhost:8000/api/klines/2330?interval=1m&limit=100"
 
-# 獲取台指期貨 5分鐘 K 線，最近 50 根  
+# 獲取台指期貨 5分鐘 K 線,最近 50 根
 curl "http://localhost:8000/api/klines/TXF?interval=5m&limit=50"
 ```
 
@@ -380,7 +380,7 @@ ws.send(JSON.stringify({
 ```json
 {
     "symbol": "2330",
-    "interval": "1m", 
+    "interval": "1m",
     "data": [
         {
             "timestamp": "2025-09-11T09:00:00",
@@ -435,4 +435,4 @@ ws.send(JSON.stringify({
 - 記憶體使用控制
 - 快取機制
 
-這個完整的實作提供了從後端到前端的完整解決方案，確保了 K 線圖的準確性和即時性！
+這個完整的實作提供了從後端到前端的完整解決方案,確保了 K 線圖的準確性和即時性！

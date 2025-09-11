@@ -10,16 +10,20 @@ from src.models.domain import APIUser
 
 router = APIRouter()
 
+
 def get_trader_user(user: APIUser = Depends(get_current_user)) -> APIUser:
     if user.role != "trader":
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN,
-            detail="You do not have permission to place orders."
+            detail="You do not have permission to place orders.",
         )
     return user
 
+
 @router.post("/order", response_model=SimulatedOrder)
-def place_order(order_request: SimulatedOrder, user: APIUser = Depends(get_trader_user)):
+def place_order(
+    order_request: SimulatedOrder, user: APIUser = Depends(get_trader_user)
+):
     """
     Places a simulated order for a financial instrument.
     This endpoint is only available to users with the 'trader' role.

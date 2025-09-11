@@ -2,7 +2,7 @@
 chcp 65001 >nul
 echo 📦 Installing Sinotrade API Backend Dependencies...
 cd backend
-uv sync
+uv sync --dev
 if errorlevel 1 (
     echo ❌ Backend dependency installation failed
     pause

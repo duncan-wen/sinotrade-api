@@ -44,7 +44,7 @@
 
 ### 1️⃣ TradingView Charting Library (推薦 ⭐⭐⭐⭐⭐)
 
-**適用場景**: 預算充足，需要專業級圖表
+**適用場景**: 預算充足,需要專業級圖表
 
 ```javascript
 import { widget } from 'charting_library';
@@ -61,7 +61,7 @@ const TradingViewChart = ({ symbol }) => {
       theme: "light",
       style: "1", // K線圖
       studies: [
-        'MACD@tv-basicstudies', 
+        'MACD@tv-basicstudies',
         'RSI@tv-basicstudies',
         'StochasticRSI@tv-basicstudies'
       ],
@@ -81,7 +81,7 @@ const TradingViewChart = ({ symbol }) => {
 ```
 
 **優點:**
-- ✅ 業界標準，功能最完整
+- ✅ 業界標準,功能最完整
 - ✅ 內建所有技術指標 (100+ 種)
 - ✅ 完整畫線工具
 - ✅ 多時間框架
@@ -89,12 +89,12 @@ const TradingViewChart = ({ symbol }) => {
 - ✅ 繁體中文支援
 
 **缺點:**
-- ❌ 商業授權，需要付費
+- ❌ 商業授權,需要付費
 - ❌ 檔案較大 (~2MB)
 
 ### 2️⃣ Lightweight Charts (開源選擇 ⭐⭐⭐⭐)
 
-**適用場景**: 開源優先，基本圖表需求
+**適用場景**: 開源優先,基本圖表需求
 
 ```javascript
 import { createChart } from 'lightweight-charts';
@@ -178,7 +178,7 @@ const LightweightChart = ({ data }) => {
 
 **優點:**
 - ✅ 免費開源
-- ✅ 輕量化，效能優秀
+- ✅ 輕量化,效能優秀
 - ✅ TypeScript 原生支援
 - ✅ 即時數據更新
 - ✅ 可客製化樣式
@@ -236,7 +236,7 @@ const TechnicalChart = ({ klineData }) => {
 
   useEffect(() => {
     const closePrices = klineData.map(k => k.close);
-    
+
     setIndicators({
       sma20: TechnicalIndicators.calculateSMA(closePrices, 20),
       rsi: TechnicalIndicators.calculateRSI(closePrices, 14),
@@ -246,11 +246,11 @@ const TechnicalChart = ({ klineData }) => {
 
   return (
     <div>
-      <LightweightChart 
-        data={{ 
+      <LightweightChart
+        data={{
           klines: klineData,
           indicators: indicators
-        }} 
+        }}
       />
       <RSIChart data={indicators.rsi} />
       <MACDChart data={indicators.macd} />
@@ -376,12 +376,12 @@ class WebSocketService {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       console.log(`🔄 WebSocket 重連嘗試 ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
-      
+
       setTimeout(() => {
         this.connect();
       }, this.reconnectInterval * this.reconnectAttempts);
     } else {
-      console.error('❌ WebSocket 重連失敗，已達最大嘗試次數');
+      console.error('❌ WebSocket 重連失敗,已達最大嘗試次數');
     }
   }
 }
@@ -438,7 +438,7 @@ const useMarketDataStore = create(
       const { subscribedSymbols } = get();
       if (subscribedSymbols.has(symbol)) {
         wsService.unsubscribe(symbol);
-        
+
         const newSet = new Set(subscribedSymbols);
         newSet.delete(symbol);
         set({ subscribedSymbols: newSet });
@@ -506,10 +506,10 @@ const OrderBook = ({ symbol }) => {
   // 合併買賣單數據
   const combinedOrders = useMemo(() => {
     if (!orderBook) return [];
-    
+
     const asks = orderBook.asks.map(ask => ({ ...ask, type: 'ask' }));
     const bids = orderBook.bids.map(bid => ({ ...bid, type: 'bid' }));
-    
+
     return [...asks.reverse(), ...bids];
   }, [orderBook]);
 
@@ -532,7 +532,7 @@ const OrderBook = ({ symbol }) => {
         <Text>數量</Text>
         <Text>筆數</Text>
       </Flex>
-      
+
       <Box
         ref={parentRef}
         h="400px"
@@ -544,7 +544,7 @@ const OrderBook = ({ symbol }) => {
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
             const order = combinedOrders[virtualRow.index];
             const isAsk = order.type === 'ask';
-            
+
             return (
               <Flex
                 key={virtualRow.key}
@@ -562,7 +562,7 @@ const OrderBook = ({ symbol }) => {
                 borderColor="gray.100"
                 _hover={{ bg: isAsk ? 'red.100' : 'green.100' }}
               >
-                <Text 
+                <Text
                   color={isAsk ? 'red.600' : 'green.600'}
                   fontWeight="medium"
                 >
@@ -607,13 +607,13 @@ const TradeHistory = ({ symbol }) => {
         <Text>數量</Text>
         <Text>類型</Text>
       </Flex>
-      
+
       <Box ref={parentRef} h="300px" overflow="auto">
         <Box h={`${rowVirtualizer.getTotalSize()}px`} position="relative">
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
             const trade = trades[virtualRow.index];
             const isBuy = trade.side === 'buy';
-            
+
             return (
               <Flex
                 key={virtualRow.key}
@@ -708,11 +708,11 @@ class ApiService {
     };
 
     const response = await fetch(url, config);
-    
+
     if (!response.ok) {
       throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
-    
+
     return response.json();
   }
 
@@ -802,7 +802,7 @@ export const useOrders = () => {
 // 下單 Mutation
 export const usePlaceOrder = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (orderData) => apiService.placeOrder(orderData),
     onSuccess: () => {
@@ -833,22 +833,22 @@ export const useTradeHistory = (limit) => {
 import { useStockQuote } from '../hooks/useQueries';
 
 const StockQuote = ({ symbol }) => {
-  const { 
-    data: quote, 
-    isLoading, 
-    error, 
+  const {
+    data: quote,
+    isLoading,
+    error,
     isStale,
-    dataUpdatedAt 
+    dataUpdatedAt
   } = useStockQuote(symbol);
 
   if (isLoading) return <Spinner />;
   if (error) return <Alert status="error">載入失敗: {error.message}</Alert>;
 
   return (
-    <Box 
-      p={4} 
-      border="1px solid" 
-      borderColor="gray.200" 
+    <Box
+      p={4}
+      border="1px solid"
+      borderColor="gray.200"
       bg={isStale ? 'gray.50' : 'white'}
     >
       <Flex justify="space-between" align="center">
@@ -858,10 +858,10 @@ const StockQuote = ({ symbol }) => {
             {quote.price.toFixed(2)}
           </Text>
         </VStack>
-        
+
         <VStack align="end" spacing={1}>
-          <Text 
-            fontSize="md" 
+          <Text
+            fontSize="md"
             color={quote.change >= 0 ? 'red.600' : 'green.600'}
           >
             {quote.change >= 0 ? '+' : ''}{quote.change.toFixed(2)}
@@ -893,7 +893,7 @@ const OrderForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     placeOrder.mutate(orderData, {
       onSuccess: () => {
         toast.success('下單成功！');
@@ -1050,7 +1050,7 @@ const TradingDashboard = () => {
     >
       {/* 頂部工具列 */}
       <GridItem colSpan={2}>
-        <SymbolSelector 
+        <SymbolSelector
           value={selectedSymbol}
           onChange={setSelectedSymbol}
         />
@@ -1474,7 +1474,7 @@ class ErrorBoundary extends React.Component<
               </AlertDescription>
             </VStack>
           </Alert>
-          <Button 
+          <Button
             onClick={() => this.setState({ hasError: false, error: undefined })}
             colorScheme="blue"
           >
@@ -1503,7 +1503,7 @@ export const usePerformanceMonitor = (componentName: string) => {
   useEffect(() => {
     const endTime = Date.now();
     const renderTime = endTime - startTime.current;
-    
+
     if (renderTime > 100) {
       console.warn(`⚠️ ${componentName} 渲染時間過長: ${renderTime}ms`);
     }
@@ -1595,11 +1595,11 @@ const validateOrder = (orderData) => {
   if (!orderData.symbol || orderData.symbol.length === 0) {
     throw new Error('股票代號不能為空');
   }
-  
+
   if (orderData.quantity <= 0) {
     throw new Error('數量必須大於0');
   }
-  
+
   if (orderData.price <= 0) {
     throw new Error('價格必須大於0');
   }
@@ -1611,11 +1611,11 @@ const validateOrder = (orderData) => {
 // 全域錯誤處理
 const handleApiError = (error) => {
   if (error.status === 401) {
-    // 未授權，重新導向登入
+    // 未授權,重新導向登入
     router.push('/login');
   } else if (error.status === 429) {
     // 請求過於頻繁
-    toast.error('請求過於頻繁，請稍後再試');
+    toast.error('請求過於頻繁,請稍後再試');
   } else {
     toast.error(error.message || '發生未知錯誤');
   }
@@ -1660,14 +1660,14 @@ getTTFB(console.log);
 
 ## 🎯 總結
 
-這個技術棧專為金融交易網站設計，具備以下特點：
+這個技術棧專為金融交易網站設計,具備以下特點:
 
 ✅ **高效能**: 虛擬化處理大量數據
 ✅ **即時性**: WebSocket 推送即時報價
 ✅ **專業性**: 完整的技術分析圖表
 ✅ **可維護**: 清晰的架構和組件分離
-✅ **可擴展**: 模組化設計，易於擴展功能
+✅ **可擴展**: 模組化設計,易於擴展功能
 ✅ **類型安全**: 完整的 TypeScript 支援
 ✅ **用戶體驗**: 響應式設計和流暢動畫
 
-透過這個技術棧，您可以建構出專業級的金融交易平台前端界面！
+透過這個技術棧,您可以建構出專業級的金融交易平台前端界面！

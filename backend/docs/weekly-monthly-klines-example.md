@@ -80,96 +80,96 @@ class MultiTimeframeKlineChart {
         this.interval = '1d';  // 預設日線
         this.chart = null;
         this.klineData = [];
-        
+
         this.initChart();
         this.loadData();
     }
 
     async changeInterval(newInterval) {
         this.interval = newInterval;
-        
+
         // 根據時間間隔調整資料量和圖表設定
         const config = this.getIntervalConfig(newInterval);
-        
+
         // 更新圖表設定
         this.updateChartConfig(config);
-        
+
         // 載入新資料
         await this.loadData();
-        
+
         // 更新按鈕狀態
         this.updateButtonStates(newInterval);
     }
 
     getIntervalConfig(interval) {
         const configs = {
-            '1m': { 
-                limit: 200, 
+            '1m': {
+                limit: 200,
                 title: '1分鐘線',
                 timeUnit: 'minute',
                 displayFormat: 'HH:mm'
             },
-            '5m': { 
-                limit: 200, 
+            '5m': {
+                limit: 200,
                 title: '5分鐘線',
                 timeUnit: 'minute',
                 displayFormat: 'HH:mm'
             },
-            '15m': { 
-                limit: 150, 
+            '15m': {
+                limit: 150,
                 title: '15分鐘線',
                 timeUnit: 'minute',
                 displayFormat: 'HH:mm'
             },
-            '1h': { 
-                limit: 120, 
+            '1h': {
+                limit: 120,
                 title: '1小時線',
                 timeUnit: 'hour',
                 displayFormat: 'MM/dd HH:mm'
             },
-            '1d': { 
-                limit: 100, 
+            '1d': {
+                limit: 100,
                 title: '日線',
                 timeUnit: 'day',
                 displayFormat: 'MM/dd'
             },
-            '1w': { 
-                limit: 52, 
+            '1w': {
+                limit: 52,
                 title: '周線',
                 timeUnit: 'week',
                 displayFormat: 'yyyy/MM/dd'
             },
-            '1M': { 
-                limit: 24, 
+            '1M': {
+                limit: 24,
                 title: '月線',
                 timeUnit: 'month',
                 displayFormat: 'yyyy/MM'
             }
         };
-        
+
         return configs[interval] || configs['1d'];
     }
 
     updateChartConfig(config) {
         // 更新圖表標題
         this.chart.options.plugins.title.text = `${this.symbol} ${config.title}`;
-        
+
         // 更新時間軸設定
         this.chart.options.scales.x.time.unit = config.timeUnit;
         this.chart.options.scales.x.time.displayFormats[config.timeUnit] = config.displayFormat;
-        
+
         this.chart.update('none');
     }
 
     async loadData() {
         try {
             const config = this.getIntervalConfig(this.interval);
-            
+
             const response = await fetch(
                 `/api/klines/${this.symbol}?interval=${this.interval}&limit=${config.limit}`
             );
             const result = await response.json();
-            
+
             if (result.error) {
                 throw new Error(result.error);
             }
@@ -187,10 +187,10 @@ class MultiTimeframeKlineChart {
             // 更新圖表
             this.chart.data.datasets[0].data = this.klineData;
             this.chart.update('none');
-            
+
             // 顯示資料來源資訊
             this.updateDataSourceInfo(result.source, result.count);
-            
+
         } catch (error) {
             console.error('載入資料失敗:', error);
         }
@@ -202,9 +202,9 @@ class MultiTimeframeKlineChart {
             'daily_aggregated': '日線聚合',
             'ticks_aggregated': 'Tick 聚合'
         };
-        
+
         const sourceText = sourceTexts[source] || '未知來源';
-        document.getElementById('data-info').textContent = 
+        document.getElementById('data-info').textContent =
             `資料來源: ${sourceText} | 共 ${count} 根 K 線`;
     }
 
@@ -213,7 +213,7 @@ class MultiTimeframeKlineChart {
         document.querySelectorAll('.interval-buttons button').forEach(btn => {
             btn.classList.remove('active');
         });
-        
+
         // 為當前間隔按鈕添加 active 類別
         document.querySelector(`button[onclick="chart.changeInterval('${activeInterval}')"]`)
             ?.classList.add('active');
@@ -272,7 +272,7 @@ class MultiTimeframeKlineChart {
 
 ### 1. 周線聚合邏輯
 ```python
-# 周線：從週一到週日聚合
+# 周線:從週一到週日聚合
 resampler = df.resample('W-SUN')  # 週日結束
 
 agg_data = resampler.agg({
@@ -286,7 +286,7 @@ agg_data = resampler.agg({
 
 ### 2. 月線聚合邏輯
 ```python
-# 月線：月末結束
+# 月線:月末結束
 resampler = df.resample('M')  # 月末結束
 
 agg_data = resampler.agg({
@@ -347,7 +347,7 @@ class DataCache {
         this.cache = new Map();
         this.maxAge = 5 * 60 * 1000;  // 5分鐘
     }
-    
+
     get(key) {
         const item = this.cache.get(key);
         if (item && (Date.now() - item.timestamp) < this.maxAge) {
@@ -355,7 +355,7 @@ class DataCache {
         }
         return null;
     }
-    
+
     set(key, data) {
         this.cache.set(key, {
             data: data,
@@ -382,4 +382,4 @@ getOptimalLimit(interval) {
 }
 ```
 
-這樣你就有了完整的多時間間隔 K 線圖系統，支援從 1分鐘到月線的所有常用週期！🎉
+這樣你就有了完整的多時間間隔 K 線圖系統,支援從 1分鐘到月線的所有常用週期！🎉

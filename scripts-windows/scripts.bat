@@ -11,6 +11,7 @@ if "%1"=="dev" goto dev
 if "%1"=="dev-backend" goto dev-backend
 if "%1"=="dev-frontend" goto dev-frontend
 if "%1"=="types" goto types
+if "%1"=="lint" goto lint
 if "%1"=="clean" goto clean
 goto help
 
@@ -31,6 +32,9 @@ echo.
 echo 🔧 Type Synchronization:
 echo   scripts types           - Generate TypeScript type definitions
 echo.
+echo 🐍 Code Quality:
+echo   scripts lint            - Show linting and formatting commands
+echo.
 echo 🧹 Cleanup:
 echo   scripts clean           - Clean generated files and cache
 echo.
@@ -45,7 +49,7 @@ goto end
 :install-backend
 echo 📦 Installing backend dependencies...
 cd backend
-uv sync
+uv sync --dev
 if errorlevel 1 (
     echo ❌ Backend dependency installation failed
     cd ..
@@ -103,7 +107,7 @@ goto end
 :types
 echo 🔧 Generating TypeScript type definitions...
 cd backend
-python scripts\generate_types.py
+uv run python scripts\generate_types.py
 if errorlevel 1 (
     echo ❌ Type generation failed
     cd ..
@@ -111,6 +115,12 @@ if errorlevel 1 (
 )
 cd ..
 echo ✅ Type generation completed
+goto end
+
+:lint
+echo 🐍 Python Code Quality Tools
+echo.
+call scripts-windows\lint.bat %2 %3 %4 %5 %6 %7 %8 %9
 goto end
 
 :clean

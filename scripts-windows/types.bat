@@ -3,7 +3,7 @@ chcp 65001 >nul
 echo 🔧 Generating TypeScript type definitions...
 echo.
 cd backend
-python scripts\generate_types.py
+uv run python scripts\generate_types.py
 if errorlevel 1 (
     echo ❌ Type generation failed
     echo 💡 Please ensure Node.js and npm are installed

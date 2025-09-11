@@ -42,7 +42,7 @@ uv run uvicorn src.main:app --reload
 # 開發模式
 dev.bat
 
-# 生產模式  
+# 生產模式
 start.bat
 ```
 
@@ -181,7 +181,7 @@ uv sync && uv run python scripts/dev.py
 ## 🌐 API 相關
 
 ### 查看 API 文檔
-啟動服務後訪問：
+啟動服務後訪問:
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 

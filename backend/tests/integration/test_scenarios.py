@@ -1,7 +1,7 @@
 # tests/integration/test_scenarios.py
 
-import pytest
 import httpx
+import pytest
 
 # 定義 API 的基礎 URL
 BASE_URL = "http://localhost:8000"
@@ -11,8 +11,8 @@ VIEWER_API_KEY = "viewer_api_key"
 TRADER_API_KEY = "trader_api_key"
 
 # 這是一個實際 API 客戶端的佔位符
-# 在真實情境中，我們會有一個與執行中服務互動的客戶端
-# 目前，我們假設伺服器正在運行，並且我們可以向其發出請求。
+# 在真實情境中,我們會有一個與執行中服務互動的客戶端
+# 目前,我們假設伺服器正在運行,並且我們可以向其發出請求。
 
 @pytest.mark.integration
 def test_viewer_can_get_quote():

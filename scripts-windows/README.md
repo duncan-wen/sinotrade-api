@@ -16,7 +16,7 @@ This directory contains all Windows batch files for the Sinotrade API project.
 
 ### Method 1: Use main command (from project root)
 ```cmd
-sinotrade install    # Install dependencies
+sinotrade install    # Install dependencies (includes dev tools)
 sinotrade dev        # Start server
 sinotrade types      # Generate types
 sinotrade clean      # Clean files
@@ -25,7 +25,7 @@ sinotrade clean      # Clean files
 ### Method 2: Use individual scripts
 ```cmd
 cd scripts-windows
-install.bat          # Install dependencies
+install.bat          # Install dependencies (includes dev tools)
 dev.bat             # Start server
 types.bat           # Generate types
 clean.bat           # Clean files

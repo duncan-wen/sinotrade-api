@@ -1,7 +1,7 @@
 # tests/contract/test_contracts.py
 
-import pytest
 import httpx
+import pytest
 from pytest_httpserver import HTTPServer
 
 # 定義 API 的基礎 URL
@@ -31,8 +31,8 @@ def test_get_quote_success(httpserver: HTTPServer):
     response = httpx.get(httpserver.url_for(f"/quote/{symbol}"), headers=headers)
 
     assert response.status_code == 200
-    # 在真實情境中，我們會根據 OpenAPI 綱要來驗證回應
-    # 目前，我們只檢查幾個欄位
+    # 在真實情境中,我們會根據 OpenAPI 綱要來驗證回應
+    # 目前,我們只檢查幾個欄位
     assert response.json()["symbol"] == symbol
 
 def test_get_quote_unauthorized(httpserver: HTTPServer):
@@ -93,7 +93,7 @@ def test_place_order_bad_request(httpserver: HTTPServer):
 
 def test_place_order_forbidden_for_viewer(httpserver: HTTPServer):
     # 這個測試需要更複雜的設定來模擬不同的使用者角色
-    # 目前，我們假設伺服器可以根據 API 金鑰來區分角色
+    # 目前,我們假設伺服器可以根據 API 金鑰來區分角色
     order_request = {
         "instrument_symbol": "2330",
         "action": "Buy",
@@ -105,6 +105,6 @@ def test_place_order_forbidden_for_viewer(httpserver: HTTPServer):
     httpserver.expect_request("/order", method="POST").respond_with_data(status=403) # 禁止
 
     # 假設這個金鑰屬於一個 'viewer'
-    headers = {"X-API-KEY": "viewer_api_key"} 
+    headers = {"X-API-KEY": "viewer_api_key"}
     response = httpx.post(httpserver.url_for("/order"), json=order_request, headers=headers)
     assert response.status_code == 403

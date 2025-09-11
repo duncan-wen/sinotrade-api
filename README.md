@@ -1,6 +1,6 @@
 # 🚀 Sinotrade API - 程式交易平台
 
-基於 **FastAPI + Next.js** 的金融交易 API 和前端界面，支援台股、期貨、選擇權即時報價與模擬下單。
+基於 **FastAPI + Next.js** 的金融交易 API 和前端界面,支援台股、期貨、選擇權即時報價與模擬下單。
 
 ## 📁 專案結構 (Monorepo)
 
@@ -46,7 +46,7 @@ make install-backend       # 只安裝後端
 sinotrade dev              # 啟動後端開發服務器 (http://localhost:8000)
 # OR: scripts-windows\dev.bat
 
-# Linux/macOS  
+# Linux/macOS
 make dev-backend           # http://localhost:8000
 make dev-frontend          # http://localhost:3000 (規劃中)
 ```
@@ -112,7 +112,7 @@ make clean                 # 清理生成的檔案和快取
 ## 🔐 認證與權限
 
 - **API 金鑰認證**: `X-API-Key` header
-- **角色控制**: 
+- **角色控制**:
   - `viewer`: 查看報價
   - `trader`: 查看報價 + 模擬下單
 
@@ -140,5 +140,5 @@ make clean                 # 清理生成的檔案和快取
 
 ---
 
-**📧 聯絡**: Sinotrade Team  
+**📧 聯絡**: Sinotrade Team
 **🔗 版本**: v0.1.0

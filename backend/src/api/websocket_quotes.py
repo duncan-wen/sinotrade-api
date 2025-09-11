@@ -2,14 +2,15 @@
 
 import asyncio
 import json
-from typing import Dict, Set, List
-from fastapi import WebSocket, WebSocketDisconnect, APIRouter
-from loguru import logger
 import time
 from datetime import datetime
+from typing import Dict, List, Set
 
-from src.services.shioaji_service import shioaji_service
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from loguru import logger
+
 from src.models.domain import Quote
+from src.services.shioaji_service import shioaji_service
 
 
 class WebSocketManager:
@@ -38,7 +39,7 @@ class WebSocketManager:
                 for symbol in self.subscriptions[client_id]:
                     if symbol in self.symbol_subscribers:
                         self.symbol_subscribers[symbol].discard(client_id)
-                        # 如果沒有人訂閱了，停止訂閱該股票
+                        # 如果沒有人訂閱了,停止訂閱該股票
                         if not self.symbol_subscribers[symbol]:
                             self._unsubscribe_from_shioaji(symbol)
 
@@ -58,7 +59,7 @@ class WebSocketManager:
 
         if symbol not in self.symbol_subscribers:
             self.symbol_subscribers[symbol] = set()
-            # 第一個訂閱者，開始訂閱 Shioaji
+            # 第一個訂閱者,開始訂閱 Shioaji
             self._subscribe_to_shioaji(symbol)
 
         self.symbol_subscribers[symbol].add(client_id)
@@ -72,7 +73,7 @@ class WebSocketManager:
 
         if symbol in self.symbol_subscribers:
             self.symbol_subscribers[symbol].discard(client_id)
-            # 如果沒有人訂閱了，停止訂閱該股票
+            # 如果沒有人訂閱了,停止訂閱該股票
             if not self.symbol_subscribers[symbol]:
                 self._unsubscribe_from_shioaji(symbol)
 
@@ -221,7 +222,7 @@ async def tick_broadcast_callback(quote: Quote):
 
 
 # 註冊到 Shioaji service
-# 注意：這需要在 ShioajiService 中添加 callback 註冊功能
+# 注意:這需要在 ShioajiService 中添加 callback 註冊功能
 
 
 router = APIRouter()

@@ -5,8 +5,8 @@
 """
 
 import json
-import sys
 import os
+import sys
 
 # 將 src 加入 Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

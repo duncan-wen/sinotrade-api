@@ -59,12 +59,12 @@ def generate_typescript_types():
             return True
         else:
             print(f"❌ 生成 TypeScript 類型失敗: {result.stderr}")
-            # 如果 npx 不可用，提供替代方案
+            # 如果 npx 不可用,提供替代方案
             print("💡 請安裝 openapi-typescript: npm install -g openapi-typescript")
             return False
 
     except FileNotFoundError:
-        print("❌ 找不到 npx，請確保已安裝 Node.js")
+        print("❌ 找不到 npx,請確保已安裝 Node.js")
         return False
 
 
