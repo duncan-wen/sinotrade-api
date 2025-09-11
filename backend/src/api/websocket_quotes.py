@@ -1,10 +1,7 @@
 # src/api/websocket_quotes.py
 
-import asyncio
 import json
-import time
 from datetime import datetime
-from typing import Dict, List, Set
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from loguru import logger
@@ -18,11 +15,11 @@ class WebSocketManager:
 
     def __init__(self):
         # 儲存所有活動的 WebSocket 連接
-        self.active_connections: Dict[str, WebSocket] = {}
+        self.active_connections: dict[str, WebSocket] = {}
         # 每個連接訂閱的股票
-        self.subscriptions: Dict[str, Set[str]] = {}
+        self.subscriptions: dict[str, set[str]] = {}
         # 每個股票的訂閱者
-        self.symbol_subscribers: Dict[str, Set[str]] = {}
+        self.symbol_subscribers: dict[str, set[str]] = {}
 
     async def connect(self, websocket: WebSocket, client_id: str):
         """接受新的 WebSocket 連接"""
@@ -96,7 +93,7 @@ class WebSocketManager:
         logger.info(f"停止訂閱 {symbol}")
 
     async def broadcast_tick(self, quote: Quote):
-        """廣播 Tick 資料給訂閱的客戶端（用於 K 線圖）"""
+        """廣播 Tick 資料給訂閱的客戶端 (用於 K 線圖)"""
         if quote.symbol not in self.symbol_subscribers:
             return
 
@@ -169,7 +166,7 @@ class KlineAggregator:
         self.current_klines = {}  # symbol -> current kline
 
     def get_minute_timestamp(self, timestamp: datetime) -> datetime:
-        """獲取分鐘時間戳（去除秒和毫秒）"""
+        """獲取分鐘時間戳 (去除秒和毫秒)"""
         return timestamp.replace(second=0, microsecond=0)
 
     async def process_tick(self, quote: Quote):
@@ -309,7 +306,7 @@ async def websocket_klines_endpoint(websocket: WebSocket, client_id: str):
         ws_manager.disconnect(f"kline_{client_id}")
 
 
-async def get_historical_klines(symbol: str, interval: str, limit: int) -> List[dict]:
+async def get_historical_klines(symbol: str, interval: str, limit: int) -> list[dict]:
     """獲取歷史 K 線資料"""
     try:
         historical_data = shioaji_service.get_historical_klines(symbol, interval, limit)

@@ -2,6 +2,7 @@
 """
 開發服務器啟動腳本
 """
+
 import subprocess
 import sys
 
@@ -20,15 +21,15 @@ def main():
         "8000",
     ]
 
-    print("🚀 啟動開發服務器...")
-    print(f"📍 URL: http://localhost:8000")
-    print(f"📖 API 文檔: http://localhost:8000/docs")
-    print("⏹️  按 Ctrl+C 停止服務器\n")
+    print("🚀 啟動開發服務器...")  # noqa: T201
+    print("📍 URL: http://localhost:8000")  # noqa: T201
+    print("📖 API 文檔: http://localhost:8000/docs")  # noqa: T201
+    print("⏹️  按 Ctrl+C 停止服務器\n")  # noqa: T201
 
     try:
         subprocess.run(cmd)
     except KeyboardInterrupt:
-        print("\n👋 服務器已停止")
+        print("\n👋 服務器已停止")  # noqa: T201
 
 
 if __name__ == "__main__":

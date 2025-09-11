@@ -16,7 +16,7 @@ sinotrade help       # Show help
 ### Detailed Commands
 ```cmd
 scripts-windows\install.bat    # Install dependencies
-scripts-windows\dev.bat        # Start server  
+scripts-windows\dev.bat        # Start server
 scripts-windows\types.bat      # Generate types
 scripts-windows\clean.bat      # Clean cache
 scripts-windows\scripts.bat help  # Full options
@@ -89,7 +89,7 @@ Both platforms can generate TypeScript types from Python models:
 
 ### Linux/macOS Users
 1. `make install-backend` - Install dependencies
-2. `make dev-backend` - Start development server  
+2. `make dev-backend` - Start development server
 3. Visit http://localhost:8000/docs
 
 ## 🔧 IDE Configuration

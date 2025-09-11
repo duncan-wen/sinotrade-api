@@ -1,17 +1,20 @@
 # src/api/quotes.py
 
+from datetime import datetime
+from typing import Any
+
 from fastapi import APIRouter, Depends, Query
-from src.models.domain import Quote
-from src.services.shioaji_service import shioaji_service
+
+from src.models.domain import APIUser, Quote
 from src.services.auth_service import get_current_user
 from src.services.cache_service import get_cached_quote
-from typing import List
+from src.services.shioaji_service import shioaji_service
 
 router = APIRouter()
 
 
 @router.get("/quote/{symbol}", response_model=Quote)
-def get_quote(symbol: str, user=Depends(get_current_user)):
+def get_quote(symbol: str, user: APIUser = Depends(get_current_user)) -> Quote:
     """
     Fetches a real-time quote for a given financial instrument symbol.
     It first checks the cache, and if not found, subscribes to the quote stream.
@@ -22,7 +25,7 @@ def get_quote(symbol: str, user=Depends(get_current_user)):
 
     # If not in cache, subscribe to the quote.
     # The actual quote will be put into the cache by the service's callback.
-    def quote_callback(quote_data):
+    def quote_callback(quote_data: Any) -> None:
         pass
 
     shioaji_service.subscribe_quote(symbol, quote_callback)
@@ -32,13 +35,14 @@ def get_quote(symbol: str, user=Depends(get_current_user)):
     # block the request. WebSockets are the best solution for this.
     dummy_quote = Quote(
         symbol=symbol,
-        timestamp="2025-09-10T12:00:00Z",
+        timestamp=datetime.fromisoformat("2025-09-10T12:00:00+00:00"),
         open=0,
         close=0,
         bid_price=0,
         ask_price=0,
         bid_volume=0,
         ask_volume=0,
+        volume=0,
         avg_price=0,
     )
     return dummy_quote
@@ -54,8 +58,8 @@ def get_historical_klines(
     use_kbar_api: bool = Query(
         default=False, description="是否使用官方KBar API (僅日線)"
     ),
-    user=Depends(get_current_user),
-) -> List[dict]:
+    user: APIUser = Depends(get_current_user),
+) -> dict[str, Any]:
     """
     獲取歷史 K 線資料
 
@@ -75,7 +79,7 @@ def get_historical_klines(
             "source": _get_data_source(interval, use_kbar_api),
         }
     except Exception as e:
-        return {"error": str(e), "symbol": symbol, "data": []}
+        return {"error": str(e), "symbol": symbol, "data": [], "count": 0}
 
 
 def _get_data_source(interval: str, use_kbar_api: bool) -> str:

@@ -2,7 +2,7 @@
 
 import atexit
 import os
-from typing import Any, Optional, Union
+from typing import Any
 
 import shioaji as sj
 from dotenv import load_dotenv
@@ -76,7 +76,9 @@ class ShioajiService:
         else:
             return self._get_klines_from_ticks(contract, symbol, interval, limit)
 
-    def _get_kbars_from_api(self, contract: Any, symbol: str, limit: int) -> list[dict[str, Any]]:
+    def _get_kbars_from_api(
+        self, contract: Any, symbol: str, limit: int
+    ) -> list[dict[str, Any]]:
         """使用官方 KBar API 獲取日線資料 (效能較好)"""
         try:
             from datetime import datetime, timedelta
@@ -129,11 +131,9 @@ class ShioajiService:
             # 周線和月線需要更多的日線資料
             if interval == "1w":
                 # 周線:獲取足夠的日線資料 (每周5個交易日)
-                daily_limit = limit * 7 + 20  # 多取一些緩衝
                 start_date = datetime.now() - timedelta(weeks=limit + 8)
             elif interval == "1M":
                 # 月線:獲取足夠的日線資料 (每月約22個交易日)
-                daily_limit = limit * 30 + 30  # 多取一些緩衝
                 start_date = datetime.now() - timedelta(days=limit * 35 + 60)
             else:
                 return []
@@ -351,7 +351,7 @@ class ShioajiService:
 
     def _get_contract(
         self, symbol: str
-    ) -> Optional[Union[sj.contracts.Stock, sj.contracts.Future, sj.contracts.Option]]:
+    ) -> sj.contracts.Stock | sj.contracts.Future | sj.contracts.Option | None:
         """
         智能獲取合約,支持多種格式:
         - 股票: "2330", "TSE2330"
@@ -451,6 +451,7 @@ class ShioajiService:
             ask_price=tick.ask_price[0] if tick.ask_price else 0,
             bid_volume=tick.bid_volume[0] if tick.bid_volume else 0,
             ask_volume=tick.ask_volume[0] if tick.ask_volume else 0,
+            volume=getattr(tick, "volume", 0),
             avg_price=float(getattr(tick, "avg_price", 0)),
             underlying_price=None,  # 股票沒有標的價格
         )
@@ -470,6 +471,7 @@ class ShioajiService:
             ask_price=tick.ask_price[0] if tick.ask_price else 0,
             bid_volume=tick.bid_volume[0] if tick.bid_volume else 0,
             ask_volume=tick.ask_volume[0] if tick.ask_volume else 0,
+            volume=getattr(tick, "volume", 0),
             avg_price=float(getattr(tick, "avg_price", 0)),
             underlying_price=getattr(tick, "underlying_price", None),
         )

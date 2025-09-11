@@ -14,6 +14,7 @@ TRADER_API_KEY = "trader_api_key"
 # 在真實情境中,我們會有一個與執行中服務互動的客戶端
 # 目前,我們假設伺服器正在運行,並且我們可以向其發出請求。
 
+
 @pytest.mark.integration
 def test_viewer_can_get_quote():
     """測試 'viewer' 角色的主要使用者情境。"""
@@ -28,6 +29,7 @@ def test_viewer_can_get_quote():
         assert quote["symbol"] == symbol
     except httpx.ConnectError:
         pytest.skip("API 服務未運行。跳過整合測試。")
+
 
 @pytest.mark.integration
 def test_trader_can_get_quote_and_place_order():
@@ -46,12 +48,14 @@ def test_trader_can_get_quote_and_place_order():
         order_request = {
             "instrument_symbol": symbol,
             "action": "Buy",
-            "price": quote["ask_price"], # 以賣出價買入
+            "price": quote["ask_price"],  # 以賣出價買入
             "quantity": 10,
             "order_type": "LMT",
-            "time_in_force": "ROD"
+            "time_in_force": "ROD",
         }
-        response_order = httpx.post(f"{BASE_URL}/order", json=order_request, headers=headers)
+        response_order = httpx.post(
+            f"{BASE_URL}/order", json=order_request, headers=headers
+        )
         assert response_order.status_code == 201
         order = response_order.json()
         assert order["status"] == "Pending"
@@ -59,6 +63,7 @@ def test_trader_can_get_quote_and_place_order():
 
     except httpx.ConnectError:
         pytest.skip("API 服務未運行。跳過整合測試。")
+
 
 @pytest.mark.integration
 def test_viewer_cannot_place_order():
@@ -70,11 +75,11 @@ def test_viewer_cannot_place_order():
         "price": 100.0,
         "quantity": 1,
         "order_type": "LMT",
-        "time_in_force": "ROD"
+        "time_in_force": "ROD",
     }
 
     try:
         response = httpx.post(f"{BASE_URL}/order", json=order_request, headers=headers)
-        assert response.status_code == 403 # 禁止
+        assert response.status_code == 403  # 禁止
     except httpx.ConnectError:
         pytest.skip("API 服務未運行。跳過整合測試。")

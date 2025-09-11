@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 
-from src.api import quotes, orders
+from src.api import orders, quotes
 
 app = FastAPI(
     title="Shioaji Trading API",
@@ -29,5 +29,5 @@ app.include_router(orders.router, prefix="/api", tags=["Orders"])
 
 
 @app.get("/")
-def read_root():
+def read_root() -> dict[str, str]:
     return {"message": "Welcome to the Shioaji Trading API"}

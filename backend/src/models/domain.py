@@ -31,6 +31,7 @@ class Quote(BaseModel):
     ask_price: float
     bid_volume: int
     ask_volume: int
+    volume: int  # 總成交量
     avg_price: float
     underlying_price: float | None = None  # For derivatives
 

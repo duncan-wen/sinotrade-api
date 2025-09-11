@@ -23,7 +23,7 @@ def get_user(api_key: str) -> APIUser | None:
         return APIUser(
             id=user_dict["id"],
             api_key=user_dict["api_key"],
-            role=user_dict["role"]  # type: ignore[arg-type]
+            role=user_dict["role"],  # type: ignore[arg-type]
         )
     return None
 

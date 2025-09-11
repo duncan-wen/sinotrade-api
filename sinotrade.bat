@@ -28,7 +28,7 @@ goto end
 call scripts-windows\install.bat
 goto end
 
-:dev  
+:dev
 call scripts-windows\dev.bat
 goto end
 

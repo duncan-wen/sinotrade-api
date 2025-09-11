@@ -1,6 +1,5 @@
 # src/services/cache_service.py
 
-from typing import Any
 
 from cachetools import TTLCache
 
