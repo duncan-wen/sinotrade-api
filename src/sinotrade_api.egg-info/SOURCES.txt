@@ -1,7 +1,0 @@
-pyproject.toml
-src/main.py
-src/sinotrade_api.egg-info/PKG-INFO
-src/sinotrade_api.egg-info/SOURCES.txt
-src/sinotrade_api.egg-info/dependency_links.txt
-src/sinotrade_api.egg-info/requires.txt
-src/sinotrade_api.egg-info/top_level.txt

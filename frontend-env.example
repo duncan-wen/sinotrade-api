@@ -1,0 +1,39 @@
+# ===== FRONTEND-SPECIFIC ENVIRONMENT VARIABLES =====
+# (For future Next.js frontend)
+
+# ===== NEXT.JS SETTINGS =====
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-nextauth-secret
+
+# ===== API ENDPOINTS =====
+# Backend API base URL
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_WS_URL=ws://localhost:8000
+
+# ===== UI CONFIGURATION =====
+# Theme settings
+NEXT_PUBLIC_DEFAULT_THEME=light
+NEXT_PUBLIC_ENABLE_DARK_MODE=true
+
+# Chart configuration
+NEXT_PUBLIC_CHART_PROVIDER=tradingview
+NEXT_PUBLIC_CHART_THEME=light
+
+# ===== FEATURES =====
+# Feature flags
+NEXT_PUBLIC_ENABLE_TRADING=true
+NEXT_PUBLIC_ENABLE_ANALYTICS=true
+NEXT_PUBLIC_ENABLE_NOTIFICATIONS=true
+
+# ===== EXTERNAL SERVICES =====
+# Analytics
+NEXT_PUBLIC_GA_TRACKING_ID=
+NEXT_PUBLIC_HOTJAR_ID=
+
+# Error tracking
+NEXT_PUBLIC_SENTRY_DSN=
+
+# ===== DEVELOPMENT =====
+# Development tools
+NEXT_PUBLIC_ENABLE_DEVTOOLS=true
+NEXT_PUBLIC_MOCK_API=false

@@ -1,0 +1,3 @@
+@echo off
+echo 🚀 啟動 Sinotrade API 生產服務器...
+uv run python scripts/start.py

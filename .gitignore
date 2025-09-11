@@ -1,0 +1,144 @@
+# ===== MONOREPO STRUCTURE =====
+
+# ===== BACKEND (Python) =====
+# Virtual environment
+backend/.venv/
+backend/venv/
+backend/env/
+
+# Python cache and bytecode
+backend/**/__pycache__/
+backend/**/*.py[cod]
+backend/**/*$py.class
+backend/**/*.so
+
+# Python build artifacts
+backend/.Python
+backend/build/
+backend/develop-eggs/
+backend/dist/
+backend/downloads/
+backend/eggs/
+backend/.eggs/
+backend/lib/
+backend/lib64/
+backend/parts/
+backend/sdist/
+backend/var/
+backend/wheels/
+backend/share/python-wheels/
+backend/**/*.egg-info/
+backend/.installed.cfg
+backend/**/*.egg
+backend/MANIFEST
+
+# Test coverage
+backend/htmlcov/
+backend/.coverage
+backend/.coverage.*
+backend/coverage.xml
+backend/*.cover
+backend/*.py,cover
+backend/.hypothesis/
+backend/.pytest_cache/
+backend/cover/
+
+# Backend environment variables
+backend/.env
+backend/.env.local
+backend/.env.development
+backend/.env.test
+backend/.env.production
+
+# ===== FRONTEND (Node.js) =====
+# Dependencies
+frontend/node_modules/
+frontend/.pnp
+frontend/.pnp.js
+
+# Production build
+frontend/build/
+frontend/dist/
+frontend/.next/
+frontend/out/
+
+# Runtime data
+frontend/pids
+frontend/*.pid
+frontend/*.seed
+frontend/*.pid.lock
+
+# Coverage directory used by tools like istanbul
+frontend/coverage/
+frontend/.nyc_output
+
+# Frontend environment variables
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# ===== SHARED =====
+# Generated TypeScript types (will be regenerated)
+shared/types/*.ts
+shared/schemas/openapi.json
+
+# ===== ROOT LEVEL =====
+# NO virtual environments in root
+/.venv/
+/venv/
+/env/
+
+# Global environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# ===== GLOBAL PATTERNS =====
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+log/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# API keys and secrets
+*.pem
+*.key
+
+# ===== DEVELOPMENT TOOLS =====
+# Testing
+.tox/
+.nox/
+.cache
+nosetests.xml
+
+# Debugging
+*.pid
+*.seed
+*.pid.lock
+
+# Windows Scripts (keep the actual .bat files, ignore temp files)
+scripts-windows/*.tmp

@@ -1,0 +1,36 @@
+# ===== SINOTRADE API - GLOBAL ENVIRONMENT VARIABLES =====
+
+# ===== GLOBAL SETTINGS =====
+# Project environment (development, staging, production)
+NODE_ENV=development
+ENVIRONMENT=development
+
+# ===== SHARED DATABASE & CACHE =====
+# Redis for caching (shared between backend and frontend)
+REDIS_URL=redis://localhost:6379
+REDIS_PASSWORD=
+
+# ===== SECURITY =====
+# JWT secrets (shared between services)
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+JWT_ALGORITHM=HS256
+JWT_EXPIRE_HOURS=24
+
+# ===== API CONFIGURATION =====
+# API base URLs
+BACKEND_URL=http://localhost:8000
+FRONTEND_URL=http://localhost:3000
+
+# ===== MONITORING & LOGGING =====
+# Logging level
+LOG_LEVEL=INFO
+
+# Sentry DSN for error tracking (optional)
+SENTRY_DSN=
+
+# ===== DEVELOPMENT TOOLS =====
+# Enable debug mode
+DEBUG=true
+
+# CORS origins (comma-separated)
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
