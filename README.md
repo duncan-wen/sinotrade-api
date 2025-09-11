@@ -129,8 +129,8 @@ make clean                 # 清理生成的檔案和快取
 ## 📝 相關文檔
 
 - [API 文檔](http://localhost:8000/docs) (啟動後端後查看)
-- [跨平台開發指南](CROSS-PLATFORM.md) - Windows & Linux/macOS
-- [Windows 快速指南](START-HERE-WINDOWS.md) - Windows 專用
+- [跨平台開發指南](docs/CROSS-PLATFORM.md) - Windows & Linux/macOS
+- [Windows 快速指南](docs/START-HERE-WINDOWS.md) - Windows 專用
 - [技術指標架構](backend/docs/technical-indicators-architecture.md)
 - [即時圖表實作](backend/docs/realtime-chart-implementation.md)
 
