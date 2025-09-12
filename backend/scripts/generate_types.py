@@ -20,21 +20,21 @@ def generate_typescript_types():
     types_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. 導出 OpenAPI schema
-    print("🔄 正在導出 OpenAPI schema...")  # noqa: T201
+    print("[INFO] 正在導出 OpenAPI schema...")  # noqa: T201
     export_script = Path(__file__).parent / "export_openapi.py"
     result = subprocess.run(
         [sys.executable, str(export_script)], capture_output=True, text=True
     )
 
     if result.returncode != 0:
-        print(f"❌ 導出 OpenAPI schema 失敗: {result.stderr}")  # noqa: T201
+        print(f"[ERROR] 導出 OpenAPI schema 失敗: {result.stderr}")  # noqa: T201
         return False
 
     # 2. 生成 TypeScript 類型
     openapi_file = schemas_dir / "openapi.json"
     types_file = types_dir / "api.ts"
 
-    print("🔄 正在生成 TypeScript 類型...")  # noqa: T201
+    print("[INFO] 正在生成 TypeScript 類型...")  # noqa: T201
 
     # 使用 openapi-typescript 生成類型
     cmd = [
@@ -50,19 +50,19 @@ def generate_typescript_types():
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=shared_dir)
 
         if result.returncode == 0:
-            print(f"✅ TypeScript 類型已生成: {types_file}")  # noqa: T201
+            print(f"[SUCCESS] TypeScript 類型已生成: {types_file}")  # noqa: T201
 
             # 3. 生成額外的便利類型
             generate_convenience_types(types_file)
             return True
         else:
-            print(f"❌ 生成 TypeScript 類型失敗: {result.stderr}")  # noqa: T201
+            print(f"[ERROR] 生成 TypeScript 類型失敗: {result.stderr}")  # noqa: T201
             # 如果 npx 不可用,提供替代方案
-            print("💡 請安裝 openapi-typescript: npm install -g openapi-typescript")  # noqa: T201
+            print("[INFO] 請安裝 openapi-typescript: npm install -g openapi-typescript")  # noqa: T201
             return False
 
     except FileNotFoundError:
-        print("❌ 找不到 npx,請確保已安裝 Node.js")  # noqa: T201
+        print("[ERROR] 找不到 npx,請確保已安裝 Node.js")  # noqa: T201
         return False
 
 
@@ -124,7 +124,7 @@ export type WSMessage = WSQuoteMessage | WSKlineMessage;
     with open(convenience_file, "w", encoding="utf-8") as f:
         f.write(convenience_types)
 
-    print(f"✅ 便利類型已生成: {convenience_file}")  # noqa: T201
+    print(f"[SUCCESS] 便利類型已生成: {convenience_file}")  # noqa: T201
 
 
 if __name__ == "__main__":
