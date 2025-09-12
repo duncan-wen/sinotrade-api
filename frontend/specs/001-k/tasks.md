@@ -4,10 +4,10 @@
 **Prerequisites**: plan.md, research.md, data-model.md, contracts/openapi.json
 
 ## Phase 3.1: Setup
-- [ ] T001 [P] Initialize Next.js project with TypeScript using `pnpm create next-app`.
-- [ ] T002 [P] Install all dependencies listed in `plan.md`: Gluestack UI, Lightweight Charts, Zustand, TanStack Query, TanStack Virtual, TanStack Table, Socket.io.
-- [ ] T003 [P] Configure ESLint and Prettier for code quality and consistent formatting.
-- [ ] T004 [P] Set up the frontend project structure according to the following plan:
+- [x] T001 [P] Initialize Next.js project with TypeScript using `pnpm create next-app`.
+- [x] T002 [P] Install all dependencies listed in `plan.md`: Gluestack UI, Lightweight Charts, Zustand, TanStack Query, TanStack Virtual, TanStack Table, Socket.io.
+- [x] T003 [P] Configure ESLint and Prettier for code quality and consistent formatting.
+- [x] T004 [P] Set up the frontend project structure according to the following plan:
   ```
   /src
   ├── /app                # Next.js 13+ App Router
@@ -20,6 +20,7 @@
   │   │   └── page.tsx
   │   └── layout.tsx
   ├── /components
+  │   ├── /ui         # Gluestack UI components
   │   ├── /common
   │   ├── /chart
   │   ├── /trading
@@ -41,9 +42,9 @@
   ```
 
 ## Phase 3.2: API Layer & State Management
-- [ ] T005 [P] Create type definitions in `types/api.ts` based on the schemas in `openapi.json` (Quote, SimulatedOrder).
-- [ ] T006 [P] Implement an API client service in `services/api.ts` to fetch data from the backend endpoints defined in `openapi.json`. Use TanStack Query for server state management.
-- [ ] T007 [P] Set up a Zustand store in `store/` for managing global UI state and client-side data.
+- [x] T005 [P] Create type definitions in `types/api.ts` based on the schemas in `openapi.json` (Quote, SimulatedOrder).
+- [x] T006 [P] Implement an API client service in `services/api.ts` to fetch data from the backend endpoints defined in `openapi.json`. Use TanStack Query for server state management.
+- [x] T007 [P] Set up a Zustand store in `store/` for managing global UI state and client-side data.
 - [ ] T008 [P] Implement a WebSocket service in `services/socket.ts` using Socket.io to handle real-time data streams from the backend.
 
 ## Phase 3.3: Core UI Components
