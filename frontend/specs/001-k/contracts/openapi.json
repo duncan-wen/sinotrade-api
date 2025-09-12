@@ -1,0 +1,434 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Shioaji Trading API",
+    "description": "An API for fetching real-time market data and placing simulated orders using the Shioaji library.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/quote/{symbol}": {
+      "get": {
+        "tags": [
+          "Quotes"
+        ],
+        "summary": "Get Quote",
+        "description": "Fetches a real-time quote for a given financial instrument symbol.\nIt first checks the cache, and if not found, subscribes to the quote stream.",
+        "operationId": "get_quote_api_quote__symbol__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Symbol"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Quote"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/klines/{symbol}": {
+      "get": {
+        "tags": [
+          "Quotes"
+        ],
+        "summary": "Get Historical Klines",
+        "description": "獲取歷史 K 線資料\n\n- **symbol**: 股票代號 (如: 2330, TSE2330, TXF, TXO等)\n- **interval**: K線間隔 (1m=1分鐘, 5m=5分鐘, 15m=15分鐘, 1h=1小時, 1d=1日, 1w=周線, 1M=月線)\n- **limit**: 返回的K線數量 (1-1000根)",
+        "operationId": "get_historical_klines_api_klines__symbol__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Symbol"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "K線間隔 (1m, 5m, 15m, 1h, 1d, 1w, 1M)",
+              "default": "1m",
+              "title": "Interval"
+            },
+            "description": "K線間隔 (1m, 5m, 15m, 1h, 1d, 1w, 1M)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "返回的K線數量",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "返回的K線數量"
+          },
+          {
+            "name": "use_kbar_api",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "是否使用官方KBar API (僅日線)",
+              "default": false,
+              "title": "Use Kbar Api"
+            },
+            "description": "是否使用官方KBar API (僅日線)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Historical Klines Api Klines  Symbol  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/order": {
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Place Order",
+        "description": "Places a simulated order for a financial instrument.\nThis endpoint is only available to users with the 'trader' role.",
+        "operationId": "place_order_api_order_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulatedOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulatedOrder"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Read Root",
+        "operationId": "read_root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Read Root  Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Quote": {
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "title": "Symbol"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "open": {
+            "type": "number",
+            "title": "Open"
+          },
+          "close": {
+            "type": "number",
+            "title": "Close"
+          },
+          "bid_price": {
+            "type": "number",
+            "title": "Bid Price"
+          },
+          "ask_price": {
+            "type": "number",
+            "title": "Ask Price"
+          },
+          "bid_volume": {
+            "type": "integer",
+            "title": "Bid Volume"
+          },
+          "ask_volume": {
+            "type": "integer",
+            "title": "Ask Volume"
+          },
+          "volume": {
+            "type": "integer",
+            "title": "Volume"
+          },
+          "avg_price": {
+            "type": "number",
+            "title": "Avg Price"
+          },
+          "underlying_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Underlying Price"
+          }
+        },
+        "type": "object",
+        "required": [
+          "symbol",
+          "timestamp",
+          "open",
+          "close",
+          "bid_price",
+          "ask_price",
+          "bid_volume",
+          "ask_volume",
+          "volume",
+          "avg_price"
+        ],
+        "title": "Quote"
+      },
+      "SimulatedOrder": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "instrument_symbol": {
+            "type": "string",
+            "title": "Instrument Symbol"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "Buy",
+              "Sell"
+            ],
+            "title": "Action"
+          },
+          "price": {
+            "type": "number",
+            "title": "Price"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "order_type": {
+            "type": "string",
+            "enum": [
+              "LMT",
+              "MKT"
+            ],
+            "title": "Order Type"
+          },
+          "time_in_force": {
+            "type": "string",
+            "enum": [
+              "ROD",
+              "IOC",
+              "FOK"
+            ],
+            "title": "Time In Force"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Pending",
+              "Filled",
+              "Cancelled",
+              "Failed"
+            ],
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "instrument_symbol",
+          "action",
+          "price",
+          "quantity",
+          "order_type",
+          "time_in_force",
+          "status",
+          "created_at"
+        ],
+        "title": "SimulatedOrder"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "APIKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-KEY"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Quotes",
+      "description": "即時報價和歷史數據相關 API"
+    },
+    {
+      "name": "Orders",
+      "description": "模擬下單相關 API"
+    },
+    {
+      "name": "WebSocket",
+      "description": "即時數據推送 WebSocket 連接"
+    }
+  ]
+}
