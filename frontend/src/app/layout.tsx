@@ -1,5 +1,6 @@
 import '../styles/globals.css'
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider/index.next15'
+import StyledJsxRegistry from './registry'
 
 export default function RootLayout({
   children,
@@ -9,7 +10,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <GluestackUIProvider mode="system">{children}</GluestackUIProvider>
+        <StyledJsxRegistry>
+          <GluestackUIProvider mode="system">{children}</GluestackUIProvider>
+        </StyledJsxRegistry>
       </body>
     </html>
   )

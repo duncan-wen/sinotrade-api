@@ -1,15 +1,72 @@
-import { Box } from '@/components/ui/box'
+// @ts-nocheck
+'use client';
+import { MainLayout } from '@/components/layout/MainLayout'
+import { View, Text } from 'react-native'
+import { Button, ButtonText } from '@/components/ui/button'
 
 export default function Home() {
   return (
-    <Box className="p-6 bg-gray-50 min-h-screen">
-      <Box className="max-w-md mx-auto">
-        <Box className="bg-white p-4 rounded-lg shadow-sm mb-4">
-          Box 元件測試
-        </Box>
+    <MainLayout>
+      {/* 交易大廳主要內容 */}
+      <View className="space-y-6">
+        {/* 市場總覽卡片 */}
+        <View className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[
+            { title: '台股指數', value: '17,234', change: '+123 (+0.72%)', up: true },
+            { title: '美股道瓊', value: '38,654', change: '-89 (-0.23%)', up: false },
+            { title: '投資組合價值', value: '$125,680', change: '+$2,340 (+1.90%)', up: true },
+            { title: '今日損益', value: '+$1,250', change: '已實現', up: true },
+          ].map((stat, index) => (
+            <View key={index} className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+              <Text className="text-sm text-gray-500 mb-1">{stat.title}</Text>
+              <Text className="text-2xl font-bold text-gray-900 mb-2">{stat.value}</Text>
+              <Text className={`text-sm ${stat.up ? 'text-green-600' : 'text-red-600'}`}>
+                {stat.change}
+              </Text>
+            </View>
+          ))}
+        </View>
 
-        <Box className="bg-blue-50 p-4 rounded-lg">✅ Box 元件正常運作</Box>
-      </Box>
-    </Box>
+        {/* 快速交易區 */}
+        <View className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+          <Text className="text-lg font-semibold text-gray-900 mb-4">快速交易</Text>
+          <View className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <View className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <Text className="font-medium text-green-900 mb-2">📈 熱門股票</Text>
+              <Text className="text-sm text-green-700">台積電、聯發科、鴻海</Text>
+            </View>
+            <View className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <Text className="font-medium text-blue-900 mb-2">⚡ 快速下單</Text>
+              <Text className="text-sm text-blue-700">一鍵買賣，即時成交</Text>
+            </View>
+            <View className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <Text className="font-medium text-purple-900 mb-2">🔍 市場分析</Text>
+              <Text className="text-sm text-purple-700">AI 智能推薦</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* 測試按鈕區域 */}
+        <View className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+          <Text className="text-lg font-semibold text-gray-900 mb-4">功能測試</Text>
+          <View className="flex-row space-x-4">
+            <Button
+              variant="solid"
+              action="primary"
+              size="lg"
+              className="bg-gradient-to-r from-purple-500 to-pink-500 px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+            >
+              <ButtonText className="text-white font-bold text-lg">
+                🚀 超酷按鈕測試
+              </ButtonText>
+            </Button>
+
+            <Button variant="outline" action="secondary" size="lg">
+              <ButtonText>📊 查看圖表</ButtonText>
+            </Button>
+          </View>
+        </View>
+      </View>
+    </MainLayout>
   )
 }

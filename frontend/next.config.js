@@ -8,6 +8,8 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   transpilePackages: [],
+  // 允許跨域開發存取
+  allowedDevOrigins: ['192.168.0.5', '192.168.0.*', '10.0.0.*', '172.16.0.*'],
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,

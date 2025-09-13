@@ -43,7 +43,16 @@ goto end
 :install
 echo 📦 Installing all dependencies...
 call :install-backend
+if errorlevel 1 (
+    echo ❌ Backend installation failed, skipping frontend installation
+    goto end
+)
 call :install-frontend
+if errorlevel 1 (
+    echo ❌ Frontend installation failed
+    goto end
+)
+echo 🎉 All dependencies installed successfully!
 goto end
 
 :install-backend
@@ -53,28 +62,28 @@ uv sync --dev
 if errorlevel 1 (
     echo ❌ Backend dependency installation failed
     cd ..
-    goto end
+    exit /b 1
 )
 cd ..
 echo ✅ Backend dependencies installed successfully
-goto end
+exit /b 0
 
 :install-frontend
 echo 📦 Installing frontend dependencies...
 if not exist frontend (
     echo ⚠️  Frontend directory does not exist, please setup frontend project first
-    goto end
+    exit /b 1
 )
 cd frontend
-npm install
+pnpm install
 if errorlevel 1 (
     echo ❌ Frontend dependency installation failed
     cd ..
-    goto end
+    exit /b 1
 )
 cd ..
 echo ✅ Frontend dependencies installed successfully
-goto end
+exit /b 0
 
 :dev
 echo 🚀 Starting development environment...

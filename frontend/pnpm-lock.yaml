@@ -87,6 +87,9 @@ importers:
       '@types/react-native':
         specifier: 0.72.8
         version: 0.72.8(react-native@0.81.1(@babel/core@7.28.4)(@types/react@18.3.24)(react@18.3.1))
+      '@types/react-native-web':
+        specifier: ^0.19.2
+        version: 0.19.2(@babel/core@7.28.4)(react@18.3.1)
       autoprefixer:
         specifier: 10.4.21
         version: 10.4.21(postcss@8.5.4)
@@ -1458,6 +1461,9 @@ packages:
     resolution: {integrity: sha512-MEe3UeoENYVFXzoXEWsvcpg6ZvlrFNlOQ7EOsvhI3CfAXwzPfO8Qwuxd40nepsYKqyyVQnTdEfv68q91yLcKrQ==}
     peerDependencies:
       '@types/react': ^18.0.0
+
+  '@types/react-native-web@0.19.2':
+    resolution: {integrity: sha512-TAgyUi1XcYYUM5j3IwBDufPUD0NaOJiz8ftld6oJPtuIT5lc+uRZZmTcTdflpsVzCtiZ6AjSyLFZ/xD0OtCfJA==}
 
   '@types/react-native@0.72.8':
     resolution: {integrity: sha512-St6xA7+EoHN5mEYfdWnfYt0e8u6k2FR0P9s2arYgakQGFgU1f9FlPrIEcj0X24pLCF5c5i3WVuLCUdiCYHmOoA==}
@@ -5967,6 +5973,19 @@ snapshots:
   '@types/react-dom@18.3.7(@types/react@18.3.24)':
     dependencies:
       '@types/react': 18.3.24
+
+  '@types/react-native-web@0.19.2(@babel/core@7.28.4)(react@18.3.1)':
+    dependencies:
+      '@types/react': 18.3.24
+      react-native: 0.81.1(@babel/core@7.28.4)(@types/react@18.3.24)(react@18.3.1)
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@react-native-community/cli'
+      - '@react-native/metro-config'
+      - bufferutil
+      - react
+      - supports-color
+      - utf-8-validate
 
   '@types/react-native@0.72.8(react-native@0.81.1(@babel/core@7.28.4)(@types/react@18.3.24)(react@18.3.1))':
     dependencies:
