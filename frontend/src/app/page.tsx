@@ -3,6 +3,8 @@
 import { MainLayout } from '@/components/layout/MainLayout'
 import { View, Text } from 'react-native'
 import { Button, ButtonText } from '@/components/ui/button'
+import { TradingChart } from '@/components/chart'
+import { generateMockKLineData, tsmcMockData } from '@/components/chart/mockData'
 
 export default function Home() {
   return (
@@ -20,7 +22,7 @@ export default function Home() {
             <View key={index} className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
               <Text className="text-sm text-gray-500 mb-1">{stat.title}</Text>
               <Text className="text-2xl font-bold text-gray-900 mb-2">{stat.value}</Text>
-              <Text className={`text-sm ${stat.up ? 'text-green-600' : 'text-red-600'}`}>
+              <Text className={`text-sm ${stat.up ? 'text-red-600' : 'text-green-600'}`}>
                 {stat.change}
               </Text>
             </View>
@@ -44,6 +46,29 @@ export default function Home() {
               <Text className="text-sm text-purple-700">AI 智能推薦</Text>
             </View>
           </View>
+        </View>
+
+        {/* 圖表展示區域 */}
+        <View className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <TradingChart
+            data={generateMockKLineData(30)}
+            symbol="TSMC 台積電"
+            height={500}
+          />
+        </View>
+
+        {/* 多圖表展示 */}
+        <View className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TradingChart
+            data={tsmcMockData}
+            symbol="2330.TW"
+            height={300}
+          />
+          <TradingChart
+            data={generateMockKLineData(15)}
+            symbol="AAPL"
+            height={300}
+          />
         </View>
 
         {/* 測試按鈕區域 */}

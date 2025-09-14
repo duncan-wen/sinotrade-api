@@ -1,7 +1,7 @@
 # src/services/cache_service.py
 
 
-from cachetools import TTLCache
+from cachetools import TTLCache  # type: ignore
 
 from src.models.domain import Quote
 

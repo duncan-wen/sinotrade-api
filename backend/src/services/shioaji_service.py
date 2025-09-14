@@ -47,6 +47,7 @@ class ShioajiService:
         interval: str = "1m",
         limit: int = 100,
         use_kbar_api: bool = False,
+        ma_periods: list[int] | None = None,
     ) -> list[dict[str, Any]]:
         """
         獲取歷史 K 線資料
@@ -56,39 +57,84 @@ class ShioajiService:
             interval: 時間間隔 (1m, 5m, 15m, 1h, 1d, 1w, 1M)
             limit: 回傳的 K 線數量
             use_kbar_api: 是否使用官方 KBar API (僅支援日線)
+            ma_periods: 均線週期列表,用於計算額外需要的數據量 (如 [5, 20, 60])
         """
         contract = self._get_contract(symbol)
         if not contract:
             logger.error(f"Cannot find contract for symbol: {symbol}")
             return []
 
-        # 策略選擇:
-        # 1. 日線:優先使用官方 KBar API
-        # 2. 周線/月線:從日線資料聚合 (效能較好)
-        # 3. 其他:從 Ticks 聚合 (精確度最高)
+        # 計算實際需要的數據量(考慮均線計算需求)
+        actual_limit = self._calculate_data_limit(limit, ma_periods)
+        logger.info(
+            f"Requested {limit} bars, fetching {actual_limit} bars for MA calculation"
+        )
 
-        if use_kbar_api and interval == "1d":
-            return self._get_kbars_from_api(contract, symbol, limit)
+        # 策略選擇:
+        # 1. 日線:優先使用官方 KBar API (更穩定)
+        # 2. 周線/月線:從日線資料聚合 (效能較好)
+        # 3. 其他:從 Ticks 聚合 (精確度最高,但可能不穩定)
+
+        if interval == "1d":
+            # 日線優先使用 KBar API
+            all_data = self._get_kbars_from_api(contract, symbol, actual_limit)
         elif interval in ["1w", "1M"]:
-            return self._get_klines_from_daily_aggregation(
-                contract, symbol, interval, limit
+            all_data = self._get_klines_from_daily_aggregation(
+                contract, symbol, interval, actual_limit
             )
         else:
-            return self._get_klines_from_ticks(contract, symbol, interval, limit)
+            # 分鐘線等其他時間間隔使用 Ticks 聚合
+            all_data = self._get_klines_from_ticks(
+                contract, symbol, interval, actual_limit
+            )
+
+        # 返回最後 limit 筆數據(用於顯示),但保留所有數據供均線計算
+        return all_data[-limit:] if len(all_data) > limit else all_data
+
+    def _calculate_data_limit(self, limit: int, ma_periods: list[int] | None) -> int:
+        """
+        計算實際需要的數據量,考慮均線計算需求
+
+        Args:
+            limit: 要顯示的K線數量
+            ma_periods: 均線週期列表 (如 [5, 20, 60])
+
+        Returns:
+            實際需要獲取的數據量
+        """
+        if not ma_periods:
+            return limit
+
+        # 找出最大的均線週期
+        max_ma_period = max(ma_periods)
+
+        # 實際需要的數據量 = 顯示數量 + 最大均線週期 - 1
+        # 例如:顯示60天 + MA60 = 需要119天數據
+        actual_limit = limit + max_ma_period - 1
+
+        logger.info(f"MA periods: {ma_periods}, max period: {max_ma_period}")
+        logger.info(f"Display limit: {limit}, actual data needed: {actual_limit}")
+
+        return actual_limit
 
     def _get_kbars_from_api(
         self, contract: Any, symbol: str, limit: int
     ) -> list[dict[str, Any]]:
-        """使用官方 KBar API 獲取日線資料 (效能較好)"""
+        """使用官方 KBar API 獲取分鐘資料並聚合成日線 (修正版)"""
         try:
             from datetime import datetime, timedelta
 
             import pandas as pd
 
             end_date = datetime.now()
-            start_date = end_date - timedelta(days=limit + 10)
+            # KBar API 返回的是分鐘數據,需要更多天數來獲取足夠的日線
+            start_date = end_date - timedelta(days=limit + 30)
 
-            logger.info(f"Using official KBar API for {symbol}")
+            logger.info(
+                f"Using official KBar API for {symbol} (returns minute data, will aggregate to daily)"
+            )
+            logger.info(f"Start date: {start_date.strftime('%Y-%m-%d')}")
+            logger.info(f"End date: {end_date.strftime('%Y-%m-%d')}")
 
             kbars = self.api.kbars(
                 contract=contract,
@@ -100,19 +146,52 @@ class ShioajiService:
                 logger.warning(f"No KBar data found for {symbol}")
                 return []
 
-            # 轉換官方 KBar 格式
+            # 轉換為 DataFrame (這些是分鐘數據)
+            df = pd.DataFrame(
+                {
+                    "datetime": pd.to_datetime(kbars.ts, unit="ns"),
+                    "open": kbars.Open,
+                    "high": kbars.High,
+                    "low": kbars.Low,
+                    "close": kbars.Close,
+                    "volume": kbars.Volume,
+                }
+            )
+
+            logger.info(f"Received {len(df)} minute bars, aggregating to daily")
+
+            # 設置時間索引
+            df.set_index("datetime", inplace=True)
+
+            # 聚合成日線 (按日期分組)
+            daily_data = (
+                df.resample("1D")
+                .agg(
+                    {
+                        "open": "first",  # 當日第一筆的開盤價
+                        "high": "max",  # 當日最高價
+                        "low": "min",  # 當日最低價
+                        "close": "last",  # 當日最後一筆的收盤價
+                        "volume": "sum",  # 當日總成交量
+                    }
+                )
+                .dropna()
+            )
+
+            # 轉換為標準格式
             klines = []
-            for i in range(len(kbars.ts)):
+            for timestamp, row in daily_data.iterrows():
                 kline = {
-                    "timestamp": pd.to_datetime(kbars.ts[i], unit="ns").isoformat(),
-                    "open": float(kbars.Open[i]),
-                    "high": float(kbars.High[i]),
-                    "low": float(kbars.Low[i]),
-                    "close": float(kbars.Close[i]),
-                    "volume": int(kbars.Volume[i]),
+                    "timestamp": timestamp.isoformat(),
+                    "open": float(row["open"]),
+                    "high": float(row["high"]),
+                    "low": float(row["low"]),
+                    "close": float(row["close"]),
+                    "volume": int(row["volume"]),
                 }
                 klines.append(kline)
 
+            logger.info(f"Aggregated to {len(klines)} daily bars")
             return klines[-limit:] if len(klines) > limit else klines
 
         except Exception as e:
@@ -244,29 +323,55 @@ class ShioajiService:
             )
 
             # 使用 Shioaji Ticks API (按照官方文檔)
-            if hasattr(contract, "exchange") and contract.exchange:
-                # 股票歷史資料
-                ticks = self.api.ticks(
-                    contract=contract,
-                    date=start_date.strftime("%Y-%m-%d"),
-                    query_type=sj.constant.TicksQueryType.LastCount,
-                    last_cnt=10000,
-                )
-            else:
-                # 期貨選擇權歷史資料
-                ticks = self.api.ticks(
-                    contract=contract,
-                    date=start_date.strftime("%Y-%m-%d"),
-                    query_type=sj.constant.TicksQueryType.LastCount,
-                    last_cnt=10000,
-                )
+            logger.info(f"Requesting ticks for contract: {contract.symbol}")
 
-            if not ticks or len(ticks) == 0:
+            try:
+                # 統一使用 Ticks API,不區分股票和期貨
+                ticks = self.api.ticks(
+                    contract=contract,
+                    date=start_date.strftime("%Y-%m-%d"),
+                    query_type=sj.constant.TicksQueryType.LastCount,
+                    last_cnt=5000,  # 減少數量避免超時
+                )
+                logger.info(f"Received ticks object type: {type(ticks)}")
+
+                # 檢查 ticks 物件的屬性
+                if hasattr(ticks, "__dict__"):
+                    logger.info(f"Ticks attributes: {list(ticks.__dict__.keys())}")
+
+            except Exception as e:
+                logger.error(f"Failed to fetch ticks: {e}")
+                return []
+
+            if not ticks:
                 logger.warning(f"No tick data found for {symbol}")
                 return []
 
             # 按照官方文檔轉換為 DataFrame
-            df = pd.DataFrame({**ticks})
+            try:
+                df = pd.DataFrame({**ticks})
+            except Exception as e:
+                logger.error(f"Failed to convert ticks to DataFrame: {e}")
+                # 嘗試其他轉換方式
+                try:
+                    if hasattr(ticks, "ts") and hasattr(ticks, "close"):
+                        df = pd.DataFrame(
+                            {
+                                "ts": ticks.ts,
+                                "close": ticks.close,
+                                "volume": getattr(ticks, "volume", []),
+                                "price": getattr(ticks, "price", ticks.close),
+                                "qty": getattr(
+                                    ticks, "qty", getattr(ticks, "volume", [])
+                                ),
+                            }
+                        )
+                    else:
+                        logger.error(f"Unsupported ticks format: {type(ticks)}")
+                        return []
+                except Exception as e2:
+                    logger.error(f"Failed alternative conversion: {e2}")
+                    return []
 
             if df.empty:
                 return []
@@ -335,6 +440,12 @@ class ShioajiService:
 
         except Exception as e:
             logger.error(f"Failed to get klines from ticks: {e}")
+
+            # 備用方案:如果是日線,嘗試使用官方 KBar API
+            if interval == "1d":
+                logger.info(f"Falling back to KBar API for {symbol}")
+                return self._get_kbars_from_api(contract, symbol, limit)
+
             return []
 
     def _login(self) -> None:

@@ -810,6 +810,36 @@ wheels = [
 ]
 
 [[package]]
+name = "polars"
+version = "1.33.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/85/da/8246f1d69d7e49f96f0c5529057a19af1536621748ef214bbd4112c83b8e/polars-1.33.1.tar.gz", hash = "sha256:fa3fdc34eab52a71498264d6ff9b0aa6955eb4b0ae8add5d3cb43e4b84644007", size = 4822485, upload-time = "2025-09-09T08:37:49.062Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/19/79/c51e7e1d707d8359bcb76e543a8315b7ae14069ecf5e75262a0ecb32e044/polars-1.33.1-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:3881c444b0f14778ba94232f077a709d435977879c1b7d7bd566b55bd1830bb5", size = 39132875, upload-time = "2025-09-09T08:36:38.609Z" },
+    { url = "https://files.pythonhosted.org/packages/f8/15/1094099a1b9cb4fbff58cd8ed3af8964f4d22a5b682ea0b7bb72bf4bc3d9/polars-1.33.1-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:29200b89c9a461e6f06fc1660bc9c848407640ee30fe0e5ef4947cfd49d55337", size = 35638783, upload-time = "2025-09-09T08:36:43.748Z" },
+    { url = "https://files.pythonhosted.org/packages/8d/b9/9ac769e4d8e8f22b0f2e974914a63dd14dec1340cd23093de40f0d67d73b/polars-1.33.1-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:444940646e76342abaa47f126c70e3e40b56e8e02a9e89e5c5d1c24b086db58a", size = 39742297, upload-time = "2025-09-09T08:36:47.132Z" },
+    { url = "https://files.pythonhosted.org/packages/7a/26/4c5da9f42fa067b2302fe62bcbf91faac5506c6513d910fae9548fc78d65/polars-1.33.1-cp39-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:094a37d06789286649f654f229ec4efb9376630645ba8963b70cb9c0b008b3e1", size = 36684940, upload-time = "2025-09-09T08:36:50.561Z" },
+    { url = "https://files.pythonhosted.org/packages/06/a6/dc535da476c93b2efac619e04ab81081e004e4b4553352cd10e0d33a015d/polars-1.33.1-cp39-abi3-win_amd64.whl", hash = "sha256:c9781c704432a2276a185ee25898aa427f39a904fbe8fde4ae779596cdbd7a9e", size = 39456676, upload-time = "2025-09-09T08:36:54.612Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/4e/a4300d52dd81b58130ccadf3873f11b3c6de54836ad4a8f32bac2bd2ba17/polars-1.33.1-cp39-abi3-win_arm64.whl", hash = "sha256:c3cfddb3b78eae01a218222bdba8048529fef7e14889a71e33a5198644427642", size = 35445171, upload-time = "2025-09-09T08:36:58.043Z" },
+]
+
+[[package]]
+name = "polars-talib"
+version = "0.1.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "polars" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c9/5a/7fb40579f8f37e86f4f90eb319a32760c0e4c0d919acb419916493533a06/polars_talib-0.1.5-cp37-abi3-macosx_10_12_x86_64.whl", hash = "sha256:1af11b5dbc6b50d69af4ec809cb2ca12378fe8d7b91d0871f59de5d23948634f", size = 3727507, upload-time = "2025-01-24T12:02:37.683Z" },
+    { url = "https://files.pythonhosted.org/packages/1d/a9/08c203d8e256d3490f960e390ec4046d7079df027eef13bae7c14976a0fd/polars_talib-0.1.5-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:990a488c17e96d8c816e01cef0d8eed925291a9da607081c38fc767ef665af42", size = 3551492, upload-time = "2025-01-24T12:02:42.662Z" },
+    { url = "https://files.pythonhosted.org/packages/39/89/db0dcfd565b9089c6acf15f976a81c6010a5c8c3b4c5f713cc80846a4430/polars_talib-0.1.5-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d794e0e4a4f0c28870adc8f0b7b9a89761d232db8c3534d7f8ef382cfcc6fab0", size = 4486597, upload-time = "2025-01-24T12:02:44.75Z" },
+    { url = "https://files.pythonhosted.org/packages/0d/1b/442bcdef40486474215e49fdb5eac58c474e32e465390ef08521568f9bf6/polars_talib-0.1.5-cp37-abi3-manylinux_2_38_aarch64.whl", hash = "sha256:da82f845f5f30de0108d1490eaf91c7a7e55d603f75cebd0112f56cb0d82b4fe", size = 4074481, upload-time = "2025-01-24T12:02:46.729Z" },
+    { url = "https://files.pythonhosted.org/packages/06/bd/2f53bb4cf3d2037ee43a7b85c4e984caeebb69ca17d76146832e04d69230/polars_talib-0.1.5-cp37-abi3-win32.whl", hash = "sha256:61638172eefa7e8cf531ce88ddbf11ccf2fdea4ef06246b89126e026c055dcc8", size = 2944592, upload-time = "2025-01-24T12:02:49.224Z" },
+    { url = "https://files.pythonhosted.org/packages/51/b8/8084249359790c98f463569e98331fd5686d82fce7e50790333e49bda609/polars_talib-0.1.5-cp37-abi3-win_amd64.whl", hash = "sha256:7fb2d64d3b92eb2625ac667e5395b1baf704ed6ee8a1e250eaacbde47d8d10d0", size = 3470437, upload-time = "2025-01-24T12:02:50.983Z" },
+]
+
+[[package]]
 name = "pre-commit"
 version = "4.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1251,6 +1281,8 @@ dependencies = [
     { name = "fastapi" },
     { name = "mypy" },
     { name = "pandas" },
+    { name = "polars" },
+    { name = "polars-talib" },
     { name = "python-dotenv" },
     { name = "shioaji", extra = ["speed"] },
     { name = "uvicorn" },
@@ -1266,6 +1298,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-httpserver" },
     { name = "ruff" },
+    { name = "types-cachetools" },
 ]
 
 [package.metadata]
@@ -1274,6 +1307,8 @@ requires-dist = [
     { name = "fastapi" },
     { name = "mypy", specifier = ">=1.17.1" },
     { name = "pandas" },
+    { name = "polars", specifier = ">=1.33.1" },
+    { name = "polars-talib", specifier = ">=0.1.5" },
     { name = "python-dotenv" },
     { name = "shioaji", extras = ["speed"] },
     { name = "uvicorn" },
@@ -1289,6 +1324,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-httpserver" },
     { name = "ruff" },
+    { name = "types-cachetools", specifier = ">=6.2.0.20250827" },
 ]
 
 [[package]]
@@ -1376,6 +1412,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/92/e8/2a73ccf9874ec4c7638f172efc8972ceab13a0e3480b389d6ed822f7a822/typer-0.17.4.tar.gz", hash = "sha256:b77dc07d849312fd2bb5e7f20a7af8985c7ec360c45b051ed5412f64d8dc1580", size = 103734, upload-time = "2025-09-05T18:14:40.746Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/93/72/6b3e70d32e89a5cbb6a4513726c1ae8762165b027af569289e19ec08edd8/typer-0.17.4-py3-none-any.whl", hash = "sha256:015534a6edaa450e7007eba705d5c18c3349dcea50a6ad79a5ed530967575824", size = 46643, upload-time = "2025-09-05T18:14:39.166Z" },
+]
+
+[[package]]
+name = "types-cachetools"
+version = "6.2.0.20250827"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/31/f2/e14f51330093fd640fd11663863dc7dd80e5894ef9d2eb39325cc61ba3cf/types_cachetools-6.2.0.20250827.tar.gz", hash = "sha256:f27febfd1b5e517e3cb1ca6daf38ad6ddb4eeb1e29bdbd81a082971ba30c0d8e", size = 9128, upload-time = "2025-08-27T02:56:50.593Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/80/9c/be9d24c246ff825385b4a139409ae7e2d36ea2294f12681951a6b9f905f7/types_cachetools-6.2.0.20250827-py3-none-any.whl", hash = "sha256:96ae5abcb5ea1e1f1faf811a2ff8b2ce7e6d820fc42c4fcb4b332b2da485de16", size = 8940, upload-time = "2025-08-27T02:56:49.645Z" },
 ]
 
 [[package]]

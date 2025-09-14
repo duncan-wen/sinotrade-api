@@ -1,527 +1,423 @@
-# 技術指標架構設計指南
+# 技術指標架構文檔
 
-本文檔分析前端 vs 後端計算技術指標（KD、MACD、RSI）的優缺點,並提供最佳實作建議。
+## 📊 概述
 
-## 🤔 核心問題
+本系統提供了完整的技術指標計算服務，支援 K 線圖和多種技術指標的高效能計算。採用雙引擎架構，可選擇 pandas 或 Polars + polars_talib 進行計算。
 
-### 技術指標計算應該在哪裡進行？
-1. **前端計算**:使用 JavaScript 圖表庫（如 TradingView、Chart.js）
-2. **後端計算**:Python 計算後傳送結果給前端
-3. **混合方案**:結合兩者優點
+## 🏗️ 架構設計
 
----
+### 系統架構圖
 
-## 📊 方案比較分析
-
-### 方案一:前端計算
-
-#### ✅ 優點
-- **即時響應**:指標參數調整立即生效
-- **高互動性**:用戶可自由調整週期、平滑參數等
-- **減少API請求**:降低後端負載
-- **離線分析**:數據下載後可離線使用
-
-#### ❌ 缺點
-- **瀏覽器效能**:大量數據計算可能造成卡頓
-- **重複計算**:每個用戶重新計算相同指標
-- **程式複雜度**:需實作技術指標演算法
-- **數據傳輸量**:需完整 K 線歷史數據
-
-#### 適用場景
-- 專業交易平台
-- 需要高度客製化的分析工具
-- 用戶數量不多但需求多樣
-
----
-
-### 方案二:後端計算
-
-#### ✅ 優點
-- **計算效能**:服務器計算能力強
-- **快取優化**:可快取常用指標結果
-- **數據一致性**:所有用戶看到相同結果
-- **傳輸效率**:只傳送指標數值,數據量小
-
-#### ❌ 缺點
-- **響應延遲**:參數調整需重新請求 API
-- **服務器負載**:大量計算請求壓力
-- **快取複雜**:不同參數組合的快取管理
-
-#### 適用場景
-- 大眾投資平台
-- 標準化指標需求
-- 高併發用戶場景
-
----
-
-## 🎯 推薦方案:漸進式混合架構
-
-### 階段一:後端主導 + 前端快取
-
-#### 後端負責
-```python
-# 預計算常用指標組合
-def get_technical_indicators(symbol: str, indicators: List[str], period: int = 14):
-    """
-    計算技術指標
-    indicators: ['RSI', 'MACD', 'KD', 'SMA', 'EMA']
-    """
-    klines = get_kline_data(symbol)
-    results = {}
-
-    if 'RSI' in indicators:
-        results['RSI'] = calculate_rsi(klines, period)
-    if 'MACD' in indicators:
-        results['MACD'] = calculate_macd(klines)
-    if 'KD' in indicators:
-        results['KD'] = calculate_stoch(klines)
-
-    return results
+```
+原始數據 → 數據預處理 → 技術指標計算 → 結構化輸出 → API 響應
+    ↓           ↓            ↓           ↓         ↓
+Shioaji → DataFrame → 雙引擎計算 → Pydantic → JSON
+                        ↓
+                   ┌─────────┴─────────┐
+                   │                   │
+              pandas 引擎        Polars 引擎
+              (相容性好)        (高效能)
 ```
 
-#### 前端負責
-```javascript
-// 快取指標數據,減少重複請求
-class IndicatorCache {
-    constructor() {
-        this.cache = new Map();
+### 核心組件
+
+1. **數據模型** (`technical_indicators.py`)
+2. **計算引擎** (`technical_analysis_service.py` + `polars_technical_analysis_service.py`)
+3. **API 端點** (`quotes.py`)
+4. **數據轉換** (前端 `chartDataConverter.ts`)
+
+## 🔧 支援的技術指標
+
+### 移動平均線 (Moving Average - MA)
+
+**計算方式**: 簡單移動平均
+**支援週期**: 5, 10, 20, 60, 120, 240
+**用途**: 趨勢判斷、支撐阻力
+
+```python
+# Pandas 版本
+df[f'ma{period}'] = df['close'].rolling(window=period).mean()
+
+# Polars 版本
+pl.col("close").rolling_mean(window_size=period).alias(f"ma{period}")
+```
+
+### KD 隨機指標 (Stochastic Oscillator)
+
+**參數**:
+- RSV 週期: 9 (預設)
+- K 週期: 9 (預設)
+- D 週期: 3 (預設)
+
+**計算公式**:
+```
+RSV = (收盤價 - N日最低價) / (N日最高價 - N日最低價) × 100
+K值 = RSV的移動平均
+D值 = K值的移動平均
+J值 = 3K - 2D
+```
+
+**用途**: 超買超賣判斷、背離分析
+
+### MACD 指標 (Moving Average Convergence Divergence)
+
+**參數**:
+- 快線 EMA: 12 (預設)
+- 慢線 EMA: 26 (預設)
+- 信號線: 9 (預設)
+
+**計算公式**:
+```
+DIF = EMA(12) - EMA(26)
+DEA = EMA(DIF, 9)
+MACD = DIF - DEA
+Histogram = (DIF - DEA) × 2
+```
+
+**用途**: 趨勢轉折、動量分析
+
+### 布林通道 (Bollinger Bands)
+
+**參數**:
+- 週期: 20 (預設)
+- 標準差倍數: 2.0 (預設)
+
+**計算公式**:
+```
+中軌 = MA(20)
+上軌 = 中軌 + 2 × 標準差
+下軌 = 中軌 - 2 × 標準差
+通道寬度 = (上軌 - 下軌) / 中軌 × 100
+```
+
+**用途**: 波動率分析、支撐阻力
+
+### RSI 相對強弱指標 (Relative Strength Index)
+
+**支援週期**: 6, 12, 24
+**計算公式**:
+```
+RS = 平均上漲幅度 / 平均下跌幅度
+RSI = 100 - (100 / (1 + RS))
+```
+
+**用途**: 超買超賣判斷、背離分析
+
+## ⚡ 雙引擎架構
+
+### Pandas 引擎 (傳統)
+
+**優勢**:
+- 成熟穩定
+- 生態系統完整
+- 除錯容易
+
+**適用場景**:
+- 開發測試
+- 小量數據
+- 相容性要求高
+
+### Polars + polars_talib 引擎 (推薦)
+
+**優勢**:
+- 3-10x 計算速度提升
+- 50-80% 記憶體節省
+- 自動多核心並行
+- 內建 TA-Lib 指標
+
+**適用場景**:
+- 生產環境
+- 大量數據
+- 多商品並行計算
+- 即時計算需求
+
+## 📡 API 端點
+
+### 單商品技術指標
+
+```http
+GET /api/chart/{symbol}?interval=1d&limit=60&indicators=ma,kd,macd,bbands,rsi&use_polars=true
+```
+
+**參數說明**:
+- `symbol`: 商品代號 (如: 2330)
+- `interval`: K線間隔 (1m, 5m, 15m, 1h, 1d, 1w, 1M)
+- `limit`: 返回的K線數量 (1-1000)
+- `indicators`: 技術指標列表
+- `ma_periods`: 均線週期設定
+- `use_polars`: 是否使用 Polars 引擎 (預設: true)
+
+**響應格式**:
+```json
+{
+  "symbol": "2330",
+  "interval": "1d",
+  "data": [
+    {
+      "timestamp": "2024-09-14T00:00:00",
+      "kline": {
+        "open": 566.0,
+        "high": 572.0,
+        "low": 563.0,
+        "close": 570.0,
+        "volume": 25420000
+      },
+      "ma": {
+        "ma5": 568.2,
+        "ma20": 565.8,
+        "ma60": 560.1
+      },
+      "kd": {
+        "k": 75.2,
+        "d": 72.8,
+        "j": 80.0
+      },
+      "macd": {
+        "dif": 2.1,
+        "dea": 1.8,
+        "macd": 0.3,
+        "histogram": 0.6
+      },
+      "bbands": {
+        "upper": 580.5,
+        "middle": 570.0,
+        "lower": 559.5,
+        "bandwidth": 3.8
+      },
+      "rsi": {
+        "rsi6": 65.2,
+        "rsi12": 58.7,
+        "rsi24": 52.1
+      }
     }
-
-    async getIndicators(symbol, indicators, period) {
-        const key = `${symbol}-${indicators.join(',')}-${period}`;
-
-        if (this.cache.has(key)) {
-            return this.cache.get(key);
-        }
-
-        const data = await api.get(`/quotes/${symbol}/indicators`, {
-            indicators: indicators.join(','),
-            period
-        });
-
-        this.cache.set(key, data);
-        return data;
-    }
+  ],
+  "count": 60,
+  "indicators_config": {...},
+  "source": "official_kbar"
 }
 ```
 
-### 階段二:前端計算能力擴展
+### 多商品並行計算 🆕
 
-#### 添加前端計算庫
-```javascript
-// 使用專業技術分析庫
-import { RSI, MACD, Stochastic } from 'technicalindicators';
+```http
+GET /api/chart/multi?symbols=2330,2317,2454&interval=1d&limit=60&indicators=ma,rsi
+```
 
-class TechnicalAnalysis {
-    static calculateRSI(prices, period = 14) {
-        return RSI.calculate({
-            values: prices,
-            period: period
-        });
+**特色**:
+- 同時處理多個商品
+- 自動並行計算
+- 最多支援 20 個商品
+- 記憶體效率優化
+
+**響應格式**:
+```json
+{
+  "symbols": ["2330", "2317", "2454"],
+  "interval": "1d",
+  "data": {
+    "2330": {
+      "count": 60,
+      "data": [...]
+    },
+    "2317": {
+      "count": 60,
+      "data": [...]
     }
-
-    static calculateMACD(prices) {
-        return MACD.calculate({
-            values: prices,
-            fastPeriod: 12,
-            slowPeriod: 26,
-            signalPeriod: 9
-        });
-    }
-
-    static calculateKD(high, low, close, period = 14) {
-        return Stochastic.calculate({
-            high: high,
-            low: low,
-            close: close,
-            period: period,
-            signalPeriod: 3
-        });
-    }
+  },
+  "summary": {
+    "total_symbols": 3,
+    "successful_symbols": 3,
+    "failed_symbols": 0
+  }
 }
 ```
 
----
+## 🎯 性能優化
 
-## 🔧 實作架構
+### 數據量計算
 
-### 後端實作（Python + TA-Lib）
+系統會自動計算技術指標所需的額外數據量：
 
-#### 1. 安裝技術分析庫
-```bash
-pip install TA-Lib pandas numpy
-```
-
-#### 2. 創建指標計算服務
 ```python
-# src/services/technical_analysis_service.py
+# 範例：顯示 60 天 + MA60 指標
+display_days = 60
+ma_periods = [60]
+actual_needed = 60 + 60 - 1 = 119 天數據
 
-import talib
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Optional
-from src.models.domain import Quote
-
-class TechnicalAnalysisService:
-
-    @staticmethod
-    def prepare_data(quotes: List[Quote]) -> pd.DataFrame:
-        """將 Quote 數據轉換為 DataFrame"""
-        df = pd.DataFrame([
-            {
-                'datetime': q.timestamp,
-                'open': float(q.open),
-                'high': float(q.high),
-                'low': float(q.low),
-                'close': float(q.close),
-                'volume': float(q.volume)
-            }
-            for q in quotes
-        ])
-        return df.sort_values('datetime')
-
-    @staticmethod
-    def calculate_rsi(df: pd.DataFrame, period: int = 14) -> List[float]:
-        """計算 RSI"""
-        rsi = talib.RSI(df['close'], timeperiod=period)
-        return rsi.fillna(0).tolist()
-
-    @staticmethod
-    def calculate_macd(df: pd.DataFrame) -> Dict[str, List[float]]:
-        """計算 MACD"""
-        macd, signal, histogram = talib.MACD(
-            df['close'],
-            fastperiod=12,
-            slowperiod=26,
-            signalperiod=9
-        )
-
-        return {
-            'macd': macd.fillna(0).tolist(),
-            'signal': signal.fillna(0).tolist(),
-            'histogram': histogram.fillna(0).tolist()
-        }
-
-    @staticmethod
-    def calculate_stoch(df: pd.DataFrame, period: int = 14) -> Dict[str, List[float]]:
-        """計算 KD 隨機指標"""
-        k, d = talib.STOCH(
-            df['high'],
-            df['low'],
-            df['close'],
-            fastk_period=period,
-            slowk_period=3,
-            slowd_period=3
-        )
-
-        return {
-            'k': k.fillna(0).tolist(),
-            'd': d.fillna(0).tolist()
-        }
-
-    def get_all_indicators(
-        self,
-        quotes: List[Quote],
-        indicators: List[str] = None
-    ) -> Dict[str, any]:
-        """計算所有指標"""
-        if not indicators:
-            indicators = ['RSI', 'MACD', 'KD']
-
-        df = self.prepare_data(quotes)
-        results = {}
-
-        if 'RSI' in indicators:
-            results['RSI'] = self.calculate_rsi(df)
-
-        if 'MACD' in indicators:
-            results['MACD'] = self.calculate_macd(df)
-
-        if 'KD' in indicators:
-            results['KD'] = self.calculate_stoch(df)
-
-        return results
+# 確保 MA60 的前 59 天都有足夠數據計算
 ```
 
-#### 3. 添加 API 端點
+### 並行計算策略
+
+**單商品模式**:
+- 向量化計算所有指標
+- 記憶體預分配
+- 懶惰求值 (Polars)
+
+**多商品模式**:
 ```python
-# src/api/technical_analysis.py
-
-from fastapi import APIRouter, Query
-from typing import List, Optional
-from src.services.technical_analysis_service import TechnicalAnalysisService
-from src.services.cache_service import get_cached_quotes
-
-router = APIRouter(prefix="/api/technical-analysis", tags=["technical-analysis"])
-
-@router.get("/{symbol}/indicators")
-async def get_indicators(
-    symbol: str,
-    indicators: Optional[str] = Query("RSI,MACD,KD", description="指標列表,逗號分隔"),
-    period: Optional[int] = Query(14, description="計算週期"),
-    limit: Optional[int] = Query(100, description="數據筆數")
-):
-    """取得技術指標"""
-
-    # 從快取獲取歷史數據
-    quotes = get_cached_quotes(symbol, limit)
-    if not quotes:
-        return {"error": "No data available"}
-
-    # 解析指標參數
-    indicator_list = [i.strip().upper() for i in indicators.split(',')]
-
-    # 計算指標
-    ta_service = TechnicalAnalysisService()
-    results = ta_service.get_all_indicators(quotes, indicator_list)
-
-    return {
-        "symbol": symbol,
-        "indicators": results,
-        "period": period,
-        "data_points": len(quotes)
-    }
-
-@router.get("/{symbol}/rsi")
-async def get_rsi(
-    symbol: str,
-    period: int = Query(14, description="RSI 週期"),
-    limit: int = Query(100, description="數據筆數")
-):
-    """取得 RSI 指標"""
-    quotes = get_cached_quotes(symbol, limit)
-    if not quotes:
-        return {"error": "No data available"}
-
-    ta_service = TechnicalAnalysisService()
-    df = ta_service.prepare_data(quotes)
-    rsi = ta_service.calculate_rsi(df, period)
-
-    return {
-        "symbol": symbol,
-        "indicator": "RSI",
-        "period": period,
-        "values": rsi
-    }
+# 使用 over("symbol") 實現真正並行
+pl.col("close").rolling_mean(window_size=period)
+.over("symbol")  # 🚀 按商品分組並行
+.alias(f"ma{period}")
 ```
 
-### 前端實作（JavaScript + Chart.js）
+### 記憶體管理
 
-#### 1. 指標數據獲取
-```javascript
-// src/services/technicalAnalysisApi.js
+1. **流式處理**: 避免載入過多歷史數據
+2. **數據類型優化**: 使用適當的數值精度
+3. **垃圾回收**: 及時釋放中間計算結果
+4. **分批處理**: 大量商品分批計算
 
-class TechnicalAnalysisApi {
-    constructor(baseUrl) {
-        this.baseUrl = baseUrl;
-        this.cache = new Map();
-    }
+## 🔍 使用範例
 
-    async getIndicators(symbol, indicators = ['RSI', 'MACD', 'KD'], period = 14) {
-        const cacheKey = `${symbol}-${indicators.join(',')}-${period}`;
+### Python 後端
 
-        if (this.cache.has(cacheKey)) {
-            return this.cache.get(cacheKey);
-        }
+```python
+# 使用 Polars 引擎計算單商品指標
+indicators_config = {
+    "ma": {"periods": [5, 20, 60]},
+    "macd": {"fast": 12, "slow": 26, "signal": 9},
+    "rsi": {"periods": [6, 12, 24]}
+}
 
-        try {
-            const response = await fetch(
-                `${this.baseUrl}/technical-analysis/${symbol}/indicators?` +
-                new URLSearchParams({
-                    indicators: indicators.join(','),
-                    period: period
-                })
-            );
+result = polars_technical_analysis_service.calculate_all_indicators(
+    kline_data, indicators_config
+)
 
-            const data = await response.json();
-            this.cache.set(cacheKey, data);
+# 多商品並行計算
+multi_result = polars_technical_analysis_service.calculate_multi_symbol_indicators(
+    {"2330": kline_data_2330, "2317": kline_data_2317},
+    indicators_config
+)
+```
 
-            return data;
-        } catch (error) {
-            console.error('Failed to fetch indicators:', error);
-            throw error;
-        }
-    }
+### 前端 TypeScript
 
-    async getRSI(symbol, period = 14) {
-        try {
-            const response = await fetch(
-                `${this.baseUrl}/technical-analysis/${symbol}/rsi?period=${period}`
-            );
-            return await response.json();
-        } catch (error) {
-            console.error('Failed to fetch RSI:', error);
-            throw error;
-        }
-    }
+```typescript
+// 獲取單商品數據
+const response = await fetch('/api/chart/2330?use_polars=true&indicators=ma,macd');
+const chartData: ChartDataResponse = await response.json();
+
+// 轉換為圖表格式
+const lightweightData = convertToLightweightChartsData(chartData.data);
+
+// 設置到 Lightweight Charts
+candlestickSeries.setData(lightweightData.candlestick);
+ma20Series.setData(lightweightData.ma['20']);
+macdSeries.setData(lightweightData.macd.histogram);
+```
+
+## 🚀 最佳實踐
+
+### 1. 引擎選擇
+
+- **開發環境**: 使用 pandas 引擎 (`use_polars=false`)
+- **生產環境**: 使用 Polars 引擎 (`use_polars=true`)
+- **多商品場景**: 強烈建議使用 Polars 引擎
+
+### 2. 參數調優
+
+```python
+# 均線設定建議
+ma_periods = [5, 10, 20, 60]  # 短中長期組合
+
+# MACD 參數 (適合台股)
+macd_config = {"fast": 12, "slow": 26, "signal": 9}
+
+# RSI 參數
+rsi_periods = [6, 12, 24]  # 短中長期組合
+```
+
+### 3. 錯誤處理
+
+- 數據不足時自動降級
+- 指標計算失敗時返回 null
+- 網路異常時提供重試機制
+- 詳細的日誌記錄
+
+### 4. 快取策略
+
+- 歷史數據快取 (Redis)
+- 計算結果快取 (短期)
+- 增量更新機制
+- 過期自動清理
+
+## 📈 擴展指南
+
+### 添加新指標
+
+1. **更新數據模型**:
+```python
+class NewIndicatorData(BaseModel):
+    timestamp: str
+    value: float | None = None
+```
+
+2. **實作計算邏輯**:
+```python
+# Pandas 版本
+def calculate_new_indicator(df: pd.DataFrame) -> pd.DataFrame:
+    df['new_indicator'] = custom_calculation(df['close'])
+    return df
+
+# Polars 版本
+pl.col("close").map_elements(custom_calculation).alias("new_indicator")
+```
+
+3. **更新 API 響應**:
+```python
+new_indicator_data = NewIndicatorData(
+    timestamp=row['timestamp'],
+    value=float(row.get('new_indicator')) if row.get('new_indicator') is not None else None
+)
+```
+
+### 自定義指標參數
+
+```python
+# 在 indicators_config 中添加新配置
+"custom_indicator": {
+    "period": 14,
+    "multiplier": 2.0,
+    "smoothing": "ema"
 }
 ```
 
-#### 2. 圖表整合
-```javascript
-// src/components/TechnicalChart.js
+## 🔧 故障排除
 
-class TechnicalChart {
-    constructor(containerId) {
-        this.container = document.getElementById(containerId);
-        this.chart = null;
-        this.taApi = new TechnicalAnalysisApi('/api');
-    }
+### 常見問題
 
-    async renderChart(symbol) {
-        // 獲取價格和指標數據
-        const [priceData, indicators] = await Promise.all([
-            this.getPriceData(symbol),
-            this.taApi.getIndicators(symbol)
-        ]);
+1. **計算結果為 null**
+   - 檢查數據量是否足夠
+   - 確認指標參數設定
+   - 查看日誌錯誤訊息
 
-        // 配置圖表
-        const chartConfig = {
-            type: 'line',
-            data: {
-                labels: priceData.timestamps,
-                datasets: [
-                    {
-                        label: '收盤價',
-                        data: priceData.closes,
-                        borderColor: 'rgb(75, 192, 192)',
-                        yAxisID: 'price'
-                    },
-                    {
-                        label: 'RSI',
-                        data: indicators.RSI,
-                        borderColor: 'rgb(255, 99, 132)',
-                        yAxisID: 'rsi'
-                    }
-                ]
-            },
-            options: {
-                scales: {
-                    price: {
-                        type: 'linear',
-                        position: 'left',
-                    },
-                    rsi: {
-                        type: 'linear',
-                        position: 'right',
-                        min: 0,
-                        max: 100
-                    }
-                }
-            }
-        };
+2. **性能問題**
+   - 使用 Polars 引擎
+   - 減少指標數量
+   - 降低數據量
 
-        this.chart = new Chart(this.container, chartConfig);
-    }
+3. **記憶體不足**
+   - 分批處理多商品
+   - 減少歷史數據範圍
+   - 檢查記憶體洩漏
 
-    async updateIndicators(symbol, newPeriod) {
-        const indicators = await this.taApi.getIndicators(symbol, ['RSI'], newPeriod);
+### 監控指標
 
-        // 更新圖表數據
-        this.chart.data.datasets[1].data = indicators.RSI;
-        this.chart.update();
-    }
-}
-```
+- API 響應時間
+- 記憶體使用量
+- CPU 使用率
+- 錯誤率統計
+
+## 📚 相關文檔
+
+- [Shioaji 官方文檔](https://sinotrade.github.io/zh/)
+- [Polars 文檔](https://pola-rs.github.io/polars/)
+- [polars_talib 文檔](https://github.com/wukan1986/polars_ta)
+- [Lightweight Charts 文檔](https://tradingview.github.io/lightweight-charts/)
 
 ---
 
-## 📈 效能優化策略
-
-### 後端優化
-
-#### 1. Redis 快取策略
-```python
-# 快取常用指標結果
-@cache_result(expire=300)  # 5 分鐘快取
-def get_cached_indicators(symbol: str, indicators: str, period: int):
-    return calculate_indicators(symbol, indicators, period)
-```
-
-#### 2. 批量計算
-```python
-# 預計算熱門股票的指標
-async def precompute_popular_indicators():
-    popular_symbols = ['2330', '2317', '3008']  # 熱門股票
-    indicators = ['RSI', 'MACD', 'KD']
-
-    for symbol in popular_symbols:
-        for indicator in indicators:
-            await compute_and_cache_indicator(symbol, indicator)
-```
-
-### 前端優化
-
-#### 1. 資料分頁載入
-```javascript
-class ChartDataManager {
-    constructor() {
-        this.pageSize = 100;
-        this.loadedData = [];
-    }
-
-    async loadMoreData(symbol, page = 0) {
-        const data = await api.getKlines(symbol, {
-            offset: page * this.pageSize,
-            limit: this.pageSize
-        });
-
-        this.loadedData = [...this.loadedData, ...data];
-        return this.loadedData;
-    }
-}
-```
-
-#### 2. Web Workers 計算
-```javascript
-// worker.js - 在背景執行緒計算指標
-self.onmessage = function(e) {
-    const { prices, period } = e.data;
-    const rsi = calculateRSI(prices, period);
-    self.postMessage({ rsi });
-};
-
-// 主執行緒
-const worker = new Worker('worker.js');
-worker.postMessage({ prices: priceData, period: 14 });
-worker.onmessage = function(e) {
-    updateChart(e.data.rsi);
-};
-```
-
----
-
-## 🎯 最終建議
-
-### 對於你的 sinotrade-api 專案:
-
-#### 第一階段（建議現在實作）
-1. **後端計算為主**:使用 Python + TA-Lib
-2. **提供標準指標**:RSI、MACD、KD、移動平均線
-3. **Redis 快取**:常用指標結果快取 5-10 分鐘
-4. **RESTful API**:簡單的指標查詢端點
-
-#### 第二階段（未來擴展）
-1. **前端計算能力**:添加 JavaScript 技術分析庫
-2. **即時參數調整**:用戶可調整指標參數
-3. **混合架構**:常用指標後端計算,客製化指標前端計算
-
-#### 技術選型建議
-- **後端**:Python + TA-Lib + Redis
-- **前端**:Chart.js 或 TradingView Charting Library
-- **快取策略**:Redis + 分層快取
-- **API設計**:RESTful + WebSocket（即時更新）
-
-這樣的架構可以確保效能、擴展性和用戶體驗的平衡！
-
----
-
-## 🔗 參考資料
-
-- [TA-Lib Python 文檔](https://ta-lib.org/)
-- [Chart.js 技術指標插件](https://www.chartjs.org/docs/latest/)
-- [TradingView Charting Library](https://www.tradingview.com/charting-library/)
-
----
-
-*最後更新: 2025年9月*
+*最後更新: 2024-09-14*
+*版本: 1.0.0*
