@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.ruff",
+    "ms-python.mypy-type-checker",
+    "ms-vscode.vscode-json",
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode"
+  ],
+  "unwantedRecommendations": [
+    "ms-python.isort",  // 避免使用 isort，因為我們用 Ruff 處理 import 排序
+    "ms-python.black-formatter"  // 已改用 Ruff formatter
+  ]
+}

@@ -98,7 +98,6 @@ shared/schemas/openapi.json
 
 # ===== GLOBAL PATTERNS =====
 # IDE
-.vscode/
 .idea/
 *.swp
 *.swo

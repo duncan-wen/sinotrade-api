@@ -1,0 +1,39 @@
+{
+  // Mypy 設定 - 針對後端 Python 專案
+  "mypy-type-checker.importStrategy": "fromEnvironment",
+  "mypy-type-checker.cwd": "${workspaceFolder}/backend",
+  "mypy-type-checker.args": ["--config-file=mypy.ini"],
+  "mypy-type-checker.reportingScope": "file",
+  "mypy-type-checker.preferDaemon": true,
+  "mypy-type-checker.ignorePatterns": [
+    "frontend/**",
+    "scripts-windows/**",
+    "docs/**",
+    "shared/**",
+    "**/*.md",
+    "**/*.json",
+    "**/*.bat"
+  ],
+
+  // Python 環境設定
+  "python.defaultInterpreterPath": "./backend/.venv/Scripts/python.exe",
+  "python.terminal.activateEnvironment": true,
+
+  // 編輯器格式化設定
+  "editor.formatOnSave": false,
+  "editor.formatOnType": false,
+  "editor.formatOnPaste": false,
+
+  // 檔案設定
+  "files.trimTrailingWhitespace": true,
+  "files.associations": {
+    "*.py": "python"
+  },
+  "files.autoSave": "onFocusChange",
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/.venv": true,
+    "**/node_modules": true
+  }
+}
