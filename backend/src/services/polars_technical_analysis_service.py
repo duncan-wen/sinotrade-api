@@ -3,7 +3,7 @@
 from typing import Any
 
 import polars as pl
-import polars_talib as plta
+import polars_talib as plta  # type: ignore
 from loguru import logger
 
 from src.models.technical_indicators import (
@@ -263,25 +263,15 @@ class PolarsTechnicalAnalysisService:
                 if "ma" in config:
                     ma_data = MovingAverageData(
                         timestamp=row["timestamp"].isoformat(),
-                        ma5=(
-                            float(row["ma5"])
-                            if row.get("ma5") is not None
-                            else None
-                        ),
+                        ma5=(float(row["ma5"]) if row.get("ma5") is not None else None),
                         ma10=(
-                            float(row["ma10"])
-                            if row.get("ma10") is not None
-                            else None
+                            float(row["ma10"]) if row.get("ma10") is not None else None
                         ),
                         ma20=(
-                            float(row["ma20"])
-                            if row.get("ma20") is not None
-                            else None
+                            float(row["ma20"]) if row.get("ma20") is not None else None
                         ),
                         ma60=(
-                            float(row["ma60"])
-                            if row.get("ma60") is not None
-                            else None
+                            float(row["ma60"]) if row.get("ma60") is not None else None
                         ),
                         ma120=(
                             float(row["ma120"])
@@ -310,20 +300,10 @@ class PolarsTechnicalAnalysisService:
                 if "macd" in config:
                     macd_data = MACDData(
                         timestamp=row["timestamp"].isoformat(),
-                        dif=(
-                            float(row["dif"])
-                            if row.get("dif") is not None
-                            else None
-                        ),
-                        dea=(
-                            float(row["dea"])
-                            if row.get("dea") is not None
-                            else None
-                        ),
+                        dif=(float(row["dif"]) if row.get("dif") is not None else None),
+                        dea=(float(row["dea"]) if row.get("dea") is not None else None),
                         macd=(
-                            float(row["macd"])
-                            if row.get("macd") is not None
-                            else None
+                            float(row["macd"]) if row.get("macd") is not None else None
                         ),
                         histogram=(
                             float(row["histogram"])
@@ -365,9 +345,7 @@ class PolarsTechnicalAnalysisService:
                     rsi_data = RSIData(
                         timestamp=row["timestamp"].isoformat(),
                         rsi6=(
-                            float(row["rsi6"])
-                            if row.get("rsi6") is not None
-                            else None
+                            float(row["rsi6"]) if row.get("rsi6") is not None else None
                         ),
                         rsi12=(
                             float(row["rsi12"])

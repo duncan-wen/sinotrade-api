@@ -61,11 +61,11 @@ def get_historical_klines(
         default="1m", description="K線間隔 (1m, 5m, 15m, 1h, 1d, 1w, 1M)"
     ),
     limit: int = Query(default=100, description="返回的K線數量", ge=1, le=1000),
-    use_kbar_api: bool = Query(
-        default=False, description="是否使用官方KBar API (僅日線)"
-    ),
     ma_periods: str = Query(
         default="", description="均線週期,逗號分隔 (如: '5,20,60')"
+    ),
+    include_indicators: bool = Query(
+        default=False, description="是否包含基本技術指標 (MA, RSI)"
     ),
     user: APIUser = Depends(get_current_user),
 ) -> dict[str, Any]:
@@ -94,14 +94,41 @@ def get_historical_klines(
                 }
 
         klines = shioaji_service.get_historical_klines(
-            symbol, interval, limit, use_kbar_api, ma_periods_list
+            symbol, interval, limit, ma_periods_list
         )
+
+        # 可選的技術指標計算
+        if include_indicators and klines:
+            logger.info("Including basic technical indicators in klines response")
+
+            # 基本指標配置
+            basic_indicators_config: dict[str, Any] = {
+                "ma": {"periods": ma_periods_list or [5, 20, 60]},
+                "rsi": {"periods": [14]},
+            }
+
+            # 使用高效能 Polars 計算
+            technical_data = polars_technical_analysis_service.calculate_all_indicators(
+                klines, basic_indicators_config
+            )
+
+            return {
+                "symbol": symbol,
+                "interval": interval,
+                "data": [indicator.dict() for indicator in technical_data],
+                "count": len(technical_data),
+                "source": _get_data_source(interval),
+                "indicators_included": True,
+                "indicators_config": basic_indicators_config,
+            }
+
         return {
             "symbol": symbol,
             "interval": interval,
             "data": klines,
             "count": len(klines),
-            "source": _get_data_source(interval, use_kbar_api),
+            "source": _get_data_source(interval),
+            "indicators_included": False,
         }
     except Exception as e:
         return {"error": str(e), "symbol": symbol, "data": [], "count": 0}
@@ -114,9 +141,6 @@ def get_chart_data_with_indicators(
         default="1d", description="K線間隔 (1m, 5m, 15m, 1h, 1d, 1w, 1M)"
     ),
     limit: int = Query(default=100, description="返回的K線數量", ge=1, le=1000),
-    use_kbar_api: bool = Query(
-        default=True, description="是否使用官方KBar API (僅日線)"
-    ),
     indicators: str = Query(
         default="ma,kd,macd,bbands,rsi",
         description="技術指標,逗號分隔 (ma,kd,macd,bbands,rsi)",
@@ -174,9 +198,7 @@ def get_chart_data_with_indicators(
 
         # 獲取原始K線數據(包含額外數據供指標計算)
         extended_limit = limit + max_period if max_period > 0 else limit
-        klines = shioaji_service.get_historical_klines(
-            symbol, interval, extended_limit, use_kbar_api=True
-        )
+        klines = shioaji_service.get_historical_klines(symbol, interval, extended_limit)
 
         if not klines:
             return ChartDataResponse(
@@ -211,7 +233,7 @@ def get_chart_data_with_indicators(
             data=display_data,
             count=len(display_data),
             indicators_config=indicators_config,
-            source=_get_data_source(interval, True),
+            source=_get_data_source(interval),
         )
 
     except Exception:
@@ -287,7 +309,7 @@ def get_multi_symbol_chart_data(
         for symbol in symbol_list:
             try:
                 klines = shioaji_service.get_historical_klines(
-                    symbol, interval, extended_limit, use_kbar_api=True
+                    symbol, interval, extended_limit
                 )
                 if klines:
                     multi_symbol_data[symbol] = klines
@@ -342,9 +364,9 @@ def get_multi_symbol_chart_data(
         return {"error": str(e), "data": {}}
 
 
-def _get_data_source(interval: str, use_kbar_api: bool) -> str:
+def _get_data_source(interval: str) -> str:
     """確定資料來源類型"""
-    if use_kbar_api and interval == "1d":
+    if interval == "1d":
         return "official_kbar"
     elif interval in ["1w", "1M"]:
         return "daily_aggregated"

@@ -2,12 +2,13 @@
 
 import atexit
 import os
-from typing import Any
+from typing import Any, cast
 
-import shioaji as sj
+import pandas as pd
+import shioaji as sj  # type: ignore
 from dotenv import load_dotenv
 from loguru import logger
-from shioaji import Exchange, TickFOPv1, TickSTKv1
+from shioaji import Exchange, TickFOPv1, TickSTKv1  # type: ignore
 
 from src.models.domain import Quote, SimulatedOrder
 from src.services.cache_service import set_cached_quote
@@ -46,7 +47,6 @@ class ShioajiService:
         symbol: str,
         interval: str = "1m",
         limit: int = 100,
-        use_kbar_api: bool = False,
         ma_periods: list[int] | None = None,
     ) -> list[dict[str, Any]]:
         """
@@ -56,7 +56,6 @@ class ShioajiService:
             symbol: 商品代號
             interval: 時間間隔 (1m, 5m, 15m, 1h, 1d, 1w, 1M)
             limit: 回傳的 K 線數量
-            use_kbar_api: 是否使用官方 KBar API (僅支援日線)
             ma_periods: 均線週期列表,用於計算額外需要的數據量 (如 [5, 20, 60])
         """
         contract = self._get_contract(symbol)
@@ -124,8 +123,6 @@ class ShioajiService:
         try:
             from datetime import datetime, timedelta
 
-            import pandas as pd
-
             end_date = datetime.now()
             # KBar API 返回的是分鐘數據,需要更多天數來獲取足夠的日線
             start_date = end_date - timedelta(days=limit + 30)
@@ -182,7 +179,7 @@ class ShioajiService:
             klines = []
             for timestamp, row in daily_data.iterrows():
                 kline = {
-                    "timestamp": timestamp.isoformat(),
+                    "timestamp": cast(pd.Timestamp, timestamp).isoformat(),
                     "open": float(row["open"]),
                     "high": float(row["high"]),
                     "low": float(row["low"]),
@@ -204,8 +201,6 @@ class ShioajiService:
         """從日線資料聚合生成周線/月線 (效能較好)"""
         try:
             from datetime import datetime, timedelta
-
-            import pandas as pd
 
             # 周線和月線需要更多的日線資料
             if interval == "1w":
@@ -270,7 +265,7 @@ class ShioajiService:
             klines = []
             for timestamp, row in agg_data.iterrows():
                 kline = {
-                    "timestamp": timestamp.isoformat(),
+                    "timestamp": cast(pd.Timestamp, timestamp).isoformat(),
                     "open": float(row["open"]),
                     "high": float(row["high"]),
                     "low": float(row["low"]),
@@ -292,8 +287,6 @@ class ShioajiService:
         """從 Ticks 聚合生成 K 線 (支援所有時間間隔)"""
         try:
             from datetime import datetime, timedelta
-
-            import pandas as pd
 
             # 計算查詢時間範圍
             end_date = datetime.now()
@@ -423,14 +416,15 @@ class ShioajiService:
                     continue
 
                 kline = {
-                    "timestamp": timestamp.isoformat(),
+                    "timestamp": cast(pd.Timestamp, timestamp).isoformat(),
                     "open": float(row["open"]),
                     "high": float(row["high"]),
                     "low": float(row["low"]),
                     "close": float(row["close"]),
                     "volume": (
-                        float(volume.loc[timestamp])
-                        if volume is not None and timestamp in volume.index
+                        float(volume.loc[cast(pd.Timestamp, timestamp)])
+                        if volume is not None
+                        and cast(pd.Timestamp, timestamp) in volume.index
                         else 0
                     ),
                 }
@@ -460,19 +454,30 @@ class ShioajiService:
         self.api.quote.set_on_tick_stk_v1_callback(self._on_stock_tick)
         self.api.quote.set_on_tick_fop_v1_callback(self._on_futures_options_tick)
 
-    def _get_contract(
-        self, symbol: str
-    ) -> sj.contracts.Stock | sj.contracts.Future | sj.contracts.Option | None:
+    def _get_contract(self, symbol: str) -> Any:
         """
         智能獲取合約,支持多種格式:
         - 股票: "2330", "TSE2330"
         - 期貨: "TXFA3", "TXF202509" 或自動獲取最近月份
         - 選擇權: "TXO18000R3", "TXO20230618000P"
+        - 指數: "TSE001", "001" (加權指數)
         """
         contract = None
 
         try:
-            # 1. 嘗試股票合約
+            # 1. 先嘗試指數合約 (TSE001, 001 等)
+            if symbol in ["TSE001", "001"]:
+                index_code = symbol[-3:] if symbol.startswith("TSE") else symbol
+                contract = self.api.Contracts.Indexs.TSE[index_code]
+                if contract:
+                    logger.info(f"Found index contract: {contract.symbol}")
+                    return contract
+
+        except (KeyError, AttributeError):
+            logger.debug(f"Index contract not found for {symbol}")
+
+        try:
+            # 2. 嘗試股票合約
             if symbol.isdigit() or (
                 len(symbol) >= 4 and symbol[:3] in ["TSE", "OTC", "OES"]
             ):
@@ -486,7 +491,7 @@ class ShioajiService:
             pass
 
         try:
-            # 2. 嘗試期貨合約
+            # 3. 嘗試期貨合約
             if "TXF" in symbol or "F" in symbol:
                 # 如果是完整的期貨代碼 (如 TXF202509)
                 if len(symbol) > 5:
@@ -517,7 +522,7 @@ class ShioajiService:
             pass
 
         try:
-            # 3. 嘗試選擇權合約
+            # 4. 嘗試選擇權合約
             if "TXO" in symbol or "O" in symbol:
                 contract = self.api.Contracts.Options[symbol]
                 if contract:
