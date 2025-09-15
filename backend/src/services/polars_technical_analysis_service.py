@@ -264,32 +264,32 @@ class PolarsTechnicalAnalysisService:
                     ma_data = MovingAverageData(
                         timestamp=row["timestamp"].isoformat(),
                         ma5=(
-                            float(row.get("ma5"))
+                            float(row["ma5"])
                             if row.get("ma5") is not None
                             else None
                         ),
                         ma10=(
-                            float(row.get("ma10"))
+                            float(row["ma10"])
                             if row.get("ma10") is not None
                             else None
                         ),
                         ma20=(
-                            float(row.get("ma20"))
+                            float(row["ma20"])
                             if row.get("ma20") is not None
                             else None
                         ),
                         ma60=(
-                            float(row.get("ma60"))
+                            float(row["ma60"])
                             if row.get("ma60") is not None
                             else None
                         ),
                         ma120=(
-                            float(row.get("ma120"))
+                            float(row["ma120"])
                             if row.get("ma120") is not None
                             else None
                         ),
                         ma240=(
-                            float(row.get("ma240"))
+                            float(row["ma240"])
                             if row.get("ma240") is not None
                             else None
                         ),
@@ -300,9 +300,9 @@ class PolarsTechnicalAnalysisService:
                 if "kd" in config:
                     kd_data = KDData(
                         timestamp=row["timestamp"].isoformat(),
-                        k=float(row.get("k")) if row.get("k") is not None else None,
-                        d=float(row.get("d")) if row.get("d") is not None else None,
-                        j=float(row.get("j")) if row.get("j") is not None else None,
+                        k=float(row["k"]) if row.get("k") is not None else None,
+                        d=float(row["d"]) if row.get("d") is not None else None,
+                        j=float(row["j"]) if row.get("j") is not None else None,
                     )
 
                 # MACD指標
@@ -311,22 +311,22 @@ class PolarsTechnicalAnalysisService:
                     macd_data = MACDData(
                         timestamp=row["timestamp"].isoformat(),
                         dif=(
-                            float(row.get("dif"))
+                            float(row["dif"])
                             if row.get("dif") is not None
                             else None
                         ),
                         dea=(
-                            float(row.get("dea"))
+                            float(row["dea"])
                             if row.get("dea") is not None
                             else None
                         ),
                         macd=(
-                            float(row.get("macd"))
+                            float(row["macd"])
                             if row.get("macd") is not None
                             else None
                         ),
                         histogram=(
-                            float(row.get("histogram"))
+                            float(row["histogram"])
                             if row.get("histogram") is not None
                             else None
                         ),
@@ -338,22 +338,22 @@ class PolarsTechnicalAnalysisService:
                     bbands_data = BollingerBandsData(
                         timestamp=row["timestamp"].isoformat(),
                         upper=(
-                            float(row.get("bb_upper"))
+                            float(row["bb_upper"])
                             if row.get("bb_upper") is not None
                             else None
                         ),
                         middle=(
-                            float(row.get("bb_middle"))
+                            float(row["bb_middle"])
                             if row.get("bb_middle") is not None
                             else None
                         ),
                         lower=(
-                            float(row.get("bb_lower"))
+                            float(row["bb_lower"])
                             if row.get("bb_lower") is not None
                             else None
                         ),
                         bandwidth=(
-                            float(row.get("bb_bandwidth"))
+                            float(row["bb_bandwidth"])
                             if row.get("bb_bandwidth") is not None
                             else None
                         ),
@@ -365,17 +365,17 @@ class PolarsTechnicalAnalysisService:
                     rsi_data = RSIData(
                         timestamp=row["timestamp"].isoformat(),
                         rsi6=(
-                            float(row.get("rsi6"))
+                            float(row["rsi6"])
                             if row.get("rsi6") is not None
                             else None
                         ),
                         rsi12=(
-                            float(row.get("rsi12"))
+                            float(row["rsi12"])
                             if row.get("rsi12") is not None
                             else None
                         ),
                         rsi24=(
-                            float(row.get("rsi24"))
+                            float(row["rsi24"])
                             if row.get("rsi24") is not None
                             else None
                         ),
@@ -544,22 +544,22 @@ class PolarsTechnicalAnalysisService:
                         MovingAverageData(
                             timestamp=row["timestamp"].isoformat(),
                             ma5=(
-                                float(row.get("ma5"))
+                                float(row["ma5"])
                                 if row.get("ma5") is not None
                                 else None
                             ),
                             ma10=(
-                                float(row.get("ma10"))
+                                float(row["ma10"])
                                 if row.get("ma10") is not None
                                 else None
                             ),
                             ma20=(
-                                float(row.get("ma20"))
+                                float(row["ma20"])
                                 if row.get("ma20") is not None
                                 else None
                             ),
                             ma60=(
-                                float(row.get("ma60"))
+                                float(row["ma60"])
                                 if row.get("ma60") is not None
                                 else None
                             ),

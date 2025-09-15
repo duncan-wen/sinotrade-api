@@ -155,17 +155,17 @@ class TechnicalAnalysisService:
         if periods is None:
             periods = [6, 12, 24]
         try:
-            # 計算價格變化
-            delta = df["close"].diff()
+            # 計算價格變化 (明確轉換為 float64)
+            delta = df["close"].astype('float64').diff()
 
             for period in periods:
                 if len(df) < period:
                     df[f"rsi{period}"] = None
                     continue
 
-                # 分離上漲和下跌
-                gain = delta.where(delta > 0, 0)
-                loss = -delta.where(delta < 0, 0)
+                # 分離上漲和下跌 (明確轉換為 float64)
+                gain = delta.where(delta > 0, 0).astype('float64')
+                loss = (-delta.where(delta < 0, 0)).astype('float64')
 
                 # 計算平均漲幅和跌幅
                 avg_gain = gain.rolling(window=period).mean()
