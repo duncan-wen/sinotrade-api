@@ -29,8 +29,8 @@ def export_openapi_schema():
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(schema, f, indent=2, ensure_ascii=False)
 
-    print(f"✅ OpenAPI schema 已導出至: {output_path}")  # noqa: T201
-    print(f"📊 Schema 包含 {len(schema.get('paths', {}))} 個 API 端點")  # noqa: T201
+    print(f"[SUCCESS] OpenAPI schema 已導出至: {output_path}")  # noqa: T201
+    print(f"[INFO] Schema 包含 {len(schema.get('paths', {}))} 個 API 端點")  # noqa: T201
     return output_path
 
 
