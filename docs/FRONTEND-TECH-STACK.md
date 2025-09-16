@@ -25,7 +25,7 @@
 | -------------- | ------------------ | ------- | --------------------------------- |
 | **框架**       | Next.js            | ^15.0.0 | React 全端框架 (最新版)           |
 | **語言**       | TypeScript         | ^5.6.0  | 類型安全 (最新版)                 |
-| **UI 庫**      | Gluestack UI       | ^2.0.0  | 現代化組件庫                      |
+| **UI 庫**      | Gluestack UI       | ^3.0.0  | 現代化組件庫                      |
 | **圖表**       | Lightweight Charts | ^4.2.0  | 金融圖表 (最新版)                 |
 | **客戶端狀態** | Zustand            | ^5.0.0  | UI 狀態管理 (配合 TanStack Query) |
 | **API 管理**   | TanStack Query     | ^5.56.0 | 伺服器狀態管理 (最新版)           |
@@ -361,7 +361,7 @@ class SocketService {
 
   subscribe(symbol: string, callbacks: SocketCallbacks): void {
     this.subscribers.set(symbol, callbacks);
-    
+
     if (this.socket?.connected) {
       this.socket.emit('subscribe', {
         symbol,
@@ -372,7 +372,7 @@ class SocketService {
 
   unsubscribe(symbol: string): void {
     this.subscribers.delete(symbol);
-    
+
     if (this.socket?.connected) {
       this.socket.emit('unsubscribe', { symbol });
     }
@@ -452,7 +452,7 @@ interface TradingUIState {
   orderPanelOpen: boolean;
   watchlistVisible: boolean;
   theme: 'light' | 'dark';
-  
+
   // 通知系統
   notifications: Array<{
     id: string;
@@ -460,7 +460,7 @@ interface TradingUIState {
     message: string;
     timestamp: number;
   }>;
-  
+
   // 動作
   setSelectedSymbol: (symbol: string) => void;
   toggleSidebar: () => void;
@@ -489,27 +489,27 @@ const useTradingUIStore = create<TradingUIState>()(
 
       // UI 動作
       setSelectedSymbol: (symbol) => set({ selectedSymbol: symbol }),
-      
-      toggleSidebar: () => set((state) => ({ 
-        sidebarCollapsed: !state.sidebarCollapsed 
+
+      toggleSidebar: () => set((state) => ({
+        sidebarCollapsed: !state.sidebarCollapsed
       })),
-      
+
       setActiveTab: (tab) => set({ activeTab: tab }),
-      
+
       setChartTimeframe: (timeframe) => set({ chartTimeframe: timeframe }),
-      
-      toggleOrderPanel: () => set((state) => ({ 
-        orderPanelOpen: !state.orderPanelOpen 
+
+      toggleOrderPanel: () => set((state) => ({
+        orderPanelOpen: !state.orderPanelOpen
       })),
-      
-      toggleWatchlist: () => set((state) => ({ 
-        watchlistVisible: !state.watchlistVisible 
+
+      toggleWatchlist: () => set((state) => ({
+        watchlistVisible: !state.watchlistVisible
       })),
-      
-      toggleTheme: () => set((state) => ({ 
-        theme: state.theme === 'light' ? 'dark' : 'light' 
+
+      toggleTheme: () => set((state) => ({
+        theme: state.theme === 'light' ? 'dark' : 'light'
       })),
-      
+
       addNotification: (notification) => set((state) => ({
         notifications: [
           ...state.notifications,
@@ -520,11 +520,11 @@ const useTradingUIStore = create<TradingUIState>()(
           },
         ],
       })),
-      
+
       removeNotification: (id) => set((state) => ({
         notifications: state.notifications.filter(n => n.id !== id),
       })),
-      
+
       clearNotifications: () => set({ notifications: [] }),
     }),
     {
@@ -559,7 +559,7 @@ interface SocketState {
   subscribedSymbols: Set<string>;
   lastHeartbeat: number | null;
   connectionAttempts: number;
-  
+
   // 動作
   connect: () => void;
   disconnect: () => void;
@@ -590,7 +590,7 @@ const useSocketStore = create<SocketState>((set, get) => ({
 
   disconnect: () => {
     socketService.disconnect();
-    set({ 
+    set({
       connected: false,
       reconnecting: false,
       subscribedSymbols: new Set<string>(),
@@ -598,32 +598,32 @@ const useSocketStore = create<SocketState>((set, get) => ({
     });
   },
 
-  setConnected: (connected) => set({ 
-    connected, 
+  setConnected: (connected) => set({
+    connected,
     reconnecting: false,
     connectionAttempts: connected ? 0 : get().connectionAttempts
   }),
 
   setReconnecting: (reconnecting) => set({ reconnecting }),
-  
+
   setError: (error) => set({ error, reconnecting: false }),
-  
+
   addSubscription: (symbol) => set((state) => ({
     subscribedSymbols: new Set(state.subscribedSymbols).add(symbol)
   })),
-  
+
   removeSubscription: (symbol) => set((state) => {
     const newSet = new Set(state.subscribedSymbols);
     newSet.delete(symbol);
     return { subscribedSymbols: newSet };
   }),
-  
+
   updateHeartbeat: () => set({ lastHeartbeat: Date.now() }),
-  
+
   incrementConnectionAttempts: () => set((state) => ({
     connectionAttempts: state.connectionAttempts + 1
   })),
-  
+
   resetConnectionAttempts: () => set({ connectionAttempts: 0 }),
 }));
 
@@ -646,7 +646,7 @@ const TradingDashboard = () => {
     queryFn: fetchPositions,
     refetchInterval: 30000,
   });
-  
+
   // Zustand - UI 狀態
   const {
     selectedSymbol,
@@ -657,14 +657,14 @@ const TradingDashboard = () => {
     setActiveTab,
     addNotification,
   } = useTradingUIStore();
-  
+
   // Zustand - Socket 狀態
   const {
     connected,
     subscribedSymbols,
     addSubscription,
   } = useSocketStore();
-  
+
   // 組合邏輯
   const handleSymbolChange = (symbol: string) => {
     setSelectedSymbol(symbol);
@@ -685,18 +685,18 @@ const TradingDashboard = () => {
         </Button>
         <Text className="ml-4">連接狀態: {connected ? '已連接' : '未連接'}</Text>
       </HStack>
-      
+
       <VStack className="flex-1">
-        <SymbolSelector 
+        <SymbolSelector
           selected={selectedSymbol}
           onChange={handleSymbolChange}
         />
-        
-        <TabNavigation 
+
+        <TabNavigation
           active={activeTab}
           onChange={setActiveTab}
         />
-        
+
         {activeTab === 'positions' && (
           <PositionsTable data={positions} />
         )}
@@ -713,10 +713,10 @@ const TradingDashboard = () => {
 const GoodComponent = () => {
   // TanStack Query 處理伺服器狀態
   const { data } = useQuery({ queryKey: ['data'], queryFn: fetchData });
-  
+
   // Zustand 處理 UI 狀態
   const { theme, toggleTheme } = useTradingUIStore();
-  
+
   return (
     <Card className={theme === 'dark' ? 'dark' : 'light'}>
       <Button onPress={toggleTheme}>切換主題</Button>
@@ -728,7 +728,7 @@ const GoodComponent = () => {
 const BadComponent = () => {
   // 不要用 Zustand 存儲伺服器數據
   const { serverData, fetchServerData } = useMarketDataStore(); // ❌
-  
+
   // 不要用 TanStack Query 管理 UI 狀態
   const { data: uiState } = useQuery({ // ❌
     queryKey: ['ui-state'],
@@ -749,7 +749,7 @@ export const useMarketData = (symbol: string) => {
   const queryClient = useQueryClient();
   const { connected, addSubscription } = useSocketStore();
   const { addNotification } = useTradingUIStore();
-  
+
   // TanStack Query 管理數據
   const query = useQuery({
     queryKey: ['market-data', symbol],
@@ -757,7 +757,7 @@ export const useMarketData = (symbol: string) => {
     staleTime: 5000,
     enabled: !!symbol,
   });
-  
+
   // Socket 即時更新數據
   useEffect(() => {
     if (connected && symbol) {
@@ -778,14 +778,14 @@ export const useMarketData = (symbol: string) => {
           });
         },
       });
-      
+
       // 更新 Zustand 訂閱狀態
       addSubscription(symbol);
-      
+
       return unsubscribe;
     }
   }, [connected, symbol]);
-  
+
   return query;
 };
 ```
@@ -816,7 +816,7 @@ interface MarketDataSyncState {
   subscribedSymbols: Set<string>;
   lastSyncTime: Record<string, number>;
   syncErrors: Record<string, string>;
-  
+
   // 同步動作
   connect: () => void;
   disconnect: () => void;
@@ -843,8 +843,8 @@ const useMarketDataSync = create<MarketDataSyncState>()(
 
     disconnect: () => {
       socketService.disconnect();
-      set({ 
-        connected: false, 
+      set({
+        connected: false,
         subscribedSymbols: new Set<string>(),
         lastSyncTime: {},
         syncErrors: {},
@@ -991,7 +991,7 @@ const OrderBook: React.FC<OrderBookProps> = ({ symbol }) => {
         ref={parentRef}
         className="h-96 overflow-auto"
       >
-        <Box 
+        <Box
           className="relative"
           style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
         >
@@ -1003,8 +1003,8 @@ const OrderBook: React.FC<OrderBookProps> = ({ symbol }) => {
               <HStack
                 key={virtualRow.key}
                 className={`absolute inset-x-0 justify-between px-3 py-1 border-b border-gray-100 hover:opacity-80 transition-opacity ${
-                  isAsk 
-                    ? 'bg-red-50 hover:bg-red-100' 
+                  isAsk
+                    ? 'bg-red-50 hover:bg-red-100'
                     : 'bg-green-50 hover:bg-green-100'
                 }`}
                 style={{
@@ -1176,9 +1176,9 @@ const PositionsTable = () => {
           const current = info.getValue();
           const avg = info.row.original.avgPrice;
           const isProfit = current > avg;
-          
+
           return (
-            <Text 
+            <Text
               className={`text-right font-medium ${
                 isProfit ? 'text-red-600' : 'text-green-600'
               }`}
@@ -1194,9 +1194,9 @@ const PositionsTable = () => {
         cell: (info) => {
           const pnl = info.getValue();
           const isProfit = pnl > 0;
-          
+
           return (
-            <Text 
+            <Text
               className={`text-right font-medium ${
                 isProfit ? 'text-red-600' : 'text-green-600'
               }`}
@@ -1221,15 +1221,15 @@ const PositionsTable = () => {
         header: '操作',
         cell: (info) => (
           <div className="flex space-x-2">
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               variant="outline"
               onPress={() => handleSell(info.row.original)}
             >
               賣出
             </Button>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               variant="ghost"
               onPress={() => handleViewDetails(info.row.original)}
             >
@@ -1342,8 +1342,8 @@ const PositionsTable = () => {
           </thead>
           <tbody>
             {table.getRowModel().rows.map((row) => (
-              <tr 
-                key={row.id} 
+              <tr
+                key={row.id}
                 className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
               >
                 {row.getVisibleCells().map((cell) => (
@@ -1465,7 +1465,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </GluestackUIProvider>
           {/* React Query DevTools - 只在開發環境顯示 */}
           {process.env.NODE_ENV === 'development' && (
-            <ReactQueryDevtools 
+            <ReactQueryDevtools
               initialIsOpen={false}
               position="bottom"
               toggleButtonProps={{
@@ -1493,7 +1493,7 @@ export const useReactQueryDevtools = () => {
     if (process.env.NODE_ENV === 'development') {
       // 可以在這裡添加自定義的開發工具邏輯
       console.log('🔧 React Query DevTools 已啟用');
-      
+
       // 添加快捷鍵來切換 DevTools
       const handleKeyPress = (event: KeyboardEvent) => {
         if (event.ctrlKey && event.shiftKey && event.key === 'Q') {
@@ -1504,7 +1504,7 @@ export const useReactQueryDevtools = () => {
           }
         }
       };
-      
+
       window.addEventListener('keydown', handleKeyPress);
       return () => window.removeEventListener('keydown', handleKeyPress);
     }
@@ -1789,7 +1789,7 @@ const OrderForm = () => {
 
 ---
 
-## 🎨 UI 框架與組件 (Gluestack UI v2)
+## 🎨 UI 框架與組件 (Gluestack UI v3)
 
 ### 主題配置
 
@@ -2140,7 +2140,7 @@ cd frontend
 ### 2. 安裝依賴套件
 
 ```bash
-# UI 框架 - Gluestack UI v2
+# UI 框架 - Gluestack UI v3
 npm install @gluestack-ui/themed @gluestack-ui/config lucide-react-native
 
 # 或者使用 NativeWind + Gluestack
@@ -2191,9 +2191,9 @@ npm install -D @types/numeral@^2.0.5 @types/node@^22.0.0
     "react-dom": "^18.3.0",
     "next": "^15.0.0",
     "typescript": "^5.6.0",
-    "@gluestack-ui/themed": "^2.0.0",
-    "@gluestack-ui/config": "^2.0.0",
-    "@gluestack-ui/nativewind-utils": "^2.0.0",
+    "@gluestack-ui/themed": "^3.0.0",
+    "@gluestack-ui/config": "^3.0.0",
+    "@gluestack-ui/nativewind-utils": "^3.0.0",
     "nativewind": "^4.0.0",
     "tailwindcss": "^3.4.0",
     "lightweight-charts": "^4.2.0",
@@ -2535,7 +2535,7 @@ getTTFB(console.log);
 
 ### ✨ 技術優勢
 ✅ **最新技術**: Next.js 15 + TypeScript 5.6 + Socket.io 4.8
-✅ **現代 UI**: Gluestack UI v2 + NativeWind + Tailwind CSS
+✅ **現代 UI**: Gluestack UI v3 + NativeWind + Tailwind CSS
 ✅ **高效能**: TanStack Virtual v3 處理數萬筆數據
 ✅ **即時性**: Socket.io 企業級即時通訊
 ✅ **專業性**: 完整的技術分析圖表系統
@@ -2562,7 +2562,7 @@ getTTFB(console.log);
 
 ### 🔗 更多資源
 - [Next.js 15 文檔](https://nextjs.org/docs)
-- [Gluestack UI v2 文檔](https://ui.gluestack.io/)
+- [Gluestack UI v3 文檔](https://ui.gluestack.io/)
 - [Socket.io 文檔](https://socket.io/docs/)
 - [TanStack Query v5 文檔](https://tanstack.com/query/latest)
 - [Lightweight Charts 文檔](https://tradingview.github.io/lightweight-charts/)

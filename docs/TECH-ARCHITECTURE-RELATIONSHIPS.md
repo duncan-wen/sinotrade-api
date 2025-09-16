@@ -29,7 +29,7 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                     UI 組件與樣式層                               │
 │  ┌─────────────────────────────────────────────────────────────┐ │
-│  │                  Gluestack UI v2                           │ │
+│  │                  Gluestack UI v3                           │ │
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │ │
 │  │  │   Theme     │  │ Components  │  │    NativeWind      │ │ │
 │  │  │ • 配色方案   │  │ • Button    │  │  • Tailwind CSS   │ │ │
@@ -103,7 +103,7 @@ export default function PositionsPage() {
 }
 ```
 
-### 🎨 Gluestack UI v2 - 「視覺設計師」
+### 🎨 Gluestack UI v3 - 「視覺設計師」
 
 **職責範圍:**
 - **組件提供** - 提供一致的 UI 元素庫
@@ -124,7 +124,7 @@ const TradingCard = ({ title, value, change, trend }) => {
         <Text className="text-gray-600 text-sm">{title}</Text>
         <HStack className="items-center justify-between">
           <Text className="text-2xl font-bold">{value}</Text>
-          <Text 
+          <Text
             className={`font-medium ${
               trend === 'up' ? 'text-red-600' : 'text-green-600'
             }`}
@@ -296,9 +296,9 @@ const StockDashboard = () => {
     const ws = new WebSocket('ws://localhost:8000/stocks');
     ws.onmessage = (event) => {
       const update = JSON.parse(event.data);
-      queryClient.setQueryData(['stocks'], (old) => 
-        old.map(stock => 
-          stock.symbol === update.symbol 
+      queryClient.setQueryData(['stocks'], (old) =>
+        old.map(stock =>
+          stock.symbol === update.symbol
             ? { ...stock, ...update }
             : stock
         )
@@ -319,7 +319,7 @@ const StockDashboard = () => {
     <div className="p-6">
       {/* Next.js 提供頁面結構 */}
       <h1 className="text-2xl font-bold mb-6">股票看板</h1>
-      
+
       {/* Gluestack UI 提供視覺組件 */}
       <Card className="overflow-hidden">
         <div ref={parentRef} className="h-96 overflow-auto">
@@ -347,7 +347,7 @@ const StockDashboard = () => {
                       <Text className="text-lg font-bold">
                         {stock.price.toFixed(2)}
                       </Text>
-                      <Text 
+                      <Text
                         className={stock.change >= 0 ? 'text-red-600' : 'text-green-600'}
                       >
                         {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)}
@@ -402,7 +402,7 @@ const OrderManagement = () => {
     columnHelper.accessor('side', {
       header: '買賣別',
       cell: info => (
-        <Badge 
+        <Badge
           className={info.getValue() === 'Buy' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}
         >
           {info.getValue() === 'Buy' ? '買進' : '賣出'}
@@ -453,7 +453,7 @@ const OrderManagement = () => {
   return (
     <Card className="p-6">
       <Text className="text-xl font-bold mb-4">訂單管理</Text>
-      
+
       {/* 表格渲染 */}
       <div className="overflow-x-auto">
         <table className="w-full">
@@ -496,7 +496,7 @@ const OrderManagement = () => {
 Next.js (基礎層)
     ↓ 提供運行環境
 Gluestack UI (展示層)
-    ↓ 提供視覺組件  
+    ↓ 提供視覺組件
 TanStack (邏輯層)
     ↓ 處理數據和狀態
 業務邏輯 (應用層)
@@ -521,12 +521,12 @@ interface TechBoundaries {
   routing: 'Next.js App Router';
   rendering: 'Server/Client Components';
   building: 'Turbo + Webpack';
-  
-  // Gluestack UI 負責  
+
+  // Gluestack UI 負責
   components: 'Button, Card, Text, etc.';
   theming: 'Colors, Fonts, Spacing';
   styling: 'NativeWind + Tailwind';
-  
+
   // TanStack 負責
   dataFetching: 'TanStack Query';
   tableLogic: 'TanStack Table';
@@ -545,10 +545,10 @@ interface TechBoundaries {
 const TradingPage = () => {
   // 數據層 - TanStack Query
   const { data: positions } = usePositions();
-  
-  // 邏輯層 - TanStack Table  
+
+  // 邏輯層 - TanStack Table
   const table = useReactTable({...});
-  
+
   // 展示層 - Gluestack UI
   return (
     <Card>
@@ -563,7 +563,7 @@ const BadComponent = () => {
   const processedData = data.map(item => {
     // 複雜的業務邏輯...
   });
-  
+
   return <ComplexUI data={processedData} />;
 };
 ```
@@ -653,7 +653,7 @@ export default function RootLayout({ children }) {
           <GluestackUIProvider config={config}>
             {children}
           </GluestackUIProvider>
-          
+
           {/* 開發環境工具 */}
           {process.env.NODE_ENV === 'development' && (
             <>

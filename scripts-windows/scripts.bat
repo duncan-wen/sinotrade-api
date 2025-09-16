@@ -50,21 +50,21 @@ if errorlevel 1 (
 call :install-frontend
 if errorlevel 1 (
     echo ❌ Frontend installation failed
-    goto end
+    exit /b 1
 )
 echo 🎉 All dependencies installed successfully!
-goto end
+exit /b 0
 
 :install-backend
 echo 📦 Installing backend dependencies...
-cd backend
+cd /d backend
 uv sync --dev
 if errorlevel 1 (
     echo ❌ Backend dependency installation failed
-    cd ..
+    cd /d ..
     exit /b 1
 )
-cd ..
+cd /d ..
 echo ✅ Backend dependencies installed successfully
 exit /b 0
 
@@ -83,7 +83,7 @@ if errorlevel 1 (
 )
 cd ..
 echo ✅ Frontend dependencies installed successfully
-exit /b 0
+goto end
 
 :dev
 echo 🚀 Starting development environment...
