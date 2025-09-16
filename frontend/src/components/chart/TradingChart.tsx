@@ -195,7 +195,7 @@ export function TradingChart({
         )}
         <div
           ref={chartContainerRef}
-          className="w-full"
+          className="w-full min-w-0"
           style={{ height: `${height}px` }}
         />
       </View>

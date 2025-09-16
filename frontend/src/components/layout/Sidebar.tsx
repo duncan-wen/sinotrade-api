@@ -28,7 +28,11 @@ export function Sidebar({ isOpen = true }: SidebarProps) {
   ];
 
   return (
-    <View className={`bg-gray-50 border-r border-gray-200 h-full transition-all duration-300 ${isOpen ? 'w-80' : 'w-20'}`}>
+    <View className={`bg-gray-50 border-r border-gray-200 min-h-screen transition-all duration-300 ${
+      isOpen
+        ? 'w-80 lg:relative lg:translate-x-0 absolute z-50 lg:z-auto'
+        : 'w-20 hidden lg:block'
+    }`}>
       {/* 主選單 */}
       <View className="p-4">
         <Text className={`text-lg font-semibold text-gray-900 mb-4 ${!isOpen && 'hidden'}`}>
