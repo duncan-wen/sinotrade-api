@@ -58,7 +58,7 @@ def get_quote(symbol: str, user: APIUser = Depends(get_current_user)) -> Quote:
 def get_historical_klines(
     symbol: str,
     interval: str = Query(
-        default="1m", description="K線間隔 (1m, 5m, 15m, 1h, 1d, 1w, 1M)"
+        default="1d", description="K線間隔 (1m, 5m, 15m, 1h, 1d, 1w, 1M)"
     ),
     limit: int = Query(default=100, description="返回的K線數量", ge=1, le=1000),
     ma_periods: str = Query(
@@ -362,6 +362,161 @@ def get_multi_symbol_chart_data(
     except Exception as e:
         logger.error(f"Multi-symbol chart data error: {e}")
         return {"error": str(e), "data": {}}
+
+
+@router.get("/benchmark/{symbol}")
+def benchmark_polars_vs_pandas(
+    symbol: str,
+    interval: str = Query(default="1d", description="K線間隔"),
+    limit: int = Query(default=500, description="測試數據量", ge=100, le=2000),
+    indicators: str = Query(
+        default="ma,kd,macd,bbands,rsi",
+        description="技術指標,逗號分隔"
+    ),
+    ma_periods: str = Query(default="5,10,20,60", description="均線週期"),
+) -> dict[str, Any]:
+    """
+    性能測試: 比較 Polars vs Pandas 計算技術指標的效能
+
+    返回兩種方法的執行時間、記憶體使用量等指標
+    """
+    import time
+    import tracemalloc
+
+    try:
+        # 解析參數
+        indicators_list = [ind.strip() for ind in indicators.split(",") if ind.strip()]
+        ma_periods_list = [int(p.strip()) for p in ma_periods.split(",") if p.strip()]
+
+        # 構建指標配置
+        indicators_config: dict[str, Any] = {}
+        if "ma" in indicators_list:
+            indicators_config["ma"] = {"periods": ma_periods_list}
+        if "kd" in indicators_list:
+            indicators_config["kd"] = {"k_period": 9, "d_period": 3, "rsv_period": 9}
+        if "macd" in indicators_list:
+            indicators_config["macd"] = {"fast": 12, "slow": 26, "signal": 9}
+        if "bbands" in indicators_list:
+            indicators_config["bbands"] = {"period": 20, "std_multiplier": 2}
+        if "rsi" in indicators_list:
+            indicators_config["rsi"] = {"periods": [14]}
+
+        # 獲取測試數據
+        klines = shioaji_service.get_historical_klines(symbol, interval, limit)
+
+        if not klines:
+            return {"error": "無法獲取K線數據", "symbol": symbol}
+
+        logger.info(f"🔬 開始性能測試 - 數據量: {len(klines)} 根K線")
+
+        # === 測試 Polars ===
+        logger.info(f"📊 測試 Polars 計算，配置: {indicators_config}")
+        tracemalloc.start()
+        polars_start = time.perf_counter()
+
+        polars_result = polars_technical_analysis_service.calculate_all_indicators(
+            klines, indicators_config
+        )
+
+        polars_end = time.perf_counter()
+        polars_memory = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        polars_time = polars_end - polars_start
+        polars_peak_memory = polars_memory[1] / (1024 * 1024)  # MB
+        logger.info(f"✅ Polars 完成: {len(polars_result)} 結果，耗時 {polars_time*1000:.1f}ms")
+
+        # === 測試 Pandas ===
+        logger.info(f"📊 測試 Pandas 計算，配置: {indicators_config}")
+        tracemalloc.start()
+        pandas_start = time.perf_counter()
+
+        pandas_result = technical_analysis_service.calculate_all_indicators(
+            klines, indicators_config
+        )
+
+        pandas_end = time.perf_counter()
+        pandas_memory = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        pandas_time = pandas_end - pandas_start
+        pandas_peak_memory = pandas_memory[1] / (1024 * 1024)  # MB
+        logger.info(f"✅ Pandas 完成: {len(pandas_result)} 結果，耗時 {pandas_time*1000:.1f}ms")
+
+        # 計算加速比
+        speedup = pandas_time / polars_time if polars_time > 0 else 0
+        memory_efficiency = pandas_peak_memory / polars_peak_memory if polars_peak_memory > 0 else 0
+
+        # 驗證結果一致性 (比較最後幾筆數據)
+        consistency_check = "未檢查"
+        if len(polars_result) > 0 and len(pandas_result) > 0:
+            # 簡單檢查最後一筆數據的MA值
+            last_polars = polars_result[-1]
+            last_pandas = pandas_result[-1]
+
+            if hasattr(last_polars, 'ma') and hasattr(last_pandas, 'ma'):
+                polars_ma5 = getattr(last_polars.ma, 'ma5', None) if last_polars.ma else None
+                pandas_ma5 = getattr(last_pandas.ma, 'ma5', None) if last_pandas.ma else None
+
+                if polars_ma5 is not None and pandas_ma5 is not None:
+                    diff_percent = abs(polars_ma5 - pandas_ma5) / pandas_ma5 * 100
+                    consistency_check = f"MA5差異: {diff_percent:.4f}%"
+                else:
+                    consistency_check = f"MA數據檢查: Polars MA5={polars_ma5}, Pandas MA5={pandas_ma5}"
+            else:
+                consistency_check = f"MA檢查: Polars有MA={hasattr(last_polars, 'ma')}, Pandas有MA={hasattr(last_pandas, 'ma')}"
+
+        benchmark_result = {
+            "symbol": symbol,
+            "test_config": {
+                "data_points": len(klines),
+                "interval": interval,
+                "indicators": indicators_list,
+                "ma_periods": ma_periods_list
+            },
+            "performance": {
+                "polars": {
+                    "execution_time_ms": round(polars_time * 1000, 2),
+                    "peak_memory_mb": round(polars_peak_memory, 2),
+                    "result_count": len(polars_result)
+                },
+                "pandas": {
+                    "execution_time_ms": round(pandas_time * 1000, 2),
+                    "peak_memory_mb": round(pandas_peak_memory, 2),
+                    "result_count": len(pandas_result)
+                },
+                "comparison": {
+                    "speedup_ratio": round(speedup, 2),
+                    "memory_efficiency_ratio": round(memory_efficiency, 2),
+                    "polars_faster": polars_time < pandas_time,
+                    "polars_memory_efficient": polars_peak_memory < pandas_peak_memory
+                }
+            },
+            "data_consistency": consistency_check,
+            "recommendation": _get_performance_recommendation(speedup, memory_efficiency)
+        }
+
+        logger.info(f"🎯 測試完成 - Polars: {polars_time*1000:.1f}ms, Pandas: {pandas_time*1000:.1f}ms, 加速比: {speedup:.2f}x")
+
+        return benchmark_result
+
+    except Exception as e:
+        logger.error(f"Benchmark test error: {e}")
+        return {"error": str(e), "symbol": symbol}
+
+
+def _get_performance_recommendation(speedup: float, memory_efficiency: float) -> str:
+    """根據性能測試結果給出建議"""
+    if speedup > 2.0 and memory_efficiency > 1.2:
+        return "🚀 強烈建議使用 Polars - 速度和記憶體效率都明顯更佳"
+    elif speedup > 1.5:
+        return "✅ 建議使用 Polars - 速度提升明顯"
+    elif speedup > 1.0:
+        return "📈 Polars 略有優勢, 可考慮切換"
+    elif speedup > 0.8:
+        return "⚖️  兩者性能相近, 可根據其他因素決定"
+    else:
+        return "⚠️  Pandas 在此場景下表現更好, 建議保持現狀"
 
 
 def _get_data_source(interval: str) -> str:

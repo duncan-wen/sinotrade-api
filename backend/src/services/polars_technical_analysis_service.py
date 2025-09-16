@@ -76,7 +76,7 @@ class PolarsTechnicalAnalysisService:
                     expressions.append(
                         pl.col("close")
                         .rolling_mean(window_size=period)
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias(f"ma{period}")
                     )
 
@@ -103,7 +103,7 @@ class PolarsTechnicalAnalysisService:
                             )
                             * 100
                         )
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias("rsv"),
                     ]
                 )
@@ -123,15 +123,15 @@ class PolarsTechnicalAnalysisService:
                     [
                         plta.macd(pl.col("close"), fast, slow, signal)
                         .struct.field("macd")
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias("macd_line"),
                         plta.macd(pl.col("close"), fast, slow, signal)
                         .struct.field("macdsignal")
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias("dea"),
                         plta.macd(pl.col("close"), fast, slow, signal)
                         .struct.field("macdhist")
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias("dif"),
                     ]
                 )
@@ -150,19 +150,19 @@ class PolarsTechnicalAnalysisService:
                             pl.col("close"), period, std_multiplier, std_multiplier
                         )
                         .struct.field("upperband")
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias("bb_upper"),
                         plta.bbands(
                             pl.col("close"), period, std_multiplier, std_multiplier
                         )
                         .struct.field("middleband")
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias("bb_middle"),
                         plta.bbands(
                             pl.col("close"), period, std_multiplier, std_multiplier
                         )
                         .struct.field("lowerband")
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias("bb_lower"),
                     ]
                 )
@@ -174,7 +174,7 @@ class PolarsTechnicalAnalysisService:
                 for period in rsi_config["periods"]:
                     expressions.append(
                         plta.rsi(pl.col("close"), period)
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias(f"rsi{period}")
                     )
 
@@ -194,7 +194,7 @@ class PolarsTechnicalAnalysisService:
                         # K 值 (RSV 的 EMA)
                         pl.col("rsv")
                         .ewm_mean(alpha=1 / k_period)
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias("k"),
                     ]
                 )
@@ -204,7 +204,7 @@ class PolarsTechnicalAnalysisService:
                         # D 值 (K 值的 EMA)
                         pl.col("k")
                         .ewm_mean(alpha=1 / d_period)
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias("d"),
                     ]
                 )
@@ -212,7 +212,7 @@ class PolarsTechnicalAnalysisService:
                 df = df.with_columns(
                     [
                         # J 值
-                        (3 * pl.col("k") - 2 * pl.col("d")).fill_null(None).alias("j"),
+                        (3 * pl.col("k") - 2 * pl.col("d")).fill_null(strategy="forward").alias("j"),
                     ]
                 )
 
@@ -227,7 +227,7 @@ class PolarsTechnicalAnalysisService:
                             / pl.col("bb_middle")
                             * 100
                         )
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias("bb_bandwidth")
                     ]
                 )
@@ -236,9 +236,9 @@ class PolarsTechnicalAnalysisService:
             if "macd" in config and all(col in df.columns for col in ["dif", "dea"]):
                 df = df.with_columns(
                     [
-                        (pl.col("dif") - pl.col("dea")).fill_null(None).alias("macd"),
+                        (pl.col("dif") - pl.col("dea")).fill_null(strategy="forward").alias("macd"),
                         ((pl.col("dif") - pl.col("dea")) * 2)
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias("histogram"),
                     ]
                 )
@@ -443,7 +443,7 @@ class PolarsTechnicalAnalysisService:
                         pl.col("close")
                         .rolling_mean(window_size=period)
                         .over("symbol")  # 🚀 關鍵:按商品分組並行計算
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias(f"ma{period}")
                     )
 
@@ -460,7 +460,7 @@ class PolarsTechnicalAnalysisService:
                         )
                         .over("symbol")  # 🚀 並行計算每個商品的 MACD
                         .struct.field("macd")
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias("macd_line"),
                         plta.macd(
                             pl.col("close"),
@@ -470,7 +470,7 @@ class PolarsTechnicalAnalysisService:
                         )
                         .over("symbol")
                         .struct.field("macdsignal")
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias("dea"),
                         plta.macd(
                             pl.col("close"),
@@ -480,7 +480,7 @@ class PolarsTechnicalAnalysisService:
                         )
                         .over("symbol")
                         .struct.field("macdhist")
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias("dif"),
                     ]
                 )
@@ -492,7 +492,7 @@ class PolarsTechnicalAnalysisService:
                     expressions.append(
                         plta.rsi(pl.col("close"), period)
                         .over("symbol")  # 🚀 並行計算每個商品的 RSI
-                        .fill_null(None)
+                        .fill_null(strategy="forward")
                         .alias(f"rsi{period}")
                     )
 
