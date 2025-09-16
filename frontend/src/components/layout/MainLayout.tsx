@@ -26,7 +26,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         {/* 主要內容 */}
         <View className="flex-1 flex flex-col">
           {/* 內容工具欄 */}
-          <View className="bg-white border-b border-gray-200 px-6 py-3 flex-row items-center justify-between">
+          <View className="bg-white border-b border-gray-200 px-6 py-2 flex-row items-center justify-between">
             {/* 側邊欄切換按鈕 */}
             <Button
               variant="outline"
@@ -58,8 +58,8 @@ export function MainLayout({ children }: MainLayoutProps) {
           </View>
 
           {/* 滾動內容區域 */}
-          <View className="flex-1 overflow-auto p-6">
-            <View className="max-w-7xl mx-auto">
+          <View className="flex-1 overflow-auto p-3">
+            <View className="max-w-full mx-auto">
               {children}
             </View>
           </View>

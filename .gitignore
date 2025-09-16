@@ -147,3 +147,6 @@ backend/.ruff_cache/
 
 # Windows Scripts (keep the actual .bat files, ignore temp files)
 scripts-windows/*.tmp
+
+# Playwright mcp
+.playwright-mcp/

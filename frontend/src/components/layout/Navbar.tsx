@@ -6,7 +6,7 @@ import { Button, ButtonText } from '@/components/ui/button';
 
 export function Navbar() {
   return (
-    <View className="bg-white border-b border-gray-200 px-6 py-4 flex-row items-center justify-between shadow-sm">
+    <View className="bg-white border-b border-gray-200 px-6 py-3 flex-row items-center justify-between shadow-sm">
       {/* Logo 區域 */}
       <View className="flex-row items-center">
         <Text className="text-2xl font-bold text-gray-900">
