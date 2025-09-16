@@ -30,9 +30,30 @@
   "sqltools.useNodeRuntime": false,
 
   // 編輯器格式化設定
-  "editor.formatOnSave": false,
+  "editor.formatOnSave": true,
   "editor.formatOnType": false,
-  "editor.formatOnPaste": false,
+  "editor.formatOnPaste": true,
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+
+  // TypeScript 錯誤抑制
+  "typescript.validate.enable": true,
+  "typescript.reportStyleChecksAsWarnings": false,
+  "typescript.preferences.includePackageJsonAutoImports": "off",
 
   // 檔案設定
   "files.trimTrailingWhitespace": true,
