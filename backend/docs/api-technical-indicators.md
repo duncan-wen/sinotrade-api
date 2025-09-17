@@ -32,13 +32,13 @@ curl -X GET "http://localhost:8000/api/chart/2330?use_polars=true&indicators=ma,
 
 **查詢參數**:
 
-| 參數 | 類型 | 預設值 | 說明 |
-|------|------|--------|------|
-| `interval` | string | `1d` | K線間隔 |
-| `limit` | integer | `100` | 返回的K線數量 (1-1000) |
-| `indicators` | string | `ma,kd,macd,bbands,rsi` | 技術指標列表 |
-| `ma_periods` | string | `5,10,20,60` | 均線週期設定 |
-| `use_polars` | boolean | `true` | 使用 Polars 高效能引擎 |
+| 參數         | 類型    | 預設值                  | 說明                   |
+| ------------ | ------- | ----------------------- | ---------------------- |
+| `interval`   | string  | `1d`                    | K線間隔                |
+| `limit`      | integer | `100`                   | 返回的K線數量 (1-1000) |
+| `indicators` | string  | `ma,kd,macd,bbands,rsi` | 技術指標列表           |
+| `ma_periods` | string  | `5,10,20,60`            | 均線週期設定           |
+| `use_polars` | boolean | `true`                  | 使用 Polars 高效能引擎 |
 
 **支援的時間間隔**:
 - `1m` - 1分鐘
@@ -62,13 +62,13 @@ curl -X GET "http://localhost:8000/api/chart/2330?use_polars=true&indicators=ma,
 
 **查詢參數**:
 
-| 參數 | 類型 | 預設值 | 說明 |
-|------|------|--------|------|
-| `symbols` | string | - | 商品代號列表 (逗號分隔) |
-| `interval` | string | `1d` | K線間隔 |
-| `limit` | integer | `60` | 每個商品的K線數量 (1-500) |
-| `indicators` | string | `ma,rsi` | 技術指標 (簡化版) |
-| `ma_periods` | string | `5,20,60` | 均線週期設定 |
+| 參數         | 類型    | 預設值    | 說明                      |
+| ------------ | ------- | --------- | ------------------------- |
+| `symbols`    | string  | -         | 商品代號列表 (逗號分隔)   |
+| `interval`   | string  | `1d`      | K線間隔                   |
+| `limit`      | integer | `60`      | 每個商品的K線數量 (1-500) |
+| `indicators` | string  | `ma,rsi`  | 技術指標 (簡化版)         |
+| `ma_periods` | string  | `5,20,60` | 均線週期設定              |
 
 **限制**:
 - 最多同時處理 20 個商品
@@ -262,13 +262,13 @@ curl -X GET "http://localhost:8000/api/chart/TXFR1?interval=1h&limit=100&indicat
 
 ### 常見錯誤碼
 
-| HTTP 狀態碼 | 錯誤類型 | 說明 |
-|-------------|----------|------|
-| `400` | Bad Request | 參數錯誤 |
-| `401` | Unauthorized | API Key 無效 |
-| `404` | Not Found | 商品代號不存在 |
-| `429` | Too Many Requests | 請求頻率過高 |
-| `500` | Internal Server Error | 伺服器內部錯誤 |
+| HTTP 狀態碼 | 錯誤類型              | 說明           |
+| ----------- | --------------------- | -------------- |
+| `400`       | Bad Request           | 參數錯誤       |
+| `401`       | Unauthorized          | API Key 無效   |
+| `404`       | Not Found             | 商品代號不存在 |
+| `429`       | Too Many Requests     | 請求頻率過高   |
+| `500`       | Internal Server Error | 伺服器內部錯誤 |
 
 ### 錯誤響應格式
 
@@ -486,7 +486,7 @@ def get_chart_with_retry(symbol: str, max_retries: int = 3) -> Optional[Dict]:
                 return None
 
             wait_time = 2 ** attempt  # 指數退避
-            print(f"重試 {attempt + 1}/{max_retries}，等待 {wait_time} 秒...")
+            print(f"重試 {attempt + 1}/{max_retries},等待 {wait_time} 秒...")
             time.sleep(wait_time)
 
     return None

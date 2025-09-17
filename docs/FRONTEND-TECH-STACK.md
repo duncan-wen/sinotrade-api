@@ -530,7 +530,7 @@ const useTradingUIStore = create<TradingUIState>()(
     {
       name: 'trading-ui-settings', // localStorage 鍵名
       partialize: (state) => ({
-        // 只持久化用戶偏好，不保存通知
+        // 只持久化用戶偏好,不保存通知
         selectedSymbol: state.selectedSymbol,
         sidebarCollapsed: state.sidebarCollapsed,
         chartTimeframe: state.chartTimeframe,
@@ -798,10 +798,10 @@ export const useMarketData = (symbol: string) => {
 | **Zustand**        | 客戶端狀態 | UI 配置、用戶偏好、通知、表單  |
 | **React State**    | 組件狀態   | 臨時狀態、輸入值、動畫狀態     |
 
-透過這樣的分工，您可以獲得：
+透過這樣的分工,您可以獲得:
 - 🎯 **明確職責** - 每個工具專注自己的強項
 - 🚀 **最佳性能** - 避免不必要的重新渲染
-- 🛠️ **易於維護** - 狀態邏輯分離，降低複雜度
+- 🛠️ **易於維護** - 狀態邏輯分離,降低複雜度
 - 📦 **適當包大小** - 只用需要的功能
 
 ```typescript
@@ -1105,7 +1105,7 @@ const TradeHistory = ({ symbol }) => {
 
 ### 為什麼需要 TanStack Table？
 
-在金融交易平台中，許多功能需要複雜的表格展示和操作：
+在金融交易平台中,許多功能需要複雜的表格展示和操作:
 
 | 功能場景     | 是否需要 TanStack Table | 原因                     |
 | ------------ | ----------------------- | ------------------------ |

@@ -4,12 +4,12 @@
 
 ### 性能對比
 
-| 指標 | pandas | **Polars + polars_talib** | 提升倍數 |
-|------|--------|---------------------------|----------|
-| **計算速度** | 基準 | 🚀 **3-10x 更快** | 3-10x |
-| **記憶體使用** | 基準 | 🚀 **50-80% 更少** | 2-5x |
-| **多核心利用** | 有限 | 🚀 **自動並行** | 4-8x |
-| **大數據處理** | 受限 | 🚀 **流式處理** | 10x+ |
+| 指標           | pandas | **Polars + polars_talib** | 提升倍數 |
+| -------------- | ------ | ------------------------- | -------- |
+| **計算速度**   | 基準   | 🚀 **3-10x 更快**          | 3-10x    |
+| **記憶體使用** | 基準   | 🚀 **50-80% 更少**         | 2-5x     |
+| **多核心利用** | 有限   | 🚀 **自動並行**            | 4-8x     |
+| **大數據處理** | 受限   | 🚀 **流式處理**            | 10x+     |
 
 ### 實際測試結果
 
@@ -32,8 +32,8 @@ Row 2: [timestamp, open, high, low, close, volume]
 Row 3: [timestamp, open, high, low, close, volume]
 
 # 列式存儲 (Polars) - 更適合技術指標計算
-Column 'close': [price1, price2, price3, ...]  # 連續記憶體，向量化友好
-Column 'volume': [vol1, vol2, vol3, ...]       # 快取友好，並行處理
+Column 'close': [price1, price2, price3, ...]  # 連續記憶體,向量化友好
+Column 'volume': [vol1, vol2, vol3, ...]       # 快取友好,並行處理
 ```
 
 **優勢**:
@@ -70,11 +70,11 @@ query = (
 # 多商品並行計算
 df.with_columns([
     pl.col("close").rolling_mean(20)
-    .over("symbol")  # 🚀 關鍵：按商品分組並行
+    .over("symbol")  # 🚀 關鍵:按商品分組並行
     .alias("ma20")
 ])
 
-# Polars 自動：
+# Polars 自動:
 # - 檢測 CPU 核心數
 # - 分配工作負載
 # - 並行執行計算
@@ -85,7 +85,7 @@ df.with_columns([
 
 ### 支援的技術指標
 
-polars_talib 提供了完整的 TA-Lib 指標庫，包括：
+polars_talib 提供了完整的 TA-Lib 指標庫,包括:
 
 #### 趨勢指標
 ```python

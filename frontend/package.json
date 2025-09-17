@@ -41,6 +41,8 @@
     "@types/react-native": "0.72.8",
     "@types/react-native-web": "^0.19.2",
     "autoprefixer": "10.4.21",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^8.57.1",
     "eslint-config-next": "15.0.0",
     "eslint-config-prettier": "^9.1.2",

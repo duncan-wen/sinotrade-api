@@ -12,7 +12,7 @@
 
 ---
 
-## 1. 🎯 Tick（逐筆成交資料）
+## 1. 🎯 Tick(逐筆成交資料)
 
 ### 定義
 每一筆實際發生的成交交易記錄,包含成交價格、數量、時間等詳細資訊。
@@ -23,7 +23,7 @@ Tick(
     code='2330',                          # 股票代碼
     datetime=datetime(2021, 7, 2, 13, 16, 35),  # 成交時間
     close=Decimal('590'),                 # 成交價格
-    volume=1,                            # 成交量（張）
+    volume=1,                            # 成交量(張)
     total_volume=14498,                  # 累計成交量
     amount=Decimal('590000'),            # 成交金額
     total_amount=Decimal('8540101000'),  # 累計成交金額
@@ -39,7 +39,7 @@ Tick(
 
 ### 應用場景
 - **高頻交易**:分析每筆成交的時間和價格模式
-- **成交量分析**:計算 VWAP（成交量加權平均價）
+- **成交量分析**:計算 VWAP(成交量加權平均價)
 - **市場微結構研究**:研究價格發現過程
 - **即時監控**:追蹤特定價格區間的成交狀況
 
@@ -59,7 +59,7 @@ api.quote.set_on_tick_stk_v1_callback(tick_callback)
 
 ---
 
-## 2. 📈 BidAsk（五檔買賣報價）
+## 2. 📈 BidAsk(五檔買賣報價)
 
 ### 定義
 當前市場上的買賣掛單資訊,顯示最佳五檔的買入價、賣出價及對應的掛單數量。
@@ -69,11 +69,11 @@ api.quote.set_on_tick_stk_v1_callback(tick_callback)
 BidAsk(
     code='2330',
     datetime=datetime(2021, 7, 2, 13, 17, 29),
-    # 買方五檔（由高到低）
+    # 買方五檔(由高到低)
     bid_price=[Decimal('589'), Decimal('588'), Decimal('587'), Decimal('586'), Decimal('585')],
     bid_volume=[223, 761, 1003, 809, 1274],  # 對應的買入量
 
-    # 賣方五檔（由低到高）
+    # 賣方五檔(由低到高)
     ask_price=[Decimal('590'), Decimal('591'), Decimal('592'), Decimal('593'), Decimal('594')],
     ask_volume=[304, 232, 183, 242, 131],    # 對應的賣出量
 
@@ -84,9 +84,9 @@ BidAsk(
 ```
 
 ### Bid/Ask 概念說明
-- **Bid（買價）**:買方願意支付的最高價格
-- **Ask（賣價）**:賣方願意接受的最低價格
-- **價差（Spread）**:Ask Price - Bid Price
+- **Bid(買價)**:買方願意支付的最高價格
+- **Ask(賣價)**:賣方願意接受的最低價格
+- **價差(Spread)**:Ask Price - Bid Price
 - **市場深度**:各價位的掛單量多寡
 
 ### 應用場景
@@ -119,7 +119,7 @@ api.quote.set_on_bidask_stk_v1_callback(bidask_callback)
 
 ---
 
-## 3. 📋 Quote（綜合報價）
+## 3. 📋 Quote(綜合報價)
 
 ### 定義
 綜合性的市場行情快照,整合了成交資訊、五檔報價、統計數據等完整市場資訊。
@@ -145,7 +145,7 @@ Quote(
     price_chg=Decimal('-15'),               # 漲跌價差
     pct_chg=Decimal('-3.15'),               # 漲跌幅(%)
 
-    # 五檔資訊（同 BidAsk）
+    # 五檔資訊(同 BidAsk)
     bid_price=[...],                        # 買方五檔價格
     bid_volume=[...],                       # 買方五檔數量
     ask_price=[...],                        # 賣方五檔價格
@@ -252,7 +252,7 @@ def _on_stock_tick(self, exchange: Exchange, tick: TickSTKv1):
 - ✅ 完整的市場資訊概覽
 - ✅ 一般的投資決策分析
 - ✅ 在交易介面顯示報價
-- ✅ 風險監控（暫停交易、借券等）
+- ✅ 風險監控(暫停交易、借券等)
 
 ---
 

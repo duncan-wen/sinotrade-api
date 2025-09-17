@@ -6,13 +6,13 @@
 
 ### 📊 資料內容比較
 
-#### Tick（逐筆成交）
+#### Tick(逐筆成交)
 ```python
 TickSTKv1(
     code='2330',                                    # 股票代碼
     datetime=datetime(2021, 7, 2, 13, 16, 35, 92970),  # 精確到毫秒
     close=Decimal('590'),                           # 成交價
-    volume=1,                                       # 成交量（張）
+    volume=1,                                       # 成交量(張)
     total_volume=14498,                            # 累計成交量
     amount=Decimal('590000'),                      # 成交金額
     open=Decimal('590'),                           # 開盤價
@@ -23,7 +23,7 @@ TickSTKv1(
 )
 ```
 
-#### Quote（綜合報價）
+#### Quote(綜合報價)
 ```python
 QuoteSTKv1(
     code='2330',
@@ -75,7 +75,7 @@ K 線圖 = 時間區間內的成交統計
 ### ❌ 為什麼不用 Quote？
 
 #### 1. **資料冗餘**
-- 包含五檔掛單資訊（K 線不需要）
+- 包含五檔掛單資訊(K 線不需要)
 - 包含借券餘額等額外資訊
 
 #### 2. **更新頻率**
@@ -139,7 +139,7 @@ class KlineAggregator:
             await self.broadcast_kline_update(symbol, kline)
 
     def get_minute_timestamp(self, timestamp: datetime) -> datetime:
-        """將時間戳對齊到分鐘（去除秒和毫秒）"""
+        """將時間戳對齊到分鐘(去除秒和毫秒)"""
         return timestamp.replace(second=0, microsecond=0)
 
     async def broadcast_new_kline(self, symbol: str, kline: dict):
@@ -189,7 +189,7 @@ class RealtimeKlineChart {
     processTick(tickData) {
         /**
          * 處理 Tick 資料,即時更新 K 線
-         * 這是前端實作版本（也可以完全依賴後端聚合）
+         * 這是前端實作版本(也可以完全依賴後端聚合)
          */
         const timestamp = new Date(tickData.timestamp);
         const price = tickData.price;
@@ -293,13 +293,13 @@ class RealtimeKlineChart {
 ## 📊 效能比較
 
 ### Tick 方案
-| 指標           | 表現  | 說明               |
-| -------------- | ----- | ------------------ |
-| **資料準確性** | ⭐⭐⭐⭐⭐ | 100% 真實成交資料  |
-| **時間精確度** | ⭐⭐⭐⭐⭐ | 毫秒級精度         |
-| **更新頻率**   | ⭐⭐⭐⭐⭐ | 每筆成交都更新     |
+| 指標           | 表現  | 說明              |
+| -------------- | ----- | ----------------- |
+| **資料準確性** | ⭐⭐⭐⭐⭐ | 100% 真實成交資料 |
+| **時間精確度** | ⭐⭐⭐⭐⭐ | 毫秒級精度        |
+| **更新頻率**   | ⭐⭐⭐⭐⭐ | 每筆成交都更新    |
 | **資料純度**   | ⭐⭐⭐⭐⭐ | 純成交資料,無雜訊 |
-| **處理複雜度** | ⭐⭐⭐   | 需要聚合處理       |
+| **處理複雜度** | ⭐⭐⭐   | 需要聚合處理      |
 
 ### Quote 方案
 | 指標           | 表現 | 說明               |

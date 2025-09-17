@@ -2,7 +2,7 @@
 
 ## 📊 概述
 
-本系統提供了完整的技術指標計算服務，支援 K 線圖和多種技術指標的高效能計算。採用雙引擎架構，可選擇 pandas 或 Polars + polars_talib 進行計算。
+本系統提供了完整的技術指標計算服務,支援 K 線圖和多種技術指標的高效能計算。採用雙引擎架構,可選擇 pandas 或 Polars + polars_talib 進行計算。
 
 ## 🏗️ 架構設計
 
@@ -236,10 +236,10 @@ GET /api/chart/multi?symbols=2330,2317,2454&interval=1d&limit=60&indicators=ma,r
 
 ### 數據量計算
 
-系統會自動計算技術指標所需的額外數據量：
+系統會自動計算技術指標所需的額外數據量:
 
 ```python
-# 範例：顯示 60 天 + MA60 指標
+# 範例:顯示 60 天 + MA60 指標
 display_days = 60
 ma_periods = [60]
 actual_needed = 60 + 60 - 1 = 119 天數據

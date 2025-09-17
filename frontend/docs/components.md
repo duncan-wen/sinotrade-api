@@ -1,6 +1,6 @@
 # 元件庫指南
 
-本文檔說明 SinoTrade 交易平台的 UI 元件庫，包括所有可重用元件的使用方法與最佳實踐。
+本文檔說明 SinoTrade 交易平台的 UI 元件庫,包括所有可重用元件的使用方法與最佳實踐。
 
 ## 📋 目錄
 
@@ -15,19 +15,19 @@
 
 ### 設計原則
 
-- **一致性**：所有元件遵循統一的設計語言
-- **可重用性**：元件設計為高度可配置和可重用
-- **響應式**：所有元件支持多裝置適配
-- **可訪問性**：符合 WCAG 2.1 AA 標準
-- **效能優化**：使用 React.memo 和適當的優化策略
+- **一致性**:所有元件遵循統一的設計語言
+- **可重用性**:元件設計為高度可配置和可重用
+- **響應式**:所有元件支持多裝置適配
+- **可訪問性**:符合 WCAG 2.1 AA 標準
+- **效能優化**:使用 React.memo 和適當的優化策略
 
 ### 技術棧
 
-- **UI 框架**：React Native Web
-- **樣式系統**：TailwindCSS + NativeWind
-- **圖表庫**：Lightweight Charts
-- **狀態管理**：Zustand
-- **類型檢查**：TypeScript
+- **UI 框架**:React Native Web
+- **樣式系統**:TailwindCSS + NativeWind
+- **圖表庫**:Lightweight Charts
+- **狀態管理**:Zustand
+- **類型檢查**:TypeScript
 
 ## 🔧 基礎元件
 
@@ -59,13 +59,13 @@ import { Button, ButtonText } from '@/components/ui/button'
 
 #### 屬性說明
 
-| 屬性 | 類型 | 預設值 | 描述 |
-|-----|------|--------|------|
-| `variant` | `'solid' \| 'outline' \| 'ghost'` | `'solid'` | 按鈕樣式變體 |
-| `action` | `'primary' \| 'secondary' \| 'positive' \| 'negative'` | `'primary'` | 按鈕動作類型 |
-| `size` | `'sm' \| 'md' \| 'lg'` | `'md'` | 按鈕尺寸 |
-| `disabled` | `boolean` | `false` | 是否禁用 |
-| `onPress` | `() => void` | - | 點擊事件處理 |
+| 屬性       | 類型                                                   | 預設值      | 描述         |
+| ---------- | ------------------------------------------------------ | ----------- | ------------ |
+| `variant`  | `'solid' \| 'outline' \| 'ghost'`                      | `'solid'`   | 按鈕樣式變體 |
+| `action`   | `'primary' \| 'secondary' \| 'positive' \| 'negative'` | `'primary'` | 按鈕動作類型 |
+| `size`     | `'sm' \| 'md' \| 'lg'`                                 | `'md'`      | 按鈕尺寸     |
+| `disabled` | `boolean`                                              | `false`     | 是否禁用     |
+| `onPress`  | `() => void`                                           | -           | 點擊事件處理 |
 
 #### 響應式使用
 
@@ -140,14 +140,14 @@ import { generateMockKLineData } from '@/components/chart/mockData'
 
 #### 屬性說明
 
-| 屬性 | 類型 | 預設值 | 描述 |
-|-----|------|--------|------|
-| `data` | `KLineData[]` | - | K線數據陣列 |
-| `symbol` | `string` | - | 股票代號/名稱 |
-| `height` | `number` | `400` | 圖表高度（像素） |
-| `width` | `number` | - | 圖表寬度，不設定則自適應 |
-| `showVolume` | `boolean` | `true` | 是否顯示成交量 |
-| `className` | `string` | `''` | 額外的 CSS 類別 |
+| 屬性         | 類型          | 預設值 | 描述                    |
+| ------------ | ------------- | ------ | ----------------------- |
+| `data`       | `KLineData[]` | -      | K線數據陣列             |
+| `symbol`     | `string`      | -      | 股票代號/名稱           |
+| `height`     | `number`      | `400`  | 圖表高度(像素)          |
+| `width`      | `number`      | -      | 圖表寬度,不設定則自適應 |
+| `showVolume` | `boolean`     | `true` | 是否顯示成交量          |
+| `className`  | `string`      | `''`   | 額外的 CSS 類別         |
 
 #### 數據格式
 
@@ -158,7 +158,7 @@ interface KLineData {
   high: number;    // 最高價
   low: number;     // 最低價
   close: number;   // 收盤價
-  volume?: number; // 成交量（可選）
+  volume?: number; // 成交量(可選)
 }
 ```
 
@@ -232,15 +232,15 @@ export default function Page() {
 
 ```tsx
 // 自動包含在 MainLayout 中
-// 包含：Logo、導航選單、用戶資訊
+// 包含:Logo、導航選單、用戶資訊
 ```
 
 ### Sidebar 側邊欄
 
 ```tsx
 // 自動包含在 MainLayout 中
-// 包含：主選單、監控清單、設定按鈕
-// 響應式：桌面固定，手機覆蓋
+// 包含:主選單、監控清單、設定按鈕
+// 響應式:桌面固定,手機覆蓋
 ```
 
 ## 📱 響應式使用
@@ -337,41 +337,41 @@ export default function Page() {
 ### 1. 元件組合
 
 ```tsx
-// ✅ 正確：使用組合模式
+// ✅ 正確:使用組合模式
 <Button variant="solid" action="positive">
   <ButtonText>確認</ButtonText>
 </Button>
 
-// ❌ 錯誤：避免過度客製化
+// ❌ 錯誤:避免過度客製化
 <CustomGreenButton>確認</CustomGreenButton>
 ```
 
 ### 2. 響應式設計
 
 ```tsx
-// ✅ 正確：使用響應式類別
+// ✅ 正確:使用響應式類別
 <Text className="text-sm lg:text-base">
 
-// ❌ 錯誤：固定尺寸
+// ❌ 錯誤:固定尺寸
 <Text className="text-base">
 ```
 
 ### 3. 效能優化
 
 ```tsx
-// ✅ 正確：使用 React.memo
+// ✅ 正確:使用 React.memo
 export const TradingChart = React.memo(function TradingChart(props) {
   // ...
 })
 
-// ✅ 正確：條件渲染
+// ✅ 正確:條件渲染
 {showChart && <TradingChart data={data} />}
 ```
 
 ### 4. 可訪問性
 
 ```tsx
-// ✅ 正確：提供可訪問性屬性
+// ✅ 正確:提供可訪問性屬性
 <Button
   accessibilityLabel="買入股票"
   accessibilityRole="button"
@@ -384,7 +384,7 @@ export const TradingChart = React.memo(function TradingChart(props) {
 ### 5. 類型安全
 
 ```tsx
-// ✅ 正確：定義明確的 interface
+// ✅ 正確:定義明確的 interface
 interface MarketCardProps {
   title: string;
   value: string;
@@ -392,7 +392,7 @@ interface MarketCardProps {
   isPositive: boolean;
 }
 
-// ✅ 正確：使用泛型
+// ✅ 正確:使用泛型
 interface ChartProps<T> {
   data: T[];
   renderer: (item: T) => React.ReactNode;
@@ -407,7 +407,7 @@ interface ChartProps<T> {
 # 檢查 TailwindCSS 類別是否正確
 # 使用瀏覽器開發者工具檢查 CSS
 
-# 常見問題：
+# 常見問題:
 # - 類別名稱拼寫錯誤
 # - 響應式斷點不正確
 # - CSS 衝突
@@ -444,5 +444,5 @@ useEffect(() => {
 
 ---
 
-*最後更新：2024年9月*
-*責任工程師：Frontend Team*
+*最後更新:2024年9月*
+*責任工程師:Frontend Team*

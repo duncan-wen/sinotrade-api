@@ -4,7 +4,7 @@
 
 ## 🔄 什麼是綁訂報價模式？
 
-**綁訂報價模式（Quote Binding）** 是 Shioaji 的進階功能,允許你將自定義物件（稱為 context）綁定到行情 callback 函數中,讓 callback 函數可以直接操作這個物件。
+**綁訂報價模式(Quote Binding)** 是 Shioaji 的進階功能,允許你將自定義物件(稱為 context)綁定到行情 callback 函數中,讓 callback 函數可以直接操作這個物件。
 
 ### 核心概念
 ```python
@@ -141,7 +141,7 @@ while True:
 
 ---
 
-### 3. ⚡ 觸價委託單（Stop Order）
+### 3. ⚡ 觸價委託單(Stop Order)
 
 #### 用途
 實現客戶端的觸價委託功能,當價格達到預設條件時自動執行委託單。
@@ -179,10 +179,10 @@ class StopOrderExecutor:
 
             is_triggered = False
 
-            # 向上突破（買進停損）
+            # 向上突破(買進停損)
             if stop_price >= ref_price and current_price >= stop_price:
                 is_triggered = True
-            # 向下突破（賣出停損）
+            # 向下突破(賣出停損)
             elif stop_price < ref_price and current_price <= stop_price:
                 is_triggered = True
 

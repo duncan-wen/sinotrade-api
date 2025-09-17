@@ -1,7 +1,9 @@
 # src/services/shioaji_service.py
 
+import asyncio
 import atexit
 import os
+from collections.abc import Callable
 from typing import Any, cast
 
 import pandas as pd
@@ -19,28 +21,203 @@ load_dotenv()
 class ShioajiService:
     def __init__(self) -> None:
         self.api = sj.Shioaji(simulation=True)  # Always use simulation for now
+        self.quote_callbacks: list[Callable] = []  # WebSocket 回調函數列表
+        self.active_subscriptions: set[str] = set()  # 記錄實際訂閱的股票代號
+        self._pending_tasks: set = set()  # 存儲待處理的任務引用
+        self._is_logged_in = False  # 登入狀態標記
+        self._is_initialized = False  # 初始化狀態標記
+        self._is_destroyed = False  # 銷毀狀態標記
         self._login()
         self._setup_callbacks()
 
     def __del__(self) -> None:
-        """當物件被垃圾回收時自動登出"""
+        """當物件被垃圾回收時進行完整清理"""
+        # 標記物件已被銷毀,防止進一步操作
+        self._is_destroyed = True
+
         try:
-            if hasattr(self, "api") and self.api:
-                logger.info("ShioajiService is being destroyed, logging out...")
-                self.api.logout()
+            logger.info("[DESTROY] ShioajiService 物件被銷毀,執行最終清理...")
+
+            # 如果還沒有被清理過,執行完整清理
+            if hasattr(self, "active_subscriptions") and self.active_subscriptions:
+                logger.warning(f"物件銷毀時仍有活躍訂閱: {self.active_subscriptions}")
+
+            # 調用完整的清理流程
+            if hasattr(self, "cleanup"):
+                try:
+                    self.cleanup()
+                    logger.info("[DESTROY] 物件銷毀時清理完成")
+                except Exception as cleanup_error:
+                    logger.error(f"物件銷毀時清理失敗: {cleanup_error}")
+                    # 如果清理失敗,至少嘗試登出
+                    try:
+                        if hasattr(self, "api") and self.api:
+                            self.api.logout()
+                    except Exception as logout_error:
+                        logger.error(f"最終登出失敗: {logout_error}")
+
         except Exception as e:
-            logger.error(f"Error during logout in __del__: {e}")
+            # __del__ 中的異常不會被正確處理,只記錄錯誤
+            try:
+                logger.error(f"物件銷毀清理異常: {e}")
+            except Exception:
+                # 如果連logger都不可用,靜默失敗
+                pass
+
+    def add_quote_callback(self, callback: Callable) -> None:
+        """添加報價回調函數"""
+        self.quote_callbacks.append(callback)
+        logger.info(f"Added quote callback: {callback.__name__}")
+
+    def initialize(self) -> bool:
+        """初始化 Shioaji 服務"""
+        if self._is_destroyed:
+            logger.error("服務已被銷毀,無法重新初始化")
+            return False
+
+        if self._is_initialized:
+            logger.info("服務已經初始化,跳過重複初始化")
+            return True
+
+        try:
+            logger.info("初始化 Shioaji 服務...")
+
+            # 檢查API物件是否有效
+            if not self.api:
+                logger.error("Shioaji API 物件無效")
+                return False
+
+            # 檢查登入狀態
+            if not self._is_logged_in:
+                logger.warning("Shioaji 未登入,先執行登入...")
+                self._login()
+
+            # 驗證登入狀態
+            if not hasattr(self.api, "login") or not self.api.login:
+                logger.error("Shioaji 登入狀態無效")
+                self._is_logged_in = False
+                return False
+
+            self._is_initialized = True
+            logger.info("[INIT] Shioaji 服務初始化成功")
+            return True
+
+        except Exception as e:
+            logger.error(f"[ERROR] Shioaji 服務初始化失敗: {e}")
+            self._is_initialized = False
+            return False
+
+    def cleanup(self) -> bool:
+        """清理 Shioaji 服務資源"""
+        try:
+            logger.info("清理 Shioaji 服務資源...")
+            logger.info(f"需要取消訂閱的股票數量: {len(self.active_subscriptions)}")
+
+            # 只取消實際訂閱過的股票
+            failed_unsubscribes = []
+            for symbol in list(self.active_subscriptions):
+                try:
+                    success = self.unsubscribe_quote(symbol)
+                    if not success:
+                        failed_unsubscribes.append(symbol)
+                        logger.warning(f"清理時取消訂閱失敗: {symbol}")
+                    else:
+                        logger.debug(f"清理時成功取消訂閱: {symbol}")
+                except Exception as e:
+                    failed_unsubscribes.append(symbol)
+                    logger.error(f"清理時取消訂閱異常: {symbol} - {e}")
+
+            if failed_unsubscribes:
+                logger.warning(f"以下股票取消訂閱失敗: {failed_unsubscribes}")
+            else:
+                logger.info("✅ 所有活躍訂閱已成功取消")
+
+            # 強制清理記錄,即使有些取消失敗
+            remaining_subs = len(self.active_subscriptions)
+            if remaining_subs > 0:
+                logger.warning(f"清理後仍有 {remaining_subs} 個訂閱記錄,強制清理")
+                self.active_subscriptions.clear()
+
+            # 取消所有待處理的任務
+            remaining_tasks = len(self._pending_tasks)
+            if remaining_tasks > 0:
+                logger.warning(f"清理時取消 {remaining_tasks} 個待處理任務")
+                for task in list(self._pending_tasks):
+                    if not task.done():
+                        task.cancel()
+                self._pending_tasks.clear()
+
+            # 登出
+            self.logout()
+            logger.info("✅ Shioaji 服務清理完成")
+            return True
+
+        except Exception as e:
+            logger.error(f"Shioaji 服務清理失敗: {e}")
+            return False
 
     def logout(self) -> None:
-        """手動登出方法"""
+        """手動登出方法,帶有完整的防護機制"""
+        if self._is_destroyed:
+            logger.warning("服務已被銷毀,無法再次登出")
+            return
+
+        if not self._is_logged_in:
+            logger.info("服務未登入,無需登出")
+            return
+
+        if not self.api:
+            logger.warning("API 物件為空,無法登出")
+            self._is_logged_in = False
+            return
+
         try:
-            if self.api:
-                logger.info("Manually logging out from Shioaji...")
-                self.api.logout()
-                self.api = None
+            logger.info("🔐 正在登出 Shioaji...")
+
+            # 檢查是否有活躍訂閱,在登出前取消
+            if self.active_subscriptions:
+                logger.warning(
+                    f"登出時仍有 {len(self.active_subscriptions)} 個活躍訂閱,強制取消"
+                )
+                for symbol in list(self.active_subscriptions):
+                    try:
+                        self.unsubscribe_quote(symbol)
+                    except Exception as unsub_error:
+                        logger.error(f"登出前取消訂閱失敗 {symbol}: {unsub_error}")
+
+            # 執行登出
+            self.api.logout()
+            self._is_logged_in = False
+            self._is_initialized = False
+            logger.info("✅ Shioaji 登出成功")
+
+        except AttributeError as e:
+            # API 物件可能已經被破壞
+            logger.error(f"API 物件狀態異常,強制清理狀態: {e}")
+            self._force_cleanup_state()
+
+        except ConnectionError as e:
+            # 網路連接問題
+            logger.error(f"登出時網路連接錯誤: {e}")
+            self._force_cleanup_state()
+
         except Exception as e:
-            logger.error(f"Error during manual logout: {e}")
+            logger.error(f"❌ 登出失敗: {e}")
+            # 即使登出失敗,也清理狀態標記
+            self._force_cleanup_state()
             raise
+
+    def _force_cleanup_state(self) -> None:
+        """強制清理內部狀態,當API操作失敗時使用"""
+        logger.warning("🔧 強制清理 Shioaji 服務狀態")
+        self._is_logged_in = False
+        self._is_initialized = False
+        self.active_subscriptions.clear()
+        self._pending_tasks.clear()
+        try:
+            self.api = None
+        except Exception:
+            pass  # 忽略清理API物件時的錯誤
 
     def get_historical_klines(
         self,
@@ -443,11 +620,26 @@ class ShioajiService:
             return []
 
     def _login(self) -> None:
-        api_key = os.getenv("SHIOAJI_API_KEY")
-        secret_key = os.getenv("SHIOAJI_SECRET_KEY")
-        if not api_key or not secret_key:
-            raise ValueError("API_KEY and SECRET_KEY must be set in .env file")
-        self.api.login(api_key=api_key, secret_key=secret_key)
+        """登入 Shioaji 並設置狀態標記"""
+        if self._is_logged_in:
+            logger.warning("已經登入,跳過重複登入")
+            return
+
+        try:
+            api_key = os.getenv("SHIOAJI_API_KEY")
+            secret_key = os.getenv("SHIOAJI_SECRET_KEY")
+            if not api_key or not secret_key:
+                raise ValueError("API_KEY and SECRET_KEY must be set in .env file")
+
+            logger.info("正在登入 Shioaji...")
+            self.api.login(api_key=api_key, secret_key=secret_key)
+            self._is_logged_in = True
+            logger.info("✅ Shioaji 登入成功")
+
+        except Exception as e:
+            logger.error(f"❌ Shioaji 登入失敗: {e}")
+            self._is_logged_in = False
+            raise
 
     def _setup_callbacks(self) -> None:
         """設置各種商品類型的 callback"""
@@ -536,37 +728,170 @@ class ShioajiService:
         return None
 
     def subscribe_quote(self, symbol: str, callback: Any = None) -> bool:
-        """Subscribes to a real-time quote for a given symbol."""
-        contract = self._get_contract(symbol)
-        if not contract:
+        """訂閱股票報價,帶有完整的防護機制"""
+        if self._is_destroyed:
+            logger.error(f"服務已被銷毀,無法訂閱 {symbol}")
             return False
 
-        logger.info(f"Subscribing to quote for {symbol} -> {contract.symbol}")
+        if not symbol or not isinstance(symbol, str):
+            logger.error(f"無效的股票代號: {symbol}")
+            return False
+
+        # 檢查是否已經訂閱
+        if symbol in self.active_subscriptions:
+            logger.debug(f"股票 {symbol} 已經訂閱,跳過重複訂閱")
+            return True
+
+        # 檢查服務狀態
+        if not self._is_initialized or not self._is_logged_in:
+            logger.error(f"服務未初始化或未登入,無法訂閱 {symbol}")
+            return False
+
+        if not self.api:
+            logger.error(f"API 物件為空,無法訂閱 {symbol}")
+            return False
+
+        contract = self._get_contract(symbol)
+        if not contract:
+            logger.error(f"找不到合約: {symbol},無法訂閱")
+            return False
 
         try:
+            logger.info(f"📈 訂閱股票: {symbol} -> {contract.symbol}")
+
+            # 檢查quote屬性是否存在
+            if not hasattr(self.api, "quote") or not self.api.quote:
+                logger.error(f"Quote API 不可用,無法訂閱 {symbol}")
+                return False
+
+            # 執行訂閱
             self.api.quote.subscribe(
                 contract,
                 quote_type=sj.constant.QuoteType.Tick,
                 version=sj.constant.QuoteVersion.v1,
             )
+
+            # 記錄成功訂閱的股票
+            self.active_subscriptions.add(symbol)
+            logger.debug(f"✅ 成功訂閱並記錄: {symbol}")
             return True
+
+        except AttributeError as e:
+            # API 物件或方法不存在
+            logger.error(f"API 屬性錯誤,無法訂閱 {symbol}: {e}")
+            return False
+
+        except ConnectionError as e:
+            # 網路連接問題
+            logger.error(f"訂閱時網路連接錯誤 {symbol}: {e}")
+            return False
+
         except Exception as e:
-            logger.error(f"Failed to subscribe to {symbol}: {e}")
+            logger.error(f"❌ 訂閱失敗 {symbol}: {e}")
+            return False
+
+    def unsubscribe_quote(self, symbol: str) -> bool:
+        """取消訂閱股票報價,帶有完整的防護機制"""
+        if self._is_destroyed:
+            logger.warning(f"服務已被銷毀,無法取消訂閱 {symbol}")
+            return False
+
+        if not symbol or not isinstance(symbol, str):
+            logger.error(f"無效的股票代號: {symbol}")
+            return False
+
+        # 檢查是否真的訂閱過
+        if symbol not in self.active_subscriptions:
+            logger.debug(f"股票 {symbol} 未在活躍訂閱列表中,跳過取消訂閱")
+            return True
+
+        # 檢查服務狀態
+        if not self._is_initialized or not self._is_logged_in:
+            logger.warning(f"服務未初始化或未登入,無法取消訂閱 {symbol}")
+            # 即使無法取消,也從記錄中移除
+            self.active_subscriptions.discard(symbol)
+            return False
+
+        if not self.api:
+            logger.error(f"API 物件為空,無法取消訂閱 {symbol}")
+            self.active_subscriptions.discard(symbol)
+            return False
+
+        contract = self._get_contract(symbol)
+        if not contract:
+            logger.warning(f"找不到合約: {symbol},無法取消訂閱")
+            # 即使找不到合約,也從記錄中移除
+            self.active_subscriptions.discard(symbol)
+            return False
+
+        try:
+            logger.info(f"❌ 取消訂閱: {symbol} -> {contract.symbol}")
+
+            # 檢查quote屬性是否存在
+            if not hasattr(self.api, "quote") or not self.api.quote:
+                logger.error(f"Quote API 不可用,無法取消訂閱 {symbol}")
+                self.active_subscriptions.discard(symbol)
+                return False
+
+            # 執行取消訂閱
+            self.api.quote.unsubscribe(
+                contract,
+                quote_type=sj.constant.QuoteType.Tick,
+                version=sj.constant.QuoteVersion.v1,
+            )
+
+            # 成功取消,從記錄中移除
+            self.active_subscriptions.discard(symbol)
+            logger.debug(f"✅ 成功取消訂閱並移除記錄: {symbol}")
+            return True
+
+        except AttributeError as e:
+            # API 物件或方法不存在
+            logger.error(f"API 屬性錯誤,無法取消訂閱 {symbol}: {e}")
+            self.active_subscriptions.discard(symbol)
+            return False
+
+        except ConnectionError as e:
+            # 網路連接問題
+            logger.error(f"取消訂閱時網路連接錯誤 {symbol}: {e}")
+            self.active_subscriptions.discard(symbol)
+            return False
+
+        except Exception as e:
+            logger.error(f"❌ 取消訂閱失敗 {symbol}: {e}")
+            # 即使取消失敗,也從記錄中移除,因為我們已經嘗試過了
+            self.active_subscriptions.discard(symbol)
             return False
 
     def _on_stock_tick(self, exchange: Exchange, tick: TickSTKv1) -> None:
         """處理股票 tick 資料"""
         logger.info(f"Received stock tick: {tick.code} - {tick.close}")
 
+        # 驗證tick數據的有效性
+        if not tick.datetime or not hasattr(tick.datetime, "isoformat"):
+            logger.error(f"無效的tick時間戳: {tick.datetime}")
+            return
+
+        try:
+            # 驗證時間戳是否有效
+            timestamp_iso = tick.datetime.isoformat()
+            if not timestamp_iso:
+                logger.error(f"無法生成有效的ISO時間戳: {tick.datetime}")
+                return
+        except Exception as e:
+            logger.error(f"時間戳處理錯誤: {e}")
+            return
+
+        # TickSTKv1 沒有買賣價信息,設置為當前成交價
         quote = Quote(
             symbol=tick.code,
             timestamp=tick.datetime,
             open=tick.open,
             close=tick.close,
-            bid_price=tick.bid_price[0] if tick.bid_price else 0,
-            ask_price=tick.ask_price[0] if tick.ask_price else 0,
-            bid_volume=tick.bid_volume[0] if tick.bid_volume else 0,
-            ask_volume=tick.ask_volume[0] if tick.ask_volume else 0,
+            bid_price=float(tick.close),  # 使用成交價作為買價
+            ask_price=float(tick.close),  # 使用成交價作為賣價
+            bid_volume=0,  # TickSTKv1 沒有買賣量信息
+            ask_volume=0,  # TickSTKv1 沒有買賣量信息
             volume=getattr(tick, "volume", 0),
             avg_price=float(getattr(tick, "avg_price", 0)),
             underlying_price=None,  # 股票沒有標的價格
@@ -574,25 +899,99 @@ class ShioajiService:
 
         set_cached_quote(quote.symbol, quote)
 
+        # 調用所有註冊的 WebSocket 回調函數
+        for callback in self.quote_callbacks:
+            try:
+                # 在主事件循環中執行 async callback
+                if asyncio.iscoroutinefunction(callback):
+                    try:
+                        loop = asyncio.get_running_loop()
+                        # 在運行中的循環中創建任務並存儲引用
+                        task = asyncio.create_task(callback(quote))
+                        self._pending_tasks.add(task)
+                        # 任務完成後自動清理引用
+                        task.add_done_callback(self._pending_tasks.discard)
+                    except RuntimeError:
+                        # 沒有運行中的循環,嘗試獲取主循環
+                        try:
+                            loop = asyncio.get_event_loop()
+                            if not loop.is_closed():
+                                asyncio.run_coroutine_threadsafe(callback(quote), loop)
+                            else:
+                                logger.warning(
+                                    f"事件循環已關閉,跳過 async 回調: {callback.__name__}"
+                                )
+                        except Exception as e2:
+                            logger.error(f"無法執行 async 回調: {e2}")
+                else:
+                    callback(quote)
+            except Exception as e:
+                logger.error(f"執行報價回調失敗: {e}")
+
     def _on_futures_options_tick(self, exchange: Exchange, tick: TickFOPv1) -> None:
         """處理期貨和選擇權 tick 資料"""
         logger.info(f"Received F/O tick: {tick.code} - {tick.close}")
 
+        # 驗證tick數據的有效性
+        if not tick.datetime or not hasattr(tick.datetime, "isoformat"):
+            logger.error(f"無效的期貨tick時間戳: {tick.datetime}")
+            return
+
+        try:
+            # 驗證時間戳是否有效
+            timestamp_iso = tick.datetime.isoformat()
+            if not timestamp_iso:
+                logger.error(f"無法生成有效的ISO時間戳: {tick.datetime}")
+                return
+        except Exception as e:
+            logger.error(f"期貨tick時間戳處理錯誤: {e}")
+            return
+
+        # TickFOPv1 可能也沒有完整的買賣價信息,設置適當的默認值
         quote = Quote(
             symbol=tick.code,
             timestamp=tick.datetime,
             open=tick.open,
             close=tick.close,
-            bid_price=tick.bid_price[0] if tick.bid_price else 0,
-            ask_price=tick.ask_price[0] if tick.ask_price else 0,
-            bid_volume=tick.bid_volume[0] if tick.bid_volume else 0,
-            ask_volume=tick.ask_volume[0] if tick.ask_volume else 0,
+            bid_price=float(tick.close),  # 使用成交價作為買價
+            ask_price=float(tick.close),  # 使用成交價作為賣價
+            bid_volume=0,  # 設置默認值
+            ask_volume=0,  # 設置默認值
             volume=getattr(tick, "volume", 0),
             avg_price=float(getattr(tick, "avg_price", 0)),
             underlying_price=getattr(tick, "underlying_price", None),
         )
 
         set_cached_quote(quote.symbol, quote)
+
+        # 調用所有註冊的 WebSocket 回調函數
+        for callback in self.quote_callbacks:
+            try:
+                # 在主事件循環中執行 async callback
+                if asyncio.iscoroutinefunction(callback):
+                    try:
+                        loop = asyncio.get_running_loop()
+                        # 在運行中的循環中創建任務並存儲引用
+                        task = asyncio.create_task(callback(quote))
+                        self._pending_tasks.add(task)
+                        # 任務完成後自動清理引用
+                        task.add_done_callback(self._pending_tasks.discard)
+                    except RuntimeError:
+                        # 沒有運行中的循環,嘗試獲取主循環
+                        try:
+                            loop = asyncio.get_event_loop()
+                            if not loop.is_closed():
+                                asyncio.run_coroutine_threadsafe(callback(quote), loop)
+                            else:
+                                logger.warning(
+                                    f"事件循環已關閉,跳過 async 回調: {callback.__name__}"
+                                )
+                        except Exception as e2:
+                            logger.error(f"無法執行 async 回調: {e2}")
+                else:
+                    callback(quote)
+            except Exception as e:
+                logger.error(f"執行報價回調失敗: {e}")
 
     def place_order(self, order: SimulatedOrder) -> SimulatedOrder:
         """Places a simulated order."""

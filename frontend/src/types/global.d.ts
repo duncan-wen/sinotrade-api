@@ -1,13 +1,13 @@
 /**
  * 專為 Gluestack UI v3 className 支援的類型定義
- * 僅擴展需要的組件，避免影響其他系統
+ * 僅擴展需要的組件,避免影響其他系統
  */
 
 // ================================
 // 僅針對 Gluestack UI 組件的 className 支援
 // ================================
 
-// 為 Gluestack UI 組件添加 className 支援，不影響原生 React Native
+// 為 Gluestack UI 組件添加 className 支援,不影響原生 React Native
 declare module '@gluestack-ui/core/alert/creator' {
   export const createAlert: any
   export const PrimitiveIcon: any

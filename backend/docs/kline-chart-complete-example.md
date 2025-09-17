@@ -274,7 +274,7 @@ class RealtimeKlineChart {
     }
 
     updateFromTick(tickData) {
-        // 如果需要從 tick 資料直接更新（前端聚合）
+        // 如果需要從 tick 資料直接更新(前端聚合)
         const timestamp = new Date(tickData.timestamp);
         const price = tickData.price;
 
@@ -416,7 +416,7 @@ ws.send(JSON.stringify({
 ## 🎯 **最佳實踐建議**
 
 ### 1. **效能優化**
-- 限制顯示的 K 線數量（建議 200 根以內）
+- 限制顯示的 K 線數量(建議 200 根以內)
 - 使用 `chart.update('none')` 避免動畫延遲
 - 批量更新資料而不是單筆更新
 

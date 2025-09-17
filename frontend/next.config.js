@@ -1,4 +1,4 @@
-import { withGluestackUI } from '@gluestack/ui-next-adapter';
+import { withGluestackUI } from '@gluestack/ui-next-adapter'
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
@@ -10,13 +10,22 @@ const nextConfig = {
   transpilePackages: [],
   // 允許跨域開發存取
   allowedDevOrigins: ['192.168.0.5', '192.168.0.*', '10.0.0.*', '172.16.0.*'],
+  // 代理 API 請求到後端服務器
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:8000/api/:path*',
+      },
+    ]
+  },
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
       'react-native$': 'react-native-web',
-    };
-    return config;
+    }
+    return config
   },
-};
+}
 
-export default withGluestackUI(nextConfig);
+export default withGluestackUI(nextConfig)

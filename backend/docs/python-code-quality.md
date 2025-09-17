@@ -13,7 +13,7 @@
 
 ### 配置文件
 
-- `pyproject.toml` - 主要配置（Black, Ruff）
+- `pyproject.toml` - 主要配置(Black, Ruff)
 - `mypy.ini` - MyPy 配置
 - `.pre-commit-config.yaml` - Pre-commit hooks 配置
 
@@ -84,7 +84,7 @@ scripts lint pre-commit
 
 忽略的規則:
 
-- **E501** - 行長度（由 Black 處理）
+- **E501** - 行長度(由 Black 處理)
 - **B008** - 參數預設值中的函數呼叫
 - **C901** - 複雜度過高
 
@@ -96,7 +96,7 @@ scripts lint pre-commit
 2. 編寫程式碼
 3. 運行格式化和檢查:`scripts lint format && scripts lint check`
 4. 修復任何問題
-5. 提交程式碼（pre-commit hooks 會自動運行）
+5. 提交程式碼(pre-commit hooks 會自動運行)
 
 ### 程式碼審查前
 
@@ -203,7 +203,7 @@ scripts lint mypy
 # 常見修復方式:
 # 1. 添加類型提示
 # 2. 使用 Union 類型
-# 3. 添加 # type: ignore 註釋（最後手段）
+# 3. 添加 # type: ignore 註釋(最後手段)
 ```
 
 ### Pre-commit 失敗

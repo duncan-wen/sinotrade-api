@@ -9,7 +9,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body suppressHydrationWarning={true}>
         <StyledJsxRegistry>
           <GluestackUIProvider mode="system">{children}</GluestackUIProvider>
         </StyledJsxRegistry>

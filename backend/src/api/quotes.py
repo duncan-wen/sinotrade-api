@@ -67,7 +67,7 @@ def get_historical_klines(
     include_indicators: bool = Query(
         default=False, description="是否包含基本技術指標 (MA, RSI)"
     ),
-    user: APIUser = Depends(get_current_user),
+    # user: APIUser = Depends(get_current_user),
 ) -> dict[str, Any]:
     """
     獲取歷史 K 線資料
@@ -370,8 +370,7 @@ def benchmark_polars_vs_pandas(
     interval: str = Query(default="1d", description="K線間隔"),
     limit: int = Query(default=500, description="測試數據量", ge=100, le=2000),
     indicators: str = Query(
-        default="ma,kd,macd,bbands,rsi",
-        description="技術指標,逗號分隔"
+        default="ma,kd,macd,bbands,rsi", description="技術指標,逗號分隔"
     ),
     ma_periods: str = Query(default="5,10,20,60", description="均線週期"),
 ) -> dict[str, Any]:
@@ -410,7 +409,7 @@ def benchmark_polars_vs_pandas(
         logger.info(f"🔬 開始性能測試 - 數據量: {len(klines)} 根K線")
 
         # === 測試 Polars ===
-        logger.info(f"📊 測試 Polars 計算，配置: {indicators_config}")
+        logger.info(f"📊 測試 Polars 計算,配置: {indicators_config}")
         tracemalloc.start()
         polars_start = time.perf_counter()
 
@@ -424,10 +423,12 @@ def benchmark_polars_vs_pandas(
 
         polars_time = polars_end - polars_start
         polars_peak_memory = polars_memory[1] / (1024 * 1024)  # MB
-        logger.info(f"✅ Polars 完成: {len(polars_result)} 結果，耗時 {polars_time*1000:.1f}ms")
+        logger.info(
+            f"✅ Polars 完成: {len(polars_result)} 結果,耗時 {polars_time * 1000:.1f}ms"
+        )
 
         # === 測試 Pandas ===
-        logger.info(f"📊 測試 Pandas 計算，配置: {indicators_config}")
+        logger.info(f"📊 測試 Pandas 計算,配置: {indicators_config}")
         tracemalloc.start()
         pandas_start = time.perf_counter()
 
@@ -441,11 +442,15 @@ def benchmark_polars_vs_pandas(
 
         pandas_time = pandas_end - pandas_start
         pandas_peak_memory = pandas_memory[1] / (1024 * 1024)  # MB
-        logger.info(f"✅ Pandas 完成: {len(pandas_result)} 結果，耗時 {pandas_time*1000:.1f}ms")
+        logger.info(
+            f"✅ Pandas 完成: {len(pandas_result)} 結果,耗時 {pandas_time * 1000:.1f}ms"
+        )
 
         # 計算加速比
         speedup = pandas_time / polars_time if polars_time > 0 else 0
-        memory_efficiency = pandas_peak_memory / polars_peak_memory if polars_peak_memory > 0 else 0
+        memory_efficiency = (
+            pandas_peak_memory / polars_peak_memory if polars_peak_memory > 0 else 0
+        )
 
         # 驗證結果一致性 (比較最後幾筆數據)
         consistency_check = "未檢查"
@@ -454,15 +459,21 @@ def benchmark_polars_vs_pandas(
             last_polars = polars_result[-1]
             last_pandas = pandas_result[-1]
 
-            if hasattr(last_polars, 'ma') and hasattr(last_pandas, 'ma'):
-                polars_ma5 = getattr(last_polars.ma, 'ma5', None) if last_polars.ma else None
-                pandas_ma5 = getattr(last_pandas.ma, 'ma5', None) if last_pandas.ma else None
+            if hasattr(last_polars, "ma") and hasattr(last_pandas, "ma"):
+                polars_ma5 = (
+                    getattr(last_polars.ma, "ma5", None) if last_polars.ma else None
+                )
+                pandas_ma5 = (
+                    getattr(last_pandas.ma, "ma5", None) if last_pandas.ma else None
+                )
 
                 if polars_ma5 is not None and pandas_ma5 is not None:
                     diff_percent = abs(polars_ma5 - pandas_ma5) / pandas_ma5 * 100
                     consistency_check = f"MA5差異: {diff_percent:.4f}%"
                 else:
-                    consistency_check = f"MA數據檢查: Polars MA5={polars_ma5}, Pandas MA5={pandas_ma5}"
+                    consistency_check = (
+                        f"MA數據檢查: Polars MA5={polars_ma5}, Pandas MA5={pandas_ma5}"
+                    )
             else:
                 consistency_check = f"MA檢查: Polars有MA={hasattr(last_polars, 'ma')}, Pandas有MA={hasattr(last_pandas, 'ma')}"
 
@@ -472,31 +483,35 @@ def benchmark_polars_vs_pandas(
                 "data_points": len(klines),
                 "interval": interval,
                 "indicators": indicators_list,
-                "ma_periods": ma_periods_list
+                "ma_periods": ma_periods_list,
             },
             "performance": {
                 "polars": {
                     "execution_time_ms": round(polars_time * 1000, 2),
                     "peak_memory_mb": round(polars_peak_memory, 2),
-                    "result_count": len(polars_result)
+                    "result_count": len(polars_result),
                 },
                 "pandas": {
                     "execution_time_ms": round(pandas_time * 1000, 2),
                     "peak_memory_mb": round(pandas_peak_memory, 2),
-                    "result_count": len(pandas_result)
+                    "result_count": len(pandas_result),
                 },
                 "comparison": {
                     "speedup_ratio": round(speedup, 2),
                     "memory_efficiency_ratio": round(memory_efficiency, 2),
                     "polars_faster": polars_time < pandas_time,
-                    "polars_memory_efficient": polars_peak_memory < pandas_peak_memory
-                }
+                    "polars_memory_efficient": polars_peak_memory < pandas_peak_memory,
+                },
             },
             "data_consistency": consistency_check,
-            "recommendation": _get_performance_recommendation(speedup, memory_efficiency)
+            "recommendation": _get_performance_recommendation(
+                speedup, memory_efficiency
+            ),
         }
 
-        logger.info(f"🎯 測試完成 - Polars: {polars_time*1000:.1f}ms, Pandas: {pandas_time*1000:.1f}ms, 加速比: {speedup:.2f}x")
+        logger.info(
+            f"🎯 測試完成 - Polars: {polars_time * 1000:.1f}ms, Pandas: {pandas_time * 1000:.1f}ms, 加速比: {speedup:.2f}x"
+        )
 
         return benchmark_result
 

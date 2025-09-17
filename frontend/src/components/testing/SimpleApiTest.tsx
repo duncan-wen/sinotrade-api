@@ -2,9 +2,9 @@
  * 簡化版 API 測試組件
  * 使用標準 HTML 元素避免 Gluestack UI v3 兼容性問題
  */
-'use client';
+'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'
 import {
   useStockQuote,
   useMultipleQuotes,
@@ -16,91 +16,95 @@ import {
   useMarketStatus,
   usePlaceOrder,
   useCancelOrder,
-} from '@/hooks/useQueries';
-import { useWebSocket } from '@/services/websocket';
-import type { OrderRequest } from '@/types/api';
+} from '@/hooks/useQueries'
+import { useWebSocket } from '@/services/websocket'
+import type { OrderRequest } from '@/types/api'
 
 const SimpleApiTest: React.FC = () => {
-  const [testSymbol, setTestSymbol] = useState('2330');
-  const [watchlistSymbols] = useState(['2330', '2317', '2454']);
+  const [testSymbol, setTestSymbol] = useState('2330')
+  const [watchlistSymbols] = useState(['2330', '2317', '2454'])
   const [orderForm, setOrderForm] = useState<Partial<OrderRequest>>({
     symbol: '2330',
     action: 'Buy',
     order_type: 'Limit',
     quantity: 1000,
     price: 500,
-  });
+  })
 
-  const webSocket = useWebSocket();
+  const webSocket = useWebSocket()
 
   // API 測試 Queries
-  const stockQuote = useStockQuote(testSymbol);
-  const multipleQuotes = useMultipleQuotes(watchlistSymbols);
+  const stockQuote = useStockQuote(testSymbol)
+  const multipleQuotes = useMultipleQuotes(watchlistSymbols)
   const klineData = useKlineData({
     symbol: testSymbol,
     interval: '1d',
-    limit: 30
-  });
-  const orders = useOrders();
-  const positions = usePositions();
-  const accountInfo = useAccountInfo();
-  const systemHealth = useSystemHealth();
-  const marketStatus = useMarketStatus();
+    limit: 30,
+  })
+  const orders = useOrders()
+  const positions = usePositions()
+  const accountInfo = useAccountInfo()
+  const systemHealth = useSystemHealth()
+  const marketStatus = useMarketStatus()
 
   // Mutations
   const placeOrderMutation = usePlaceOrder({
     onSuccess: (data) => {
-      alert(`下單成功！訂單ID: ${data.id}`);
+      alert(`下單成功！訂單ID: ${data.id}`)
     },
     onError: (error) => {
-      alert(`下單失敗: ${error.message}`);
+      alert(`下單失敗: ${error.message}`)
     },
-  });
+  })
 
   const cancelOrderMutation = useCancelOrder({
     onSuccess: () => {
-      alert('取消訂單成功！');
+      alert('取消訂單成功！')
     },
     onError: (error) => {
-      alert(`取消訂單失敗: ${error.message}`);
+      alert(`取消訂單失敗: ${error.message}`)
     },
-  });
+  })
 
   // WebSocket 設置
   useEffect(() => {
     if (!webSocket.isConnected) {
-      webSocket.connect();
+      webSocket.connect()
     }
 
-    const unsubscribe = webSocket.subscribe('test-dashboard', {
-      onConnect: () => console.log('WebSocket 連接成功'),
-      onDisconnect: (reason) => console.log('WebSocket 斷開:', reason),
-      onQuote: (quote) => console.log('收到報價更新:', quote),
-      onOrderUpdate: (update) => console.log('收到訂單更新:', update),
-      onError: (error) => console.error('WebSocket 錯誤:', error),
-    }, {
-      symbols: [testSymbol, ...watchlistSymbols],
-      channels: ['quotes', 'orders', 'positions'],
-    });
+    const unsubscribe = webSocket.subscribe(
+      'test-dashboard',
+      {
+        onConnect: () => console.log('WebSocket 連接成功'),
+        onDisconnect: (reason) => console.log('WebSocket 斷開:', reason),
+        onQuote: (quote) => console.log('收到報價更新:', quote),
+        onOrderUpdate: (update) => console.log('收到訂單更新:', update),
+        onError: (error) => console.error('WebSocket 錯誤:', error),
+      },
+      {
+        symbols: [testSymbol, ...watchlistSymbols],
+        channels: ['quotes', 'orders', 'positions'],
+      }
+    )
 
     return () => {
-      unsubscribe();
-    };
-  }, [testSymbol, watchlistSymbols]);
+      unsubscribe()
+    }
+  }, [testSymbol, watchlistSymbols])
 
   // 事件處理
   const handlePlaceOrder = () => {
     if (!orderForm.symbol || !orderForm.quantity || !orderForm.price) {
-      alert('請填寫完整的訂單資訊');
-      return;
+      alert('請填寫完整的訂單資訊')
+      return
     }
 
-    placeOrderMutation.mutate(orderForm as OrderRequest);
-  };
+    placeOrderMutation.mutate(orderForm as OrderRequest)
+  }
 
   const handleCancelOrder = (orderId: string) => {
-    cancelOrderMutation.mutate(orderId);
-  };
+    cancelOrderMutation.mutate(orderId)
+  }
 
   return (
     <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
@@ -110,19 +114,31 @@ const SimpleApiTest: React.FC = () => {
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">📊 系統狀態</h2>
         <div className="flex flex-wrap gap-3 mb-4">
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            systemHealth.data?.status === 'healthy' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-          }`}>
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-medium ${
+              systemHealth.data?.status === 'healthy'
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+            }`}
+          >
             系統: {systemHealth.data?.status || '檢查中...'}
           </span>
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            marketStatus.data?.is_open ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-          }`}>
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-medium ${
+              marketStatus.data?.is_open
+                ? 'bg-green-100 text-green-800'
+                : 'bg-gray-100 text-gray-800'
+            }`}
+          >
             市場: {marketStatus.data?.is_open ? '開市' : '休市'}
           </span>
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            webSocket.isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-          }`}>
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-medium ${
+              webSocket.isConnected
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+            }`}
+          >
             WebSocket: {webSocket.isConnected ? '已連接' : '未連接'}
           </span>
         </div>
@@ -130,13 +146,15 @@ const SimpleApiTest: React.FC = () => {
         {systemHealth.data && (
           <div className="text-sm text-gray-600 space-y-1">
             <p>Shioaji: {systemHealth.data.services?.shioaji || '未知'}</p>
-            <p>運行時間: {Math.floor((systemHealth.data.uptime || 0) / 60)} 分鐘</p>
+            <p>
+              運行時間: {Math.floor((systemHealth.data.uptime || 0) / 60)} 分鐘
+            </p>
           </div>
         )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 左側：市場數據測試 */}
+        {/* 左側:市場數據測試 */}
         <div className="space-y-6">
           {/* 單一股票報價測試 */}
           <div className="bg-white rounded-lg shadow p-6">
@@ -171,13 +189,22 @@ const SimpleApiTest: React.FC = () => {
 
             {stockQuote.data && (
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-bold text-lg">{stockQuote.data.name} ({stockQuote.data.symbol})</h4>
-                <p className="text-2xl font-bold">${stockQuote.data.price.toFixed(2)}</p>
-                <p className={`font-medium ${
-                  stockQuote.data.change >= 0 ? 'text-red-600' : 'text-green-600'
-                }`}>
-                  {stockQuote.data.change >= 0 ? '+' : ''}{stockQuote.data.change.toFixed(2)}
-                  ({stockQuote.data.change_percent.toFixed(2)}%)
+                <h4 className="font-bold text-lg">
+                  {stockQuote.data.name} ({stockQuote.data.symbol})
+                </h4>
+                <p className="text-2xl font-bold">
+                  ${stockQuote.data.price.toFixed(2)}
+                </p>
+                <p
+                  className={`font-medium ${
+                    stockQuote.data.change >= 0
+                      ? 'text-red-600'
+                      : 'text-green-600'
+                  }`}
+                >
+                  {stockQuote.data.change >= 0 ? '+' : ''}
+                  {stockQuote.data.change.toFixed(2)}(
+                  {stockQuote.data.change_percent.toFixed(2)}%)
                 </p>
                 <p className="text-sm text-gray-500">
                   成交量: {stockQuote.data.volume.toLocaleString()}
@@ -205,10 +232,15 @@ const SimpleApiTest: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <p className="font-bold">${quote.price.toFixed(2)}</p>
-                        <p className={`text-sm ${
-                          quote.change >= 0 ? 'text-red-600' : 'text-green-600'
-                        }`}>
-                          {quote.change >= 0 ? '+' : ''}{quote.change.toFixed(2)}
+                        <p
+                          className={`text-sm ${
+                            quote.change >= 0
+                              ? 'text-red-600'
+                              : 'text-green-600'
+                          }`}
+                        >
+                          {quote.change >= 0 ? '+' : ''}
+                          {quote.change.toFixed(2)}
                         </p>
                       </div>
                     </div>
@@ -247,7 +279,7 @@ const SimpleApiTest: React.FC = () => {
           </div>
         </div>
 
-        {/* 右側：交易功能測試 */}
+        {/* 右側:交易功能測試 */}
         <div className="space-y-6">
           {/* 下單測試 */}
           <div className="bg-white rounded-lg shadow p-6">
@@ -256,14 +288,16 @@ const SimpleApiTest: React.FC = () => {
               <input
                 type="text"
                 value={orderForm.symbol}
-                onChange={(e) => setOrderForm({...orderForm, symbol: e.target.value})}
+                onChange={(e) =>
+                  setOrderForm({ ...orderForm, symbol: e.target.value })
+                }
                 placeholder="股票代號"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
 
               <div className="flex gap-2">
                 <button
-                  onClick={() => setOrderForm({...orderForm, action: 'Buy'})}
+                  onClick={() => setOrderForm({ ...orderForm, action: 'Buy' })}
                   className={`flex-1 px-4 py-2 rounded-md font-medium ${
                     orderForm.action === 'Buy'
                       ? 'bg-red-500 text-white'
@@ -273,7 +307,7 @@ const SimpleApiTest: React.FC = () => {
                   買進
                 </button>
                 <button
-                  onClick={() => setOrderForm({...orderForm, action: 'Sell'})}
+                  onClick={() => setOrderForm({ ...orderForm, action: 'Sell' })}
                   className={`flex-1 px-4 py-2 rounded-md font-medium ${
                     orderForm.action === 'Sell'
                       ? 'bg-green-500 text-white'
@@ -287,7 +321,12 @@ const SimpleApiTest: React.FC = () => {
               <input
                 type="number"
                 value={orderForm.quantity?.toString()}
-                onChange={(e) => setOrderForm({...orderForm, quantity: parseInt(e.target.value) || 0})}
+                onChange={(e) =>
+                  setOrderForm({
+                    ...orderForm,
+                    quantity: parseInt(e.target.value) || 0,
+                  })
+                }
                 placeholder="數量"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -296,7 +335,12 @@ const SimpleApiTest: React.FC = () => {
                 type="number"
                 step="0.01"
                 value={orderForm.price?.toString()}
-                onChange={(e) => setOrderForm({...orderForm, price: parseFloat(e.target.value) || 0})}
+                onChange={(e) =>
+                  setOrderForm({
+                    ...orderForm,
+                    price: parseFloat(e.target.value) || 0,
+                  })
+                }
                 placeholder="價格"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -325,16 +369,22 @@ const SimpleApiTest: React.FC = () => {
                   <div key={order.id} className="bg-gray-50 p-3 rounded-lg">
                     <div className="flex justify-between items-center mb-2">
                       <span className="font-medium">{order.symbol}</span>
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        order.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                        order.status === 'Filled' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 rounded text-xs ${
+                          order.status === 'Pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : order.status === 'Filled'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
                         {order.status}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
-                      <span>{order.action} {order.quantity}</span>
+                      <span>
+                        {order.action} {order.quantity}
+                      </span>
                       <span>@{order.price?.toFixed(2)}</span>
                       {order.status === 'Pending' && (
                         <button
@@ -362,17 +412,27 @@ const SimpleApiTest: React.FC = () => {
             {positions.data && (
               <div className="space-y-3">
                 {positions.data.slice(0, 5).map((position) => (
-                  <div key={position.symbol} className="bg-gray-50 p-3 rounded-lg">
+                  <div
+                    key={position.symbol}
+                    className="bg-gray-50 p-3 rounded-lg"
+                  >
                     <div className="flex justify-between items-center mb-1">
                       <span className="font-medium">{position.symbol}</span>
-                      <span className="font-bold">${position.current_price.toFixed(2)}</span>
+                      <span className="font-bold">
+                        ${position.current_price.toFixed(2)}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span>持股: {position.quantity}</span>
-                      <span className={`font-medium ${
-                        position.unrealized_pnl >= 0 ? 'text-red-600' : 'text-green-600'
-                      }`}>
-                        {position.unrealized_pnl >= 0 ? '+' : ''}${position.unrealized_pnl.toFixed(2)}
+                      <span
+                        className={`font-medium ${
+                          position.unrealized_pnl >= 0
+                            ? 'text-red-600'
+                            : 'text-green-600'
+                        }`}
+                      >
+                        {position.unrealized_pnl >= 0 ? '+' : ''}$
+                        {position.unrealized_pnl.toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -393,22 +453,33 @@ const SimpleApiTest: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>帳戶餘額:</span>
-                  <span className="font-bold">${accountInfo.data.balance.toLocaleString()}</span>
+                  <span className="font-bold">
+                    ${accountInfo.data.balance.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>可用餘額:</span>
-                  <span className="font-bold">${accountInfo.data.available_balance.toLocaleString()}</span>
+                  <span className="font-bold">
+                    ${accountInfo.data.available_balance.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>總市值:</span>
-                  <span className="font-bold">${accountInfo.data.total_value.toLocaleString()}</span>
+                  <span className="font-bold">
+                    ${accountInfo.data.total_value.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>未實現損益:</span>
-                  <span className={`font-bold ${
-                    accountInfo.data.unrealized_pnl >= 0 ? 'text-red-600' : 'text-green-600'
-                  }`}>
-                    {accountInfo.data.unrealized_pnl >= 0 ? '+' : ''}${accountInfo.data.unrealized_pnl.toLocaleString()}
+                  <span
+                    className={`font-bold ${
+                      accountInfo.data.unrealized_pnl >= 0
+                        ? 'text-red-600'
+                        : 'text-green-600'
+                    }`}
+                  >
+                    {accountInfo.data.unrealized_pnl >= 0 ? '+' : ''}$
+                    {accountInfo.data.unrealized_pnl.toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -421,10 +492,18 @@ const SimpleApiTest: React.FC = () => {
       <div className="bg-white rounded-lg shadow p-6 mt-6">
         <h3 className="text-lg font-semibold mb-4">🔌 WebSocket 統計</h3>
         <div className="flex flex-wrap gap-4 mb-4">
-          <span className="text-sm">連接狀態: {webSocket.stats.connected ? '已連接' : '未連接'}</span>
-          <span className="text-sm">連接ID: {webSocket.stats.connectionId || 'N/A'}</span>
-          <span className="text-sm">訂閱數量: {webSocket.stats.subscriptions}</span>
-          <span className="text-sm">重連次數: {webSocket.stats.reconnectAttempts}</span>
+          <span className="text-sm">
+            連接狀態: {webSocket.stats.connected ? '已連接' : '未連接'}
+          </span>
+          <span className="text-sm">
+            連接ID: {webSocket.stats.connectionId || 'N/A'}
+          </span>
+          <span className="text-sm">
+            訂閱數量: {webSocket.stats.subscriptions}
+          </span>
+          <span className="text-sm">
+            重連次數: {webSocket.stats.reconnectAttempts}
+          </span>
         </div>
         <div className="flex gap-2">
           <button
@@ -451,7 +530,7 @@ const SimpleApiTest: React.FC = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default SimpleApiTest;
+export default SimpleApiTest

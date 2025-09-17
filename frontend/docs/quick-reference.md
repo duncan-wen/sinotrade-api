@@ -1,6 +1,6 @@
 # 快速參考指南
 
-本文檔提供 SinoTrade 交易平台前端開發的快速參考，包括常用程式碼片段、樣式類別和最佳實踐。
+本文檔提供 SinoTrade 交易平台前端開發的快速參考,包括常用程式碼片段、樣式類別和最佳實踐。
 
 ## 📋 目錄
 
@@ -14,14 +14,14 @@
 
 ### 斷點系統
 
-| 斷點 | 最小寬度 | 設備類型 |
-|-----|---------|---------|
-| `(default)` | 0px | 手機 |
-| `sm:` | 640px | 小平板 |
-| `md:` | 768px | 平板 |
-| `lg:` | 1024px | 小桌面 |
-| `xl:` | 1280px | 桌面 |
-| `2xl:` | 1536px | 大桌面 |
+| 斷點        | 最小寬度 | 設備類型 |
+| ----------- | -------- | -------- |
+| `(default)` | 0px      | 手機     |
+| `sm:`       | 640px    | 小平板   |
+| `md:`       | 768px    | 平板     |
+| `lg:`       | 1024px   | 小桌面   |
+| `xl:`       | 1280px   | 桌面     |
+| `2xl:`      | 1536px   | 大桌面   |
 
 ### 常用響應式組合
 
@@ -215,7 +215,7 @@ export class ErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return (
         <View className="p-4 text-center">
-          <Text className="text-red-600">發生錯誤，請重新整理頁面</Text>
+          <Text className="text-red-600">發生錯誤,請重新整理頁面</Text>
         </View>
       )
     }
@@ -376,7 +376,7 @@ console.log('Is mobile:', window.innerWidth < 768)
 # Chrome: React Developer Tools
 # Firefox: React Developer Tools
 
-# 使用方式：
+# 使用方式:
 # 1. 開啟開發者工具
 # 2. 切換到 React 或 Profiler 標籤
 # 3. 檢查元件樹狀結構和 props
@@ -421,5 +421,5 @@ useEffect             # useEffect Hook 片段
 
 ---
 
-*最後更新：2024年9月*
+*最後更新:2024年9月*
 *快速參考 - 保持書籤以便快速查閱*

@@ -3,7 +3,7 @@
 **Feature Branch**: `001-k`
 **Created**: 2025-09-12
 **Status**: Draft
-**Input**: User description: "這是一個投資交易的網站-智能交易,提供股票 期貨 選擇權報價,有K線圖 提供均線、指標 週期選擇，有五檔報價，提供虛擬帳號模擬交易,策略分析，回測等功能"
+**Input**: User description: "這是一個投資交易的網站-智能交易,提供股票 期貨 選擇權報價,有K線圖 提供均線、指標 週期選擇,有五檔報價,提供虛擬帳號模擬交易,策略分析,回測等功能"
 
 ## Execution Flow (main)
 ```

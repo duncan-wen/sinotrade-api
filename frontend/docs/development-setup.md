@@ -1,6 +1,6 @@
 # 開發環境設置
 
-本文檔說明如何設置 SinoTrade 交易平台前端的開發環境，包括必要的工具安裝、環境配置和開發工作流程。
+本文檔說明如何設置 SinoTrade 交易平台前端的開發環境,包括必要的工具安裝、環境配置和開發工作流程。
 
 ## 📋 目錄
 
@@ -15,18 +15,18 @@
 
 ### 最低需求
 
-- **作業系統**：Windows 10/11, macOS 10.15+, Ubuntu 18.04+
-- **Node.js**：v18.17.0 或更新版本
-- **記憶體**：8GB RAM
-- **儲存空間**：5GB 可用空間
-- **瀏覽器**：Chrome 90+, Firefox 88+, Safari 14+
+- **作業系統**:Windows 10/11, macOS 10.15+, Ubuntu 18.04+
+- **Node.js**:v18.17.0 或更新版本
+- **記憶體**:8GB RAM
+- **儲存空間**:5GB 可用空間
+- **瀏覽器**:Chrome 90+, Firefox 88+, Safari 14+
 
 ### 推薦配置
 
-- **Node.js**：v20.x LTS
-- **記憶體**：16GB RAM
-- **儲存空間**：SSD 硬碟
-- **螢幕解析度**：1920x1080 或更高
+- **Node.js**:v20.x LTS
+- **記憶體**:16GB RAM
+- **儲存空間**:SSD 硬碟
+- **螢幕解析度**:1920x1080 或更高
 
 ## 🛠️ 環境安裝
 
@@ -39,7 +39,7 @@
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
 
 # 安裝 nvm (Windows - 使用 nvm-windows)
-# 下載並安裝：https://github.com/coreybutler/nvm-windows
+# 下載並安裝:https://github.com/coreybutler/nvm-windows
 
 # 安裝 Node.js LTS
 nvm install --lts
@@ -91,9 +91,9 @@ code --install-extension ms-playwright.playwright
 
 #### 其他編輯器
 
-- **WebStorm**：完整的 IDE 支援
-- **Sublime Text**：輕量級編輯器
-- **Vim/Neovim**：終端編輯器
+- **WebStorm**:完整的 IDE 支援
+- **Sublime Text**:輕量級編輯器
+- **Vim/Neovim**:終端編輯器
 
 ## 📁 專案設置
 
@@ -290,7 +290,7 @@ git push origin feature/new-feature
 # 檢查 Node.js 版本
 node --version
 
-# 如果版本過舊，升級到 LTS
+# 如果版本過舊,升級到 LTS
 nvm install --lts
 nvm use --lts
 ```
@@ -341,7 +341,7 @@ pnpm dev -- --port 3001
 console.log('Debug info:', { data, props })
 
 // 使用 React DevTools
-// Chrome 擴充套件：React Developer Tools
+// Chrome 擴充套件:React Developer Tools
 ```
 
 ### 4. 效能分析
@@ -440,5 +440,5 @@ pnpm audit
 
 ---
 
-*最後更新：2024年9月*
-*責任工程師：Frontend Team*
+*最後更新:2024年9月*
+*責任工程師:Frontend Team*

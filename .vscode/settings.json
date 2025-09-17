@@ -19,7 +19,7 @@
   "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
   "python.terminal.activateEnvironment": true,
 
-  // IntelliCode 設定（已禁用避免錯誤）
+  // IntelliCode 設定(已禁用避免錯誤)
   "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
   "vsintellicode.python.completionsEnabled": false,
 
@@ -48,6 +48,16 @@
   "[javascriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
+  },
+
+  // Python 格式化設定 - 使用 Ruff
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    }
   },
 
   // TypeScript 錯誤抑制

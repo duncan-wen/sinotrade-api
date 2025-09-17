@@ -28,11 +28,11 @@
 
 ### 生態系統優勢
 
-✅ **統一的API設計** - 一致的開發體驗  
-✅ **TypeScript 原生支援** - 完整的類型安全  
-✅ **性能優化** - 專為現代 React 設計  
-✅ **活躍維護** - 持續更新和社群支援  
-✅ **模組化設計** - 按需使用，不增加無用負擔  
+✅ **統一的API設計** - 一致的開發體驗
+✅ **TypeScript 原生支援** - 完整的類型安全
+✅ **性能優化** - 專為現代 React 設計
+✅ **活躍維護** - 持續更新和社群支援
+✅ **模組化設計** - 按需使用,不增加無用負擔
 
 ---
 
@@ -69,7 +69,7 @@
 | **離線支援**   | ✅ 優秀            | ✅ 優秀        |
 
 **金融平台建議**: ✅ **推薦 TanStack Query**
-- 大部分金融 API 是 REST，不需要 GraphQL 的複雜性
+- 大部分金融 API 是 REST,不需要 GraphQL 的複雜性
 - 更小的包大小對載入速度有利
 - 配合 Socket.io 可以實現即時訂閱
 
@@ -271,7 +271,7 @@ const OrderBookPage = () => {
   "推薦指數": "⭐⭐⭐⭐⭐",
   "技術棧": {
     "@tanstack/react-query": "^5.56.0",
-    "@tanstack/react-table": "^8.20.0", 
+    "@tanstack/react-table": "^8.20.0",
     "@tanstack/react-virtual": "^3.10.0"
   },
   "適用場景": [
@@ -299,7 +299,7 @@ const OrderBookPage = () => {
 #### 1️⃣ 階段性導入
 ```
 階段 1: TanStack Query (數據管理基礎)
-階段 2: TanStack Virtual (效能優化)  
+階段 2: TanStack Virtual (效能優化)
 階段 3: TanStack Table (複雜表格)
 ```
 
@@ -316,7 +316,7 @@ const OrderBookPage = () => {
 // 監控關鍵指標
 const performanceMetrics = {
   queryResponseTime: '< 100ms',
-  tableRenderTime: '< 50ms', 
+  tableRenderTime: '< 50ms',
   virtualScrollFPS: '> 55fps',
   memoryUsage: '< 50MB',
   bundleSize: '< 500KB'
@@ -332,7 +332,7 @@ const performanceMetrics = {
 1. **統一性** - 一致的 API 設計和開發體驗
 2. **性能** - 針對現代 React 優化的高效能解決方案
 3. **TypeScript** - 完整的類型安全和開發時檢查
-4. **模組化** - 按需使用，避免不必要的複雜性
+4. **模組化** - 按需使用,避免不必要的複雜性
 5. **社群** - 活躍的維護和持續的創新
 
 ### 🚀 金融平台特殊優勢
@@ -342,7 +342,7 @@ const performanceMetrics = {
 3. **複雜性管理** - 模組化設計降低複雜金融邏輯的開發難度
 4. **維護性** - 統一的生態降低長期維護成本
 
-透過 TanStack 生態系統，您可以建構出高效能、可維護的專業級金融交易平台！
+透過 TanStack 生態系統,您可以建構出高效能、可維護的專業級金融交易平台！
 
 ### 🔗 相關資源
 - [TanStack Query 文檔](https://tanstack.com/query/latest)

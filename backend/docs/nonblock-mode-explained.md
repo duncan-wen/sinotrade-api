@@ -6,12 +6,12 @@
 
 ### 什麼是阻塞？什麼是非阻塞？
 
-#### 📞 阻塞模式（Blocking）- 像打電話
+#### 📞 阻塞模式(Blocking)- 像打電話
 - **行為**:程式必須「等待」操作完成才能繼續
 - **比喻**:打電話訂餐,必須在線上等店員確認完才能掛電話
 - **程式表現**:`api.place_order()` 會停住直到收到交易所回應
 
-#### 📱 非阻塞模式（Non-blocking）- 像發簡訊
+#### 📱 非阻塞模式(Non-blocking)- 像發簡訊
 - **行為**:程式「立刻」繼續執行,不等結果
 - **比喻**:用 APP 訂餐,按下訂購後立刻可以做其他事
 - **程式表現**:`api.place_order(timeout=0)` 立刻返回,真正結果稍後通知
@@ -33,7 +33,7 @@
 
 ### 基本使用
 
-#### 阻塞模式（預設）
+#### 阻塞模式(預設)
 ```python
 import shioaji as sj
 
@@ -48,7 +48,7 @@ order = api.Order(
     account=api.futopt_account
 )
 
-# 阻塞模式下單（預設）
+# 阻塞模式下單(預設)
 print("開始下單...")
 trade = api.place_order(contract, order)  # 程式會在這裡等待
 print(f"下單完成！訂單號:{trade.order.id}")

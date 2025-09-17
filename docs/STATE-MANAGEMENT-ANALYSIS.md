@@ -56,14 +56,14 @@
 
 ### ⚖️ **職責分工表**
 
-| 狀態類型     | TanStack Query | Zustand    | React State | 選擇理由                         |
-| ------------ | -------------- | ---------- | ----------- | -------------------------------- |
-| **API 數據** | ✅ 專責         | ❌ 避免     | ❌ 避免      | 快取、同步、錯誤處理             |
-| **即時數據** | ✅ 配合 Socket  | ✅ 連接狀態 | ❌ 避免      | Query 管理數據，Zustand 管理連接 |
-| **用戶偏好** | ❌ 不適用       | ✅ 專責     | ❌ 避免      | 需要持久化和全域存取             |
-| **UI 狀態**  | ❌ 不適用       | ✅ 全域 UI  | ✅ 局部 UI   | 根據作用域選擇                   |
-| **表單狀態** | ❌ 不適用       | ✅ 複雜表單 | ✅ 簡單表單  | 根據複雜度選擇                   |
-| **路由狀態** | ❌ 不適用       | ❌ 避免     | ❌ 避免      | Next.js Router 專責              |
+| 狀態類型     | TanStack Query | Zustand    | React State | 選擇理由                        |
+| ------------ | -------------- | ---------- | ----------- | ------------------------------- |
+| **API 數據** | ✅ 專責         | ❌ 避免     | ❌ 避免      | 快取、同步、錯誤處理            |
+| **即時數據** | ✅ 配合 Socket  | ✅ 連接狀態 | ❌ 避免      | Query 管理數據,Zustand 管理連接 |
+| **用戶偏好** | ❌ 不適用       | ✅ 專責     | ❌ 避免      | 需要持久化和全域存取            |
+| **UI 狀態**  | ❌ 不適用       | ✅ 全域 UI  | ✅ 局部 UI   | 根據作用域選擇                  |
+| **表單狀態** | ❌ 不適用       | ✅ 複雜表單 | ✅ 簡單表單  | 根據複雜度選擇                  |
+| **路由狀態** | ❌ 不適用       | ❌ 避免     | ❌ 避免      | Next.js Router 專責             |
 
 ---
 
@@ -84,7 +84,7 @@ const { data: positions } = useQuery({
 // 🎯 即時數據同步
 const useMarketData = (symbol: string) => {
   const queryClient = useQueryClient();
-  
+
   useEffect(() => {
     const unsubscribe = socketService.subscribe(symbol, {
       onQuote: (quote) => {
@@ -93,7 +93,7 @@ const useMarketData = (symbol: string) => {
     });
     return unsubscribe;
   }, [symbol]);
-  
+
   return useQuery({
     queryKey: ['quote', symbol],
     queryFn: () => fetchQuote(symbol),
@@ -208,10 +208,10 @@ const OrderForm = () => {
   const [inputValue, setInputValue] = useState('');
   const [isValid, setIsValid] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
-  
+
   // 🎯 動畫狀態
   const [isAnimating, setIsAnimating] = useState(false);
-  
+
   // 🎯 臨時 UI 狀態
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
 };
@@ -238,20 +238,20 @@ import useSocketStore from '@/store/useSocketStore';
 
 export const useTradingDashboard = () => {
   const queryClient = useQueryClient();
-  
+
   // TanStack Query - 伺服器數據
   const positionsQuery = useQuery({
     queryKey: ['positions'],
     queryFn: fetchPositions,
     refetchInterval: 30000,
   });
-  
+
   const ordersQuery = useQuery({
     queryKey: ['orders'],
     queryFn: fetchOrders,
     refetchInterval: 10000,
   });
-  
+
   // Zustand - UI 狀態
   const {
     selectedSymbol,
@@ -260,7 +260,7 @@ export const useTradingDashboard = () => {
     setActiveTab,
     addNotification,
   } = useTradingUIStore();
-  
+
   // Zustand - 連接狀態
   const {
     connected,
@@ -269,18 +269,18 @@ export const useTradingDashboard = () => {
     disconnect,
     addSubscription,
   } = useSocketStore();
-  
+
   // 協作邏輯
   const handleSymbolChange = useCallback((symbol: string) => {
     // 1. 更新 UI 狀態
     setSelectedSymbol(symbol);
-    
+
     // 2. 預取數據
     queryClient.prefetchQuery({
       queryKey: ['quote', symbol],
       queryFn: () => fetchQuote(symbol),
     });
-    
+
     // 3. 管理訂閱
     if (connected && !subscribedSymbols.has(symbol)) {
       addSubscription(symbol);
@@ -290,18 +290,18 @@ export const useTradingDashboard = () => {
       });
     }
   }, [connected, subscribedSymbols, setSelectedSymbol, addSubscription, addNotification]);
-  
+
   return {
     // 數據
     positions: positionsQuery.data,
     orders: ordersQuery.data,
     isLoading: positionsQuery.isLoading || ordersQuery.isLoading,
-    
+
     // UI 狀態
     selectedSymbol,
     activeTab,
     connected,
-    
+
     // 動作
     handleSymbolChange,
     setActiveTab,
@@ -318,42 +318,42 @@ export const useTradingDashboard = () => {
 export const useRealtimeSync = () => {
   const queryClient = useQueryClient();
   const { addNotification } = useTradingUIStore();
-  const { 
-    connected, 
-    setConnected, 
-    addSubscription, 
-    updateSyncTime 
+  const {
+    connected,
+    setConnected,
+    addSubscription,
+    updateSyncTime
   } = useSocketStore();
-  
+
   useEffect(() => {
     if (!connected) return;
-    
+
     // Socket 事件處理
     const handleQuoteUpdate = (data: QuoteUpdate) => {
       // 更新 TanStack Query 快取
       queryClient.setQueryData(['quote', data.symbol], data.quote);
-      
+
       // 更新 Zustand 同步時間
       updateSyncTime(data.symbol);
-      
+
       // 觸發相關查詢的重新驗證
       queryClient.invalidateQueries({
         queryKey: ['positions'],
         exact: false,
       });
     };
-    
+
     const handleConnectionLost = () => {
       setConnected(false);
       addNotification({
         type: 'error',
-        message: '即時數據連接中斷，正在重新連接...',
+        message: '即時數據連接中斷,正在重新連接...',
       });
     };
-    
+
     socketService.on('quote', handleQuoteUpdate);
     socketService.on('disconnect', handleConnectionLost);
-    
+
     return () => {
       socketService.off('quote', handleQuoteUpdate);
       socketService.off('disconnect', handleConnectionLost);
@@ -369,10 +369,10 @@ export const useRealtimeSync = () => {
 export const useErrorHandler = () => {
   const { addNotification } = useTradingUIStore();
   const { setError: setSocketError } = useSocketStore();
-  
+
   // TanStack Query 全域錯誤處理
   const queryClient = useQueryClient();
-  
+
   useEffect(() => {
     queryClient.setMutationDefaults(['order'], {
       onError: (error: ApiError) => {
@@ -382,19 +382,19 @@ export const useErrorHandler = () => {
         });
       },
     });
-    
+
     queryClient.setQueryDefaults(['market-data'], {
       onError: (error: ApiError) => {
         if (error.code === 'RATE_LIMIT') {
           addNotification({
             type: 'warning',
-            message: '請求過於頻繁，請稍後再試',
+            message: '請求過於頻繁,請稍後再試',
           });
         }
       },
     });
   }, []);
-  
+
   // Socket 錯誤處理
   const handleSocketError = useCallback((error: SocketError) => {
     setSocketError(error.message);
@@ -403,7 +403,7 @@ export const useErrorHandler = () => {
       message: `連接錯誤: ${error.message}`,
     });
   }, [setSocketError, addNotification]);
-  
+
   return { handleSocketError };
 };
 ```
@@ -436,7 +436,7 @@ const Component = () => {
   // 只訂閱需要的狀態
   const theme = useTradingUIStore(state => state.theme);
   const setTheme = useTradingUIStore(state => state.setTheme);
-  
+
   // 避免訂閱整個 store
   // const store = useTradingUIStore(); // ❌
 };
@@ -460,24 +460,24 @@ const useOptimizedMarketData = (symbol: string) => {
 // 3. 批量更新 (組合模式)
 const useBatchedUpdates = () => {
   const [updates, setUpdates] = useState<Update[]>([]);
-  
+
   const batchUpdate = useCallback((update: Update) => {
     setUpdates(prev => [...prev, update]);
   }, []);
-  
+
   // 批量處理更新
   useEffect(() => {
     if (updates.length === 0) return;
-    
+
     const timer = setTimeout(() => {
       // 批量應用更新
       processBatchedUpdates(updates);
       setUpdates([]);
     }, 100);
-    
+
     return () => clearTimeout(timer);
   }, [updates]);
-  
+
   return { batchUpdate };
 };
 ```
@@ -535,20 +535,20 @@ const useBatchedUpdates = () => {
 
 ### 🚀 **遷移策略**
 
-如果需要從現有方案遷移：
+如果需要從現有方案遷移:
 
 ```typescript
 // 階段 1: 引入 TanStack Query (伺服器狀態)
 // 將 API 請求邏輯遷移到 TanStack Query
 
 // 階段 2: 評估 Zustand 需求
-// 分析現有全域狀態，決定是否需要 Zustand
+// 分析現有全域狀態,決定是否需要 Zustand
 
 // 階段 3: 優化 React State
 // 簡化組件內部狀態管理
 
 // 階段 4: 整合優化
-// 確保三者協作順暢，消除冗餘
+// 確保三者協作順暢,消除冗餘
 ```
 
-透過這樣的分析和實施，您可以建立一個高效、可維護的狀態管理架構！
+透過這樣的分析和實施,您可以建立一個高效、可維護的狀態管理架構！

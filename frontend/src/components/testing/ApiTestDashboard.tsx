@@ -2,19 +2,19 @@
  * API 測試儀表板
  * 用於測試前後端串接功能
  */
-'use client';
+'use client'
 
-import React, { useState, useEffect } from 'react';
-import { Box } from '@/components/ui/box';
-import { VStack } from '@/components/ui/vstack';
-import { HStack } from '@/components/ui/hstack';
-import { Card } from '@/components/ui/card';
-import { Text } from '@/components/ui/text';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Alert } from '@/components/ui/alert';
-import { Spinner } from '@/components/ui/spinner';
+import React, { useState, useEffect } from 'react'
+import { Box } from '@/components/ui/box'
+import { VStack } from '@/components/ui/vstack'
+import { HStack } from '@/components/ui/hstack'
+import { Card } from '@/components/ui/card'
+import { Text } from '@/components/ui/text'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Alert } from '@/components/ui/alert'
+import { Spinner } from '@/components/ui/spinner'
 import {
   useStockQuote,
   useMultipleQuotes,
@@ -27,96 +27,104 @@ import {
   usePlaceOrder,
   useCancelOrder,
   useTradingDashboard,
-} from '@/hooks/useQueries';
-import { useWebSocket } from '@/services/websocket';
-import type { OrderRequest } from '@/types/api';
+} from '@/hooks/useQueries'
+import { useWebSocket } from '@/services/websocket'
+import type { OrderRequest } from '@/types/api'
 
 const ApiTestDashboard: React.FC = () => {
-  const [testSymbol, setTestSymbol] = useState('2330');
-  const [watchlistSymbols, setWatchlistSymbols] = useState(['2330', '2317', '2454']);
+  const [testSymbol, setTestSymbol] = useState('2330')
+  const [watchlistSymbols, setWatchlistSymbols] = useState([
+    '2330',
+    '2317',
+    '2454',
+  ])
   const [orderForm, setOrderForm] = useState<Partial<OrderRequest>>({
     symbol: '2330',
     action: 'Buy',
     order_type: 'Limit',
     quantity: 1000,
     price: 500,
-  });
+  })
 
-  const webSocket = useWebSocket();
+  const webSocket = useWebSocket()
 
   // ==================== API 測試 Queries ====================
 
-  const stockQuote = useStockQuote(testSymbol);
-  const multipleQuotes = useMultipleQuotes(watchlistSymbols);
+  const stockQuote = useStockQuote(testSymbol)
+  const multipleQuotes = useMultipleQuotes(watchlistSymbols)
   const klineData = useKlineData({
     symbol: testSymbol,
     interval: '1d',
-    limit: 30
-  });
-  const orders = useOrders();
-  const positions = usePositions();
-  const accountInfo = useAccountInfo();
-  const systemHealth = useSystemHealth();
-  const marketStatus = useMarketStatus();
-  const tradingDashboard = useTradingDashboard();
+    limit: 30,
+  })
+  const orders = useOrders()
+  const positions = usePositions()
+  const accountInfo = useAccountInfo()
+  const systemHealth = useSystemHealth()
+  const marketStatus = useMarketStatus()
+  const tradingDashboard = useTradingDashboard()
 
   // ==================== Mutations ====================
 
   const placeOrderMutation = usePlaceOrder({
     onSuccess: (data) => {
-      alert(`下單成功！訂單ID: ${data.id}`);
+      alert(`下單成功！訂單ID: ${data.id}`)
     },
     onError: (error) => {
-      alert(`下單失敗: ${error.message}`);
+      alert(`下單失敗: ${error.message}`)
     },
-  });
+  })
 
   const cancelOrderMutation = useCancelOrder({
     onSuccess: () => {
-      alert('取消訂單成功！');
+      alert('取消訂單成功！')
     },
     onError: (error) => {
-      alert(`取消訂單失敗: ${error.message}`);
+      alert(`取消訂單失敗: ${error.message}`)
     },
-  });
+  })
 
   // ==================== WebSocket 測試 ====================
 
   useEffect(() => {
     if (!webSocket.isConnected) {
-      webSocket.connect();
+      webSocket.connect()
     }
 
-    const unsubscribe = webSocket.subscribe('test-dashboard', {
-      onConnect: () => console.log('WebSocket 連接成功'),
-      onDisconnect: (reason) => console.log('WebSocket 斷開:', reason),
-      onQuote: (quote) => console.log('收到報價更新:', quote),
-      onOrderUpdate: (update) => console.log('收到訂單更新:', update),
-      onError: (error) => console.error('WebSocket 錯誤:', error),
-    }, {
-      symbols: [testSymbol, ...watchlistSymbols],
-      channels: ['quotes', 'orders', 'positions'],
-    });
+    const unsubscribe = webSocket.subscribe(
+      'test-dashboard',
+      {
+        onConnect: () => console.log('WebSocket 連接成功'),
+        onDisconnect: (reason) => console.log('WebSocket 斷開:', reason),
+        onQuote: (quote) => console.log('收到報價更新:', quote),
+        onOrderUpdate: (update) => console.log('收到訂單更新:', update),
+        onError: (error) => console.error('WebSocket 錯誤:', error),
+      },
+      {
+        symbols: [testSymbol, ...watchlistSymbols],
+        channels: ['quotes', 'orders', 'positions'],
+      }
+    )
 
     return () => {
-      unsubscribe();
-    };
-  }, [testSymbol, watchlistSymbols]);
+      unsubscribe()
+    }
+  }, [testSymbol, watchlistSymbols])
 
   // ==================== 事件處理 ====================
 
   const handlePlaceOrder = () => {
     if (!orderForm.symbol || !orderForm.quantity || !orderForm.price) {
-      alert('請填寫完整的訂單資訊');
-      return;
+      alert('請填寫完整的訂單資訊')
+      return
     }
 
-    placeOrderMutation.mutate(orderForm as OrderRequest);
-  };
+    placeOrderMutation.mutate(orderForm as OrderRequest)
+  }
 
   const handleCancelOrder = (orderId: string) => {
-    cancelOrderMutation.mutate(orderId);
-  };
+    cancelOrderMutation.mutate(orderId)
+  }
 
   // ==================== 渲染組件 ====================
 
@@ -129,22 +137,30 @@ const ApiTestDashboard: React.FC = () => {
         <Text className="text-xl font-semibold mb-4">📊 系統狀態</Text>
         <HStack className="flex-wrap gap-2">
           <Badge
-            variant={systemHealth.data?.status === 'healthy' ? 'solid' : 'outline'}
+            variant={
+              systemHealth.data?.status === 'healthy' ? 'solid' : 'outline'
+            }
             className={`${systemHealth.data?.status === 'healthy' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
           >
-            <Text className="text-xs">系統: {systemHealth.data?.status || '檢查中...'}</Text>
+            <Text className="text-xs">
+              系統: {systemHealth.data?.status || '檢查中...'}
+            </Text>
           </Badge>
           <Badge
             variant={marketStatus.data?.is_open ? 'solid' : 'outline'}
             className={`${marketStatus.data?.is_open ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}`}
           >
-            <Text className="text-xs">市場: {marketStatus.data?.is_open ? '開市' : '休市'}</Text>
+            <Text className="text-xs">
+              市場: {marketStatus.data?.is_open ? '開市' : '休市'}
+            </Text>
           </Badge>
           <Badge
             variant={webSocket.isConnected ? 'solid' : 'outline'}
             className={`${webSocket.isConnected ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
           >
-            <Text className="text-xs">WebSocket: {webSocket.isConnected ? '已連接' : '未連接'}</Text>
+            <Text className="text-xs">
+              WebSocket: {webSocket.isConnected ? '已連接' : '未連接'}
+            </Text>
           </Badge>
         </HStack>
 
@@ -161,7 +177,7 @@ const ApiTestDashboard: React.FC = () => {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 左側：市場數據測試 */}
+        {/* 左側:市場數據測試 */}
         <VStack className="space-y-4">
           {/* 單一股票報價測試 */}
           <Card className="w-full p-4">
@@ -173,7 +189,10 @@ const ApiTestDashboard: React.FC = () => {
                 placeholder="股票代號"
                 className="flex-1"
               />
-              <Button onPress={() => stockQuote.refetch()} className="bg-blue-500 text-white px-4 py-2 rounded">
+              <Button
+                onPress={() => stockQuote.refetch()}
+                className="bg-blue-500 text-white px-4 py-2 rounded"
+              >
                 <Text className="text-white">刷新</Text>
               </Button>
             </HStack>
@@ -181,22 +200,27 @@ const ApiTestDashboard: React.FC = () => {
             {stockQuote.isLoading && <Spinner />}
             {stockQuote.error && (
               <Alert action="error" className="mb-4">
-                <Text className="text-red-600">
-                  {stockQuote.error.message}
-                </Text>
+                <Text className="text-red-600">{stockQuote.error.message}</Text>
               </Alert>
             )}
             {stockQuote.data && (
               <Box className="bg-gray-50 p-3 rounded">
-                <Text className="font-bold">{stockQuote.data.name} ({stockQuote.data.symbol})</Text>
+                <Text className="font-bold">
+                  {stockQuote.data.name} ({stockQuote.data.symbol})
+                </Text>
                 <Text className="text-2xl font-bold">
                   ${stockQuote.data.price.toFixed(2)}
                 </Text>
-                <Text className={`font-medium ${
-                  stockQuote.data.change >= 0 ? 'text-red-600' : 'text-green-600'
-                }`}>
-                  {stockQuote.data.change >= 0 ? '+' : ''}{stockQuote.data.change.toFixed(2)}
-                  ({stockQuote.data.change_percent.toFixed(2)}%)
+                <Text
+                  className={`font-medium ${
+                    stockQuote.data.change >= 0
+                      ? 'text-red-600'
+                      : 'text-green-600'
+                  }`}
+                >
+                  {stockQuote.data.change >= 0 ? '+' : ''}
+                  {stockQuote.data.change.toFixed(2)}(
+                  {stockQuote.data.change_percent.toFixed(2)}%)
                 </Text>
                 <Text className="text-sm text-gray-500">
                   成交量: {stockQuote.data.volume.toLocaleString()}
@@ -216,14 +240,23 @@ const ApiTestDashboard: React.FC = () => {
                     <HStack className="justify-between">
                       <VStack>
                         <Text className="font-medium">{quote.symbol}</Text>
-                        <Text className="text-xs text-gray-500">{quote.name}</Text>
+                        <Text className="text-xs text-gray-500">
+                          {quote.name}
+                        </Text>
                       </VStack>
                       <VStack className="items-end">
-                        <Text className="font-bold">${quote.price.toFixed(2)}</Text>
-                        <Text className={`text-sm ${
-                          quote.change >= 0 ? 'text-red-600' : 'text-green-600'
-                        }`}>
-                          {quote.change >= 0 ? '+' : ''}{quote.change.toFixed(2)}
+                        <Text className="font-bold">
+                          ${quote.price.toFixed(2)}
+                        </Text>
+                        <Text
+                          className={`text-sm ${
+                            quote.change >= 0
+                              ? 'text-red-600'
+                              : 'text-green-600'
+                          }`}
+                        >
+                          {quote.change >= 0 ? '+' : ''}
+                          {quote.change.toFixed(2)}
                         </Text>
                       </VStack>
                     </HStack>
@@ -258,7 +291,7 @@ const ApiTestDashboard: React.FC = () => {
           </Card>
         </VStack>
 
-        {/* 右側：交易功能測試 */}
+        {/* 右側:交易功能測試 */}
         <VStack className="space-y-4">
           {/* 下單測試 */}
           <Card className="w-full p-4">
@@ -266,35 +299,55 @@ const ApiTestDashboard: React.FC = () => {
             <VStack className="space-y-2">
               <Input
                 value={orderForm.symbol}
-                onChangeText={(value) => setOrderForm({...orderForm, symbol: value})}
+                onChangeText={(value) =>
+                  setOrderForm({ ...orderForm, symbol: value })
+                }
                 placeholder="股票代號"
                 className="border border-gray-300 rounded px-3 py-2"
               />
               <HStack className="space-x-2">
                 <Button
                   variant={orderForm.action === 'Buy' ? 'solid' : 'outline'}
-                  onPress={() => setOrderForm({...orderForm, action: 'Buy'})}
+                  onPress={() => setOrderForm({ ...orderForm, action: 'Buy' })}
                   className={`flex-1 ${orderForm.action === 'Buy' ? 'bg-red-500 text-white' : 'border border-red-500 text-red-500'} px-4 py-2 rounded`}
                 >
-                  <Text className={orderForm.action === 'Buy' ? 'text-white' : 'text-red-500'}>買進</Text>
+                  <Text
+                    className={
+                      orderForm.action === 'Buy' ? 'text-white' : 'text-red-500'
+                    }
+                  >
+                    買進
+                  </Text>
                 </Button>
                 <Button
                   variant={orderForm.action === 'Sell' ? 'solid' : 'outline'}
-                  onPress={() => setOrderForm({...orderForm, action: 'Sell'})}
+                  onPress={() => setOrderForm({ ...orderForm, action: 'Sell' })}
                   className={`flex-1 ${orderForm.action === 'Sell' ? 'bg-green-500 text-white' : 'border border-green-500 text-green-500'} px-4 py-2 rounded`}
                 >
-                  <Text className={orderForm.action === 'Sell' ? 'text-white' : 'text-green-500'}>賣出</Text>
+                  <Text
+                    className={
+                      orderForm.action === 'Sell'
+                        ? 'text-white'
+                        : 'text-green-500'
+                    }
+                  >
+                    賣出
+                  </Text>
                 </Button>
               </HStack>
               <Input
                 value={orderForm.quantity?.toString()}
-                onChangeText={(value) => setOrderForm({...orderForm, quantity: parseInt(value) || 0})}
+                onChangeText={(value) =>
+                  setOrderForm({ ...orderForm, quantity: parseInt(value) || 0 })
+                }
                 placeholder="數量"
                 className="border border-gray-300 rounded px-3 py-2"
               />
               <Input
                 value={orderForm.price?.toString()}
-                onChangeText={(value) => setOrderForm({...orderForm, price: parseFloat(value) || 0})}
+                onChangeText={(value) =>
+                  setOrderForm({ ...orderForm, price: parseFloat(value) || 0 })
+                }
                 placeholder="價格"
                 className="border border-gray-300 rounded px-3 py-2"
               />
@@ -323,7 +376,9 @@ const ApiTestDashboard: React.FC = () => {
                       <Badge variant="outline">{order.status}</Badge>
                     </HStack>
                     <HStack className="justify-between text-sm">
-                      <Text>{order.action} {order.quantity}</Text>
+                      <Text>
+                        {order.action} {order.quantity}
+                      </Text>
                       <Text>@{order.price?.toFixed(2)}</Text>
                       {order.status === 'Pending' && (
                         <Button
@@ -350,14 +405,21 @@ const ApiTestDashboard: React.FC = () => {
                   <Box key={position.symbol} className="bg-gray-50 p-3 rounded">
                     <HStack className="justify-between mb-1">
                       <Text className="font-medium">{position.symbol}</Text>
-                      <Text className="font-bold">${position.current_price.toFixed(2)}</Text>
+                      <Text className="font-bold">
+                        ${position.current_price.toFixed(2)}
+                      </Text>
                     </HStack>
                     <HStack className="justify-between text-sm">
                       <Text>持股: {position.quantity}</Text>
-                      <Text className={`font-medium ${
-                        position.unrealized_pnl >= 0 ? 'text-red-600' : 'text-green-600'
-                      }`}>
-                        {position.unrealized_pnl >= 0 ? '+' : ''}${position.unrealized_pnl.toFixed(2)}
+                      <Text
+                        className={`font-medium ${
+                          position.unrealized_pnl >= 0
+                            ? 'text-red-600'
+                            : 'text-green-600'
+                        }`}
+                      >
+                        {position.unrealized_pnl >= 0 ? '+' : ''}$
+                        {position.unrealized_pnl.toFixed(2)}
                       </Text>
                     </HStack>
                   </Box>
@@ -374,22 +436,33 @@ const ApiTestDashboard: React.FC = () => {
               <VStack className="space-y-2">
                 <HStack className="justify-between">
                   <Text>帳戶餘額:</Text>
-                  <Text className="font-bold">${accountInfo.data.balance.toLocaleString()}</Text>
+                  <Text className="font-bold">
+                    ${accountInfo.data.balance.toLocaleString()}
+                  </Text>
                 </HStack>
                 <HStack className="justify-between">
                   <Text>可用餘額:</Text>
-                  <Text className="font-bold">${accountInfo.data.available_balance.toLocaleString()}</Text>
+                  <Text className="font-bold">
+                    ${accountInfo.data.available_balance.toLocaleString()}
+                  </Text>
                 </HStack>
                 <HStack className="justify-between">
                   <Text>總市值:</Text>
-                  <Text className="font-bold">${accountInfo.data.total_value.toLocaleString()}</Text>
+                  <Text className="font-bold">
+                    ${accountInfo.data.total_value.toLocaleString()}
+                  </Text>
                 </HStack>
                 <HStack className="justify-between">
                   <Text>未實現損益:</Text>
-                  <Text className={`font-bold ${
-                    accountInfo.data.unrealized_pnl >= 0 ? 'text-red-600' : 'text-green-600'
-                  }`}>
-                    {accountInfo.data.unrealized_pnl >= 0 ? '+' : ''}${accountInfo.data.unrealized_pnl.toLocaleString()}
+                  <Text
+                    className={`font-bold ${
+                      accountInfo.data.unrealized_pnl >= 0
+                        ? 'text-red-600'
+                        : 'text-green-600'
+                    }`}
+                  >
+                    {accountInfo.data.unrealized_pnl >= 0 ? '+' : ''}$
+                    {accountInfo.data.unrealized_pnl.toLocaleString()}
                   </Text>
                 </HStack>
               </VStack>
@@ -402,10 +475,18 @@ const ApiTestDashboard: React.FC = () => {
       <Card className="mt-6 p-4">
         <Text className="text-lg font-semibold mb-4">🔌 WebSocket 統計</Text>
         <HStack className="space-y-4" className="flex-wrap">
-          <Text className="text-sm">連接狀態: {webSocket.stats.connected ? '已連接' : '未連接'}</Text>
-          <Text className="text-sm">連接ID: {webSocket.stats.connectionId || 'N/A'}</Text>
-          <Text className="text-sm">訂閱數量: {webSocket.stats.subscriptions}</Text>
-          <Text className="text-sm">重連次數: {webSocket.stats.reconnectAttempts}</Text>
+          <Text className="text-sm">
+            連接狀態: {webSocket.stats.connected ? '已連接' : '未連接'}
+          </Text>
+          <Text className="text-sm">
+            連接ID: {webSocket.stats.connectionId || 'N/A'}
+          </Text>
+          <Text className="text-sm">
+            訂閱數量: {webSocket.stats.subscriptions}
+          </Text>
+          <Text className="text-sm">
+            重連次數: {webSocket.stats.reconnectAttempts}
+          </Text>
         </HStack>
         <HStack className="mt-4 space-x-2">
           <Button
@@ -432,7 +513,7 @@ const ApiTestDashboard: React.FC = () => {
         </HStack>
       </Card>
     </Box>
-  );
-};
+  )
+}
 
-export default ApiTestDashboard;
+export default ApiTestDashboard

@@ -1,6 +1,6 @@
 # 佈局系統文檔
 
-本文檔說明 SinoTrade 交易平台的佈局系統架構，包括 MainLayout 和 Sidebar 元件的設計與使用方法。
+本文檔說明 SinoTrade 交易平台的佈局系統架構,包括 MainLayout 和 Sidebar 元件的設計與使用方法。
 
 ## 📋 目錄
 
@@ -83,15 +83,15 @@ export function MainLayout({ children }: MainLayoutProps) {
 
 ### 屬性說明
 
-| 屬性 | 類型 | 必填 | 描述 |
-|-----|------|------|------|
-| `children` | `React.ReactNode` | ✅ | 頁面主要內容 |
+| 屬性       | 類型              | 必填 | 描述         |
+| ---------- | ----------------- | ---- | ------------ |
+| `children` | `React.ReactNode` | ✅    | 頁面主要內容 |
 
 ### 功能特性
 
 #### 1. 響應式佈局管理
-- **桌面版**：固定側邊欄 + 內容區域
-- **手機版**：覆蓋式側邊欄 + 全寬內容
+- **桌面版**:固定側邊欄 + 內容區域
+- **手機版**:覆蓋式側邊欄 + 全寬內容
 
 #### 2. 狀態管理
 ```tsx
@@ -100,7 +100,7 @@ const [sidebarOpen, setSidebarOpen] = useState(true);
 
 #### 3. 滾動管理
 ```tsx
-// 確保內容可以正常滾動，底部不被截斷
+// 確保內容可以正常滾動,底部不被截斷
 <View className="w-full pb-16">
   {children}
 </View>
@@ -136,8 +136,8 @@ export function Sidebar({ isOpen = true }: SidebarProps) {
 
 ### 屬性說明
 
-| 屬性 | 類型 | 預設值 | 描述 |
-|-----|------|--------|------|
+| 屬性     | 類型      | 預設值 | 描述           |
+| -------- | --------- | ------ | -------------- |
 | `isOpen` | `boolean` | `true` | 側邊欄是否展開 |
 
 ### 功能區塊
@@ -168,8 +168,8 @@ const watchlist = [
 
 #### 3. 響應式顯示邏輯
 ```tsx
-// 桌面版：根據 isOpen 決定寬度
-// 手機版：覆蓋模式或完全隱藏
+// 桌面版:根據 isOpen 決定寬度
+// 手機版:覆蓋模式或完全隱藏
 className={`
   ${isOpen
     ? 'w-80 lg:relative lg:translate-x-0 absolute z-50 lg:z-auto'
@@ -304,13 +304,13 @@ export function CustomToolbar() {
 ### 1. 內容區域設計
 
 ```tsx
-// ✅ 正確：使用適當的間距
+// ✅ 正確:使用適當的間距
 <View className="space-y-4">
   <Card />
   <Card />
 </View>
 
-// ❌ 錯誤：過度巢狀容器
+// ❌ 錯誤:過度巢狀容器
 <View className="container">
   <View className="wrapper">
     <View className="content">
@@ -323,20 +323,20 @@ export function CustomToolbar() {
 ### 2. 響應式間距
 
 ```tsx
-// ✅ 正確：響應式間距
+// ✅ 正確:響應式間距
 <View className="p-2 lg:p-4 space-y-3 lg:space-y-6">
 
-// ❌ 錯誤：固定間距
+// ❌ 錯誤:固定間距
 <View className="p-4 space-y-6">
 ```
 
 ### 3. 側邊欄狀態管理
 
 ```tsx
-// ✅ 正確：使用狀態管理
+// ✅ 正確:使用狀態管理
 const [sidebarOpen, setSidebarOpen] = useState(true)
 
-// ✅ 正確：響應式預設狀態
+// ✅ 正確:響應式預設狀態
 const [sidebarOpen, setSidebarOpen] = useState(() => {
   return window.innerWidth >= 1024
 })
@@ -345,7 +345,7 @@ const [sidebarOpen, setSidebarOpen] = useState(() => {
 ### 4. 可訪問性考量
 
 ```tsx
-// ✅ 正確：提供鍵盤導航
+// ✅ 正確:提供鍵盤導航
 <Button
   onPress={toggleSidebar}
   accessibilityLabel="切換側邊欄"
@@ -354,10 +354,10 @@ const [sidebarOpen, setSidebarOpen] = useState(() => {
   {isOpen ? '👈' : '👉'}
 </Button>
 
-// ✅ 正確：焦點管理
+// ✅ 正確:焦點管理
 useEffect(() => {
   if (!sidebarOpen && isMobile) {
-    // 側邊欄關閉時，焦點回到主內容
+    // 側邊欄關閉時,焦點回到主內容
     mainContentRef.current?.focus()
   }
 }, [sidebarOpen, isMobile])
@@ -366,12 +366,12 @@ useEffect(() => {
 ### 5. 效能優化
 
 ```tsx
-// ✅ 正確：條件渲染重元件
+// ✅ 正確:條件渲染重元件
 {isOpen && (
   <WatchlistSection />
 )}
 
-// ✅ 正確：使用 React.memo 避免不必要重渲染
+// ✅ 正確:使用 React.memo 避免不必要重渲染
 export const Sidebar = React.memo(function Sidebar({ isOpen }) {
   // ...
 })
@@ -381,9 +381,9 @@ export const Sidebar = React.memo(function Sidebar({ isOpen }) {
 
 ### 1. 側邊欄在手機版無法滑動
 
-**問題**：iOS Safari 中側邊欄內容無法滾動
+**問題**:iOS Safari 中側邊欄內容無法滾動
 
-**解決方案**：
+**解決方案**:
 ```css
 .sidebar-content {
   overflow-y: auto;
@@ -393,9 +393,9 @@ export const Sidebar = React.memo(function Sidebar({ isOpen }) {
 
 ### 2. 佈局閃爍問題
 
-**問題**：頁面載入時佈局會閃爍
+**問題**:頁面載入時佈局會閃爍
 
-**解決方案**：
+**解決方案**:
 ```tsx
 // 使用 useLayoutEffect 避免閃爍
 useLayoutEffect(() => {
@@ -405,9 +405,9 @@ useLayoutEffect(() => {
 
 ### 3. 覆蓋層點擊無效
 
-**問題**：手機版覆蓋層點擊無法關閉側邊欄
+**問題**:手機版覆蓋層點擊無法關閉側邊欄
 
-**解決方案**：
+**解決方案**:
 ```tsx
 // 確保覆蓋層在正確的 z-index 層級
 <Pressable
@@ -424,5 +424,5 @@ useLayoutEffect(() => {
 
 ---
 
-*最後更新：2024年9月*
-*責任工程師：Frontend Team*
+*最後更新:2024年9月*
+*責任工程師:Frontend Team*

@@ -2,7 +2,7 @@
 
 ## 🚀 啟動服務
 
-### 開發模式（自動重載） - 推薦
+### 開發模式(自動重載) - 推薦
 ```bash
 uv run python scripts/dev.py
 ```
@@ -63,14 +63,14 @@ uv run pytest tests/contract/test_contracts.py
 uv run pytest --cov=src
 ```
 
-### 運行測試（詳細輸出）
+### 運行測試(詳細輸出)
 ```bash
 uv run pytest -v
 ```
 
 ## 🔧 代碼品質
 
-### 格式化代碼（Black）
+### 格式化代碼(Black)
 ```bash
 uv run black src/ tests/
 ```
@@ -80,7 +80,7 @@ uv run black src/ tests/
 uv run black --check src/ tests/
 ```
 
-### 代碼檢查（Ruff）
+### 代碼檢查(Ruff)
 ```bash
 uv run ruff check src/ tests/
 ```
@@ -90,7 +90,7 @@ uv run ruff check src/ tests/
 uv run ruff check --fix src/ tests/
 ```
 
-### 格式化 + 檢查（一次完成）
+### 格式化 + 檢查(一次完成)
 ```bash
 uv run black src/ tests/ && uv run ruff check src/ tests/
 ```
