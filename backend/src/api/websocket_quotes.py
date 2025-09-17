@@ -422,17 +422,30 @@ async def websocket_klines_endpoint(websocket: WebSocket, client_id: str):
 
                 async def send_test_tick(captured_symbol: str):
                     await asyncio.sleep(2)  # 等待2秒
+
+                    # 根據不同股票/期貨生成不同的測試價格
+                    base_prices = {
+                        "2330": 1275.0,  # 台積電
+                        "2317": 125.0,  # 鴻海
+                        "2454": 850.0,  # 聯發科
+                        "3008": 2300.0,  # 大立光
+                        "TXFF": 22800.0,  # 台指期貨
+                        "MXFF": 18500.0,  # 小台指期貨
+                    }
+
+                    base_price = base_prices.get(captured_symbol, 100.0)  # 預設價格
+
                     test_quote = Quote(
                         symbol=captured_symbol,
                         timestamp=datetime.now(),
-                        open=1270.0,
-                        close=1275.0,
-                        bid_price=1274.0,
-                        ask_price=1276.0,
+                        open=base_price * 0.996,  # 開盤價略低
+                        close=base_price,  # 當前價格
+                        bid_price=base_price * 0.999,  # 買價
+                        ask_price=base_price * 1.001,  # 賣價
                         bid_volume=100,
                         ask_volume=200,
                         volume=150,
-                        avg_price=1272.0,
+                        avg_price=base_price * 0.998,
                         underlying_price=None,
                     )
                     logger.info(
@@ -482,7 +495,8 @@ async def websocket_klines_endpoint(websocket: WebSocket, client_id: str):
 async def get_historical_klines(symbol: str, interval: str, limit: int) -> list[dict]:
     """獲取歷史 K 線資料"""
     try:
-        historical_data = shioaji_service.get_historical_klines(symbol, interval, limit)
+        result = shioaji_service.get_historical_klines(symbol, interval, limit)
+        historical_data = result["data"]
         logger.info(f"Retrieved {len(historical_data)} historical klines for {symbol}")
         return historical_data
     except Exception as e:

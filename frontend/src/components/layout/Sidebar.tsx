@@ -1,11 +1,11 @@
 // @ts-nocheck
-'use client';
-import React from 'react';
-import { View, Text } from 'react-native-web';
-import { Button, ButtonText } from '@/components/ui/button';
+'use client'
+import React from 'react'
+import { View, Text } from 'react-native-web'
+import { Button, ButtonText } from '@/components/ui/button'
 
 interface SidebarProps {
-  isOpen?: boolean;
+  isOpen?: boolean
 }
 
 export function Sidebar({ isOpen = true }: SidebarProps) {
@@ -18,24 +18,52 @@ export function Sidebar({ isOpen = true }: SidebarProps) {
     { icon: '⚡', label: '快速下單', active: false },
     { icon: '📋', label: '交易記錄', active: false },
     { icon: '💰', label: '資金管理', active: false },
-  ];
+  ]
 
   const watchlist = [
-    { symbol: 'TSLA', name: '特斯拉', price: '$248.50', change: '+2.3%', up: true },
-    { symbol: 'AAPL', name: '蘋果', price: '$192.80', change: '-0.8%', up: false },
-    { symbol: 'NVDA', name: '輝達', price: '$721.33', change: '+4.1%', up: true },
-    { symbol: '2330.TW', name: '台積電', price: 'NT$566', change: '+1.2%', up: true },
-  ];
+    {
+      symbol: 'TSLA',
+      name: '特斯拉',
+      price: '$248.50',
+      change: '+2.3%',
+      up: true,
+    },
+    {
+      symbol: 'AAPL',
+      name: '蘋果',
+      price: '$192.80',
+      change: '-0.8%',
+      up: false,
+    },
+    {
+      symbol: 'NVDA',
+      name: '輝達',
+      price: '$721.33',
+      change: '+4.1%',
+      up: true,
+    },
+    {
+      symbol: '2330.TW',
+      name: '台積電',
+      price: 'NT$566',
+      change: '+1.2%',
+      up: true,
+    },
+  ]
 
   return (
-    <View className={`bg-gray-50 border-r border-gray-200 min-h-screen transition-all duration-300 ${
-      isOpen
-        ? 'w-80 lg:relative lg:translate-x-0 absolute z-50 lg:z-auto'
-        : 'w-20 hidden lg:block'
-    }`}>
+    <View
+      className={`bg-gray-50 border-r border-gray-200 min-h-screen transition-all duration-300 ${
+        isOpen
+          ? 'w-80 lg:relative lg:translate-x-0 absolute z-50 lg:z-auto'
+          : 'w-20 hidden lg:block'
+      }`}
+    >
       {/* 主選單 */}
       <View className="p-4">
-        <Text className={`text-lg font-semibold text-gray-900 mb-4 ${!isOpen && 'hidden'}`}>
+        <Text
+          className={`text-lg font-semibold text-gray-900 mb-4 ${!isOpen && 'hidden'}`}
+        >
           主要功能
         </Text>
 
@@ -50,7 +78,13 @@ export function Sidebar({ isOpen = true }: SidebarProps) {
               <View className="flex-row items-center">
                 <Text className="text-lg mr-3">{item.icon}</Text>
                 {isOpen && (
-                  <ButtonText className={item.active ? 'text-blue-700 font-medium' : 'text-gray-700'}>
+                  <ButtonText
+                    className={
+                      item.active
+                        ? 'text-blue-700 font-medium'
+                        : 'text-gray-700'
+                    }
+                  >
                     {item.label}
                   </ButtonText>
                 )}
@@ -72,12 +106,17 @@ export function Sidebar({ isOpen = true }: SidebarProps) {
 
           <View className="space-y-3">
             {watchlist.map((stock, index) => (
-              <View key={index} className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+              <View
+                key={index}
+                className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm"
+              >
                 <View className="flex-row items-center justify-between mb-1">
                   <Text className="font-semibold text-gray-900 text-sm">
                     {stock.symbol}
                   </Text>
-                  <Text className={`text-sm font-medium ${stock.up ? 'text-green-600' : 'text-red-600'}`}>
+                  <Text
+                    className={`text-sm font-medium ${stock.up ? 'text-green-600' : 'text-red-600'}`}
+                  >
                     {stock.change}
                   </Text>
                 </View>
@@ -106,5 +145,5 @@ export function Sidebar({ isOpen = true }: SidebarProps) {
         </Button>
       </View>
     </View>
-  );
+  )
 }

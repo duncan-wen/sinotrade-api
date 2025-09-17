@@ -53,6 +53,12 @@ export function TradingChart({
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [klineData, setKlineData] = useState<KLineData[]>(initialData || [])
+  const [contractInfo, setContractInfo] = useState<{
+    symbol: string
+    name: string
+    code: string
+    exchange: string
+  } | null>(null)
 
   // 獲取歷史K線數據
   useEffect(() => {
@@ -66,6 +72,8 @@ export function TradingChart({
 
       try {
         setIsLoading(true)
+        // 切換股票時先清空舊數據
+        setKlineData([])
         const response = await fetch(
           `/api/klines/${symbol}?interval=${interval}&limit=100`
         )
@@ -73,6 +81,13 @@ export function TradingChart({
 
         if (result.data) {
           console.log('📊 API歷史K線數據:', result.data.slice(0, 3)) // 只顯示前3條
+          console.log('📋 合約資訊:', result.contract) // 顯示合約資訊
+
+          // 設定合約資訊
+          if (result.contract) {
+            setContractInfo(result.contract)
+          }
+
           // 確保數據格式統一,API數據應該已經是正確格式
           const formattedData = result.data.map((d: any) => ({
             time: d.time || d.timestamp,
@@ -385,8 +400,25 @@ export function TradingChart({
       crosshair: {
         mode: 1, // Normal crosshair mode
       },
+      leftPriceScale: {
+        borderColor: '#cccccc',
+        visible: showVolume, // 只有顯示成交量時才顯示左側軸
+        scaleMargins: {
+          top: 0.7, // 成交量圖表在下方 30%
+          bottom: 0,
+        },
+      },
       rightPriceScale: {
         borderColor: '#cccccc',
+        scaleMargins: showVolume
+          ? {
+              top: 0.05,
+              bottom: 0.35, // 為成交量留出空間
+            }
+          : {
+              top: 0.05,
+              bottom: 0.05, // 無成交量時正常邊距
+            },
       },
       timeScale: {
         borderColor: '#cccccc',
@@ -413,15 +445,7 @@ export function TradingChart({
         priceFormat: {
           type: 'volume',
         },
-        priceScaleId: 'volume',
-      })
-
-      // 設置成交量價格軸
-      chart.priceScale('volume').applyOptions({
-        scaleMargins: {
-          top: 0.7, // 成交量圖表在下方 30%
-          bottom: 0,
-        },
+        priceScaleId: 'left', // 使用左側價格軸
       })
     }
 
@@ -556,6 +580,19 @@ export function TradingChart({
     // 自動調整視圖
     if (chartRef.current) {
       chartRef.current.timeScale().fitContent()
+      // 自動調整價格範圍以適應新數據
+      setTimeout(() => {
+        if (chartRef.current) {
+          chartRef.current.timeScale().fitContent()
+          // 強制重新計算價格範圍
+          if (candlestickSeriesRef.current) {
+            const priceScale = chartRef.current.priceScale('right')
+            priceScale.applyOptions({
+              autoScale: true,
+            })
+          }
+        }
+      }, 100) // 延遲確保數據已設置完成
     }
   }, [klineData, showVolume])
 
@@ -565,9 +602,12 @@ export function TradingChart({
       <View className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{symbol}</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {contractInfo?.name ? `${contractInfo.name} (${symbol})` : symbol}
+            </h3>
             <p className="text-sm text-gray-500">
               {interval} K線圖 {enableRealtime && '• 即時更新'}
+              {contractInfo?.exchange && ` • ${contractInfo.exchange}`}
             </p>
           </div>
           <div className="flex space-x-2">

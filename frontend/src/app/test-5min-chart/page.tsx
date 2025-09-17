@@ -5,12 +5,13 @@
 
 import React, { useState } from 'react'
 import { TradingChart } from '@/components/chart/TradingChart'
+import Select from '@/components/common/select'
 
 export default function Test5MinChartPage() {
   const [symbol, setSymbol] = useState('2330')
   const [enableRealtime, setEnableRealtime] = useState(true)
 
-  const testSymbols = ['2330', '2317', '2454', '3008']
+  const testSymbols = ['2330', '2317', '2454', '3008', 'TXFF', 'MXFF']
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -27,7 +28,13 @@ export default function Test5MinChartPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 股票代號
               </label>
-              <select
+              <Select
+                value={symbol}
+                onValueChange={setSymbol}
+                placeholder="選擇股票代號"
+                options={testSymbols.map((sym) => ({ label: sym, value: sym }))}
+              />
+              {/* <select
                 value={symbol}
                 onChange={(e) => setSymbol(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -37,7 +44,7 @@ export default function Test5MinChartPage() {
                     {sym}
                   </option>
                 ))}
-              </select>
+              </select> */}
             </div>
 
             <div className="flex items-center">

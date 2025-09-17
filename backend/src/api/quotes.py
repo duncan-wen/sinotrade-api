@@ -93,9 +93,12 @@ def get_historical_klines(
                     "count": 0,
                 }
 
-        klines = shioaji_service.get_historical_klines(
+        result = shioaji_service.get_historical_klines(
             symbol, interval, limit, ma_periods_list
         )
+
+        klines = result["data"]
+        contract_info = result["contract"]
 
         # 可選的技術指標計算
         if include_indicators and klines:
@@ -129,6 +132,7 @@ def get_historical_klines(
             "count": len(klines),
             "source": _get_data_source(interval),
             "indicators_included": False,
+            "contract": contract_info,
         }
     except Exception as e:
         return {"error": str(e), "symbol": symbol, "data": [], "count": 0}

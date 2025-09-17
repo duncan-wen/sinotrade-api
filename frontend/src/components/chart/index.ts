@@ -1,2 +1,2 @@
-export { TradingChart } from './TradingChart';
-export type { KLineData } from './TradingChart';
+export { TradingChart } from './TradingChart'
+export type { KLineData } from './TradingChart'

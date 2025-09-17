@@ -185,8 +185,8 @@ class ShioajiService:
                     except Exception as unsub_error:
                         logger.error(f"登出前取消訂閱失敗 {symbol}: {unsub_error}")
 
-            # 執行登出
-            self.api.logout()
+                # 執行登出
+                self.api.logout()
             self._is_logged_in = False
             self._is_initialized = False
             logger.info("✅ Shioaji 登出成功")
@@ -225,7 +225,7 @@ class ShioajiService:
         interval: str = "1m",
         limit: int = 100,
         ma_periods: list[int] | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> dict[str, Any]:
         """
         獲取歷史 K 線資料
 
@@ -238,7 +238,7 @@ class ShioajiService:
         contract = self._get_contract(symbol)
         if not contract:
             logger.error(f"Cannot find contract for symbol: {symbol}")
-            return []
+            return {"contract": {"symbol": symbol, "name": symbol}, "data": []}
 
         # 計算實際需要的數據量(考慮均線計算需求)
         actual_limit = self._calculate_data_limit(limit, ma_periods)
@@ -265,7 +265,18 @@ class ShioajiService:
             )
 
         # 返回最後 limit 筆數據(用於顯示),但保留所有數據供均線計算
-        return all_data[-limit:] if len(all_data) > limit else all_data
+        klines_data = all_data[-limit:] if len(all_data) > limit else all_data
+
+        # 返回包含合約資訊和數據的字典
+        return {
+            "contract": {
+                "symbol": contract.symbol,
+                "name": getattr(contract, "name", symbol),
+                "code": getattr(contract, "code", symbol),
+                "exchange": str(getattr(contract, "exchange", "")),
+            },
+            "data": klines_data,
+        }
 
     def _calculate_data_limit(self, limit: int, ma_periods: list[int] | None) -> int:
         """
@@ -676,7 +687,9 @@ class ShioajiService:
                 stock_code = symbol[-4:] if len(symbol) > 4 else symbol
                 contract = self.api.Contracts.Stocks[stock_code]
                 if contract:
-                    logger.info(f"Found stock contract: {contract.symbol}")
+                    logger.info(
+                        f"Found stock contract: {contract.symbol} - {contract.name}"
+                    )
                     return contract
 
         except (KeyError, AttributeError):

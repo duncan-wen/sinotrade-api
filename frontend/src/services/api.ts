@@ -9,10 +9,10 @@ import type {
   OrderResponse,
   Position,
   Trade,
-  MarketDataRequest
-} from '@/types/api';
+  MarketDataRequest,
+} from '@/types/api'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 class ApiError extends Error {
   constructor(
@@ -20,8 +20,8 @@ class ApiError extends Error {
     public statusText: string,
     message: string
   ) {
-    super(message);
-    this.name = 'ApiError';
+    super(message)
+    this.name = 'ApiError'
   }
 }
 
@@ -29,22 +29,22 @@ class ApiError extends Error {
  * 基礎 HTTP 客戶端
  */
 class HttpClient {
-  private baseURL: string;
-  private defaultHeaders: HeadersInit;
+  private baseURL: string
+  private defaultHeaders: HeadersInit
 
   constructor(baseURL: string) {
-    this.baseURL = baseURL;
+    this.baseURL = baseURL
     this.defaultHeaders = {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    };
+      Accept: 'application/json',
+    }
   }
 
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
+    const url = `${this.baseURL}${endpoint}`
 
     const config: RequestInit = {
       headers: {
@@ -52,65 +52,65 @@ class HttpClient {
         ...options.headers,
       },
       ...options,
-    };
+    }
 
     try {
-      const response = await fetch(url, config);
+      const response = await fetch(url, config)
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorData = await response.json().catch(() => ({}))
         throw new ApiError(
           response.status,
           response.statusText,
           errorData.detail || `HTTP ${response.status}: ${response.statusText}`
-        );
+        )
       }
 
       // 處理空響應
-      const contentType = response.headers.get('content-type');
+      const contentType = response.headers.get('content-type')
       if (!contentType?.includes('application/json')) {
-        return {} as T;
+        return {} as T
       }
 
-      return await response.json();
+      return await response.json()
     } catch (error) {
       if (error instanceof ApiError) {
-        throw error;
+        throw error
       }
 
       // 網路錯誤或其他錯誤
-      throw new ApiError(0, 'Network Error', error.message || '網路連接失敗');
+      throw new ApiError(0, 'Network Error', error.message || '網路連接失敗')
     }
   }
 
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
     const searchParams = params
       ? '?' + new URLSearchParams(params).toString()
-      : '';
+      : ''
 
     return this.request<T>(`${endpoint}${searchParams}`, {
       method: 'GET',
-    });
+    })
   }
 
   async post<T>(endpoint: string, data?: any): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
-    });
+    })
   }
 
   async put<T>(endpoint: string, data?: any): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
-    });
+    })
   }
 
   async delete<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'DELETE',
-    });
+    })
   }
 }
 
@@ -118,10 +118,10 @@ class HttpClient {
  * API 服務類
  */
 class ApiService {
-  private client: HttpClient;
+  private client: HttpClient
 
   constructor() {
-    this.client = new HttpClient(API_BASE_URL);
+    this.client = new HttpClient(API_BASE_URL)
   }
 
   // ==================== 市場數據 API ====================
@@ -130,38 +130,40 @@ class ApiService {
    * 獲取股票即時報價
    */
   async getQuote(symbol: string): Promise<Quote> {
-    return this.client.get<Quote>(`/api/quotes/${symbol}`);
+    return this.client.get<Quote>(`/api/quotes/${symbol}`)
   }
 
   /**
    * 獲取多檔股票報價
    */
   async getMultipleQuotes(symbols: string[]): Promise<Quote[]> {
-    return this.client.post<Quote[]>('/api/quotes/batch', { symbols });
+    return this.client.post<Quote[]>('/api/quotes/batch', { symbols })
   }
 
   /**
    * 獲取 K線數據
    */
   async getKlines(params: {
-    symbol: string;
-    interval?: string;
-    limit?: number;
-    start_date?: string;
-    end_date?: string;
+    symbol: string
+    interval?: string
+    limit?: number
+    start_date?: string
+    end_date?: string
   }): Promise<KlineData[]> {
-    return this.client.get<KlineData[]>('/api/klines', params);
+    return this.client.get<KlineData[]>('/api/klines', params)
   }
 
   /**
    * 搜尋股票
    */
-  async searchStocks(query: string): Promise<Array<{
-    symbol: string;
-    name: string;
-    market: string;
-  }>> {
-    return this.client.get('/api/stocks/search', { q: query });
+  async searchStocks(query: string): Promise<
+    Array<{
+      symbol: string
+      name: string
+      market: string
+    }>
+  > {
+    return this.client.get('/api/stocks/search', { q: query })
   }
 
   // ==================== 交易相關 API ====================
@@ -170,52 +172,52 @@ class ApiService {
    * 下單
    */
   async placeOrder(order: OrderRequest): Promise<OrderResponse> {
-    return this.client.post<OrderResponse>('/api/orders', order);
+    return this.client.post<OrderResponse>('/api/orders', order)
   }
 
   /**
    * 取消訂單
    */
   async cancelOrder(orderId: string): Promise<{ success: boolean }> {
-    return this.client.delete(`/api/orders/${orderId}`);
+    return this.client.delete(`/api/orders/${orderId}`)
   }
 
   /**
    * 獲取訂單列表
    */
   async getOrders(params?: {
-    status?: string;
-    symbol?: string;
-    limit?: number;
-    offset?: number;
+    status?: string
+    symbol?: string
+    limit?: number
+    offset?: number
   }): Promise<{
-    orders: OrderResponse[];
-    total: number;
+    orders: OrderResponse[]
+    total: number
   }> {
-    return this.client.get('/api/orders', params);
+    return this.client.get('/api/orders', params)
   }
 
   /**
    * 獲取持倉
    */
   async getPositions(): Promise<Position[]> {
-    return this.client.get<Position[]>('/api/positions');
+    return this.client.get<Position[]>('/api/positions')
   }
 
   /**
    * 獲取交易歷史
    */
   async getTrades(params?: {
-    symbol?: string;
-    start_date?: string;
-    end_date?: string;
-    limit?: number;
-    offset?: number;
+    symbol?: string
+    start_date?: string
+    end_date?: string
+    limit?: number
+    offset?: number
   }): Promise<{
-    trades: Trade[];
-    total: number;
+    trades: Trade[]
+    total: number
   }> {
-    return this.client.get('/api/trades', params);
+    return this.client.get('/api/trades', params)
   }
 
   // ==================== 帳戶相關 API ====================
@@ -224,35 +226,35 @@ class ApiService {
    * 獲取帳戶資訊
    */
   async getAccountInfo(): Promise<{
-    account_id: string;
-    balance: number;
-    available_balance: number;
-    total_value: number;
-    unrealized_pnl: number;
+    account_id: string
+    balance: number
+    available_balance: number
+    total_value: number
+    unrealized_pnl: number
   }> {
-    return this.client.get('/api/account/info');
+    return this.client.get('/api/account/info')
   }
 
   /**
    * 獲取資金流水
    */
   async getAccountHistory(params?: {
-    start_date?: string;
-    end_date?: string;
-    limit?: number;
-    offset?: number;
+    start_date?: string
+    end_date?: string
+    limit?: number
+    offset?: number
   }): Promise<{
     records: Array<{
-      id: string;
-      type: string;
-      amount: number;
-      balance: number;
-      description: string;
-      created_at: string;
-    }>;
-    total: number;
+      id: string
+      type: string
+      amount: number
+      balance: number
+      description: string
+      created_at: string
+    }>
+    total: number
   }> {
-    return this.client.get('/api/account/history', params);
+    return this.client.get('/api/account/history', params)
   }
 
   // ==================== 系統狀態 API ====================
@@ -261,27 +263,27 @@ class ApiService {
    * 檢查 API 健康狀態
    */
   async healthCheck(): Promise<{
-    status: string;
-    timestamp: string;
-    shioaji_connected: boolean;
+    status: string
+    timestamp: string
+    shioaji_connected: boolean
   }> {
-    return this.client.get('/api/health');
+    return this.client.get('/api/health')
   }
 
   /**
    * 獲取市場狀態
    */
   async getMarketStatus(): Promise<{
-    is_open: boolean;
-    next_open_time?: string;
-    next_close_time?: string;
-    timezone: string;
+    is_open: boolean
+    next_open_time?: string
+    next_close_time?: string
+    timezone: string
   }> {
-    return this.client.get('/api/market/status');
+    return this.client.get('/api/market/status')
   }
 }
 
 // 導出單例實例
-export const apiService = new ApiService();
-export { ApiError };
-export type { ApiService };
+export const apiService = new ApiService()
+export { ApiError }
+export type { ApiService }

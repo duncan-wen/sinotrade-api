@@ -13,6 +13,10 @@
 *.yaml text eol=lf
 *.yml text eol=lf
 
+# Windows 批次檔案需要 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
 # 二進制檔案
 *.png binary
 *.jpg binary

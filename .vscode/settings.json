@@ -67,6 +67,7 @@
 
   // 檔案設定
   "files.trimTrailingWhitespace": true,
+  "files.eol": "\n", // 強制使用 LF (Unix) 作為行結束符
   "files.associations": {
     "*.py": "python"
   },

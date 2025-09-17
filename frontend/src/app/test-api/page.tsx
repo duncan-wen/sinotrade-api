@@ -2,14 +2,14 @@
  * API 測試頁面
  * 用於測試前後端串接功能
  */
-'use client';
+'use client'
 
-import React from 'react';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
-import { queryClient } from '@/lib/queryClient';
-import SimpleApiTest from '@/components/testing/SimpleApiTest';
+import React from 'react'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider'
+import { queryClient } from '@/lib/queryClient'
+import SimpleApiTest from '@/components/testing/SimpleApiTest'
 
 export default function TestApiPage() {
   return (
@@ -21,11 +21,9 @@ export default function TestApiPage() {
 
         {/* React Query DevTools - 只在開發環境顯示 */}
         {process.env.NODE_ENV === 'development' && (
-          <ReactQueryDevtools
-            initialIsOpen={false}
-          />
+          <ReactQueryDevtools initialIsOpen={false} />
         )}
       </GluestackUIProvider>
     </QueryClientProvider>
-  );
+  )
 }
