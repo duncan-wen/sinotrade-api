@@ -13,8 +13,8 @@ export default function TestFuturesPage() {
 
   // 期貨合約列表
   const futuresSymbols = [
-    'TXFR1', // 台指期貨
-    'MXFF', // 小台指期貨
+    'TXFR2', // 台指期貨
+    'MXFR2', // 小台指期貨
     'T5FF', // 5年期公債期貨
     'T10FF', // 10年期公債期貨
     'GTFF', // 櫃買期貨
@@ -86,10 +86,10 @@ export default function TestFuturesPage() {
           </h3>
           <ul className="text-sm text-yellow-700 space-y-1">
             <li>
-              • <strong>TXFF</strong>: 台指期貨 (Taiwan Stock Index Futures)
+              • <strong>TXFR2</strong>: 台指期貨 (Taiwan Stock Index Futures)
             </li>
             <li>
-              • <strong>MXFF</strong>: 小台指期貨 (Mini Taiwan Stock Index
+              • <strong>MXFR2</strong>: 小台指期貨 (Mini Taiwan Stock Index
               Futures)
             </li>
             <li>

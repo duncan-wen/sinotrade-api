@@ -36,22 +36,94 @@ class KlineWebSocketService {
   private subscriptions = new Map<string, (message: KlineMessage) => void>()
 
   constructor() {
-    this.clientId = `kline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    // 使用瀏覽器會話級別的唯一 ID,確保:
+    // 1. 同一瀏覽器標籤頁內保持相同 ID (避免重複連接)
+    // 2. 不同用戶/標籤頁有不同 ID (避免用戶衝突)
+    const sessionId = this.getOrCreateSessionId()
+    this.clientId = `kline_${sessionId}`
+  }
+
+  /**
+   * 獲取或創建會話級別的唯一 ID
+   */
+  private getOrCreateSessionId(): string {
+    // 檢查是否在瀏覽器環境 (避免 SSR 錯誤)
+    if (
+      typeof window === 'undefined' ||
+      typeof sessionStorage === 'undefined'
+    ) {
+      // 服務器端或不支援 sessionStorage 的環境,生成臨時 ID
+      const tempId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      console.log('🌐 服務器端生成臨時 WebSocket ID:', tempId)
+      return tempId
+    }
+
+    const SESSION_KEY = 'kline_websocket_session_id'
+    let sessionId = sessionStorage.getItem(SESSION_KEY)
+
+    if (!sessionId) {
+      // 創建新的會話 ID:時間戳 + 隨機字符
+      sessionId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      sessionStorage.setItem(SESSION_KEY, sessionId)
+      console.log('🆕 創建新的 WebSocket 會話 ID:', sessionId)
+    } else {
+      console.log('🔄 重用現有 WebSocket 會話 ID:', sessionId)
+    }
+
+    return sessionId
   }
 
   /**
    * 連接 WebSocket
    */
   async connect(): Promise<void> {
+    // 檢查是否已經有活躍連線
     if (this.ws?.readyState === WebSocket.OPEN) {
+      console.log('🔗 WebSocket 已連線,重用現有連線:', this.clientId)
       return
+    }
+
+    // 檢查是否正在連線中
+    if (this.ws?.readyState === WebSocket.CONNECTING) {
+      console.log('🔄 WebSocket 正在連線中,等待完成:', this.clientId)
+      return new Promise((resolve, reject) => {
+        const checkConnection = () => {
+          if (this.ws?.readyState === WebSocket.OPEN) {
+            resolve()
+          } else if (this.ws?.readyState === WebSocket.CLOSED) {
+            reject(new Error('WebSocket 連線失敗'))
+          } else {
+            setTimeout(checkConnection, 100)
+          }
+        }
+        checkConnection()
+      })
     }
 
     return new Promise((resolve, reject) => {
       const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000'
 
       try {
-        this.ws = new WebSocket(`${wsUrl}/ws/klines/${this.clientId}`)
+        // 先關閉舊連線(如果存在)
+        if (this.ws) {
+          console.log('🗑️ 關閉舊的 WebSocket 連線')
+          this.ws.close()
+        }
+
+        console.log('🚀 創建新的 WebSocket 連線:', {
+          clientId: this.clientId,
+          url: `${wsUrl}/ws/klines/${this.clientId}`,
+          wsUrl,
+          timestamp: new Date().toISOString(),
+        })
+
+        // 檢查 WebSocket URL 格式
+        const fullUrl = `${wsUrl}/ws/klines/${this.clientId}`
+        if (!fullUrl.startsWith('ws://') && !fullUrl.startsWith('wss://')) {
+          throw new Error(`無效的 WebSocket URL: ${fullUrl}`)
+        }
+
+        this.ws = new WebSocket(fullUrl)
 
         this.ws.onopen = () => {
           console.log('✅ K線 WebSocket 連接成功')
@@ -80,8 +152,18 @@ class KlineWebSocketService {
         }
 
         this.ws.onerror = (error) => {
-          console.error('K線 WebSocket 錯誤:', error)
-          reject(error)
+          console.error('❌ K線 WebSocket 錯誤:', {
+            error,
+            readyState: this.ws?.readyState,
+            url: `${wsUrl}/ws/klines/${this.clientId}`,
+            clientId: this.clientId,
+            timestamp: new Date().toISOString(),
+          })
+          reject(
+            new Error(
+              `WebSocket 連接失敗: ${(error as any)?.message || '未知錯誤'}`
+            )
+          )
         }
       } catch (error) {
         reject(error)
@@ -218,5 +300,19 @@ class KlineWebSocketService {
   }
 }
 
-// 全局實例
-export const klineWebSocketService = new KlineWebSocketService()
+// 創建全域單例實例,避免重複連接
+let globalKlineWebSocketService: KlineWebSocketService | null = null
+
+export const klineWebSocketService: KlineWebSocketService | null = (() => {
+  // 延遲初始化:只在瀏覽器環境中創建實例
+  if (typeof window !== 'undefined' && !globalKlineWebSocketService) {
+    globalKlineWebSocketService = new KlineWebSocketService()
+    console.log(
+      '🔗 創建全域 KlineWebSocketService 實例:',
+      globalKlineWebSocketService['clientId']
+    )
+  }
+
+  // 如果在服務器端,返回 null (組件需要處理這種情況)
+  return globalKlineWebSocketService
+})()

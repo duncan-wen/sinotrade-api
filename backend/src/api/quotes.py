@@ -19,6 +19,24 @@ from src.services.technical_analysis_service import technical_analysis_service
 router = APIRouter()
 
 
+def _extract_klines_data(result: Any) -> list[dict[str, Any]]:
+    """
+    統一處理 get_historical_klines 回傳結果,提取 K線數據
+
+    Args:
+        result: get_historical_klines 的回傳值
+
+    Returns:
+        K線數據列表
+    """
+    if isinstance(result, dict):
+        return result.get("data", [])
+    elif isinstance(result, list):
+        return result
+    else:
+        return []
+
+
 @router.get("/quote/{symbol}", response_model=Quote)
 def get_quote(symbol: str, user: APIUser = Depends(get_current_user)) -> Quote:
     """
@@ -97,8 +115,13 @@ def get_historical_klines(
             symbol, interval, limit, ma_periods_list
         )
 
-        klines = result["data"]
-        contract_info = result["contract"]
+        # 統一處理回傳格式
+        if isinstance(result, dict):
+            klines = result.get("data", [])
+            contract_info = result.get("contract", {"symbol": symbol, "name": symbol})
+        else:
+            klines = result if isinstance(result, list) else []
+            contract_info = {"symbol": symbol, "name": symbol}
 
         # 可選的技術指標計算
         if include_indicators and klines:
@@ -202,7 +225,10 @@ def get_chart_data_with_indicators(
 
         # 獲取原始K線數據(包含額外數據供指標計算)
         extended_limit = limit + max_period if max_period > 0 else limit
-        klines = shioaji_service.get_historical_klines(symbol, interval, extended_limit)
+        klines_result = shioaji_service.get_historical_klines(
+            symbol, interval, extended_limit
+        )
+        klines = _extract_klines_data(klines_result)
 
         if not klines:
             return ChartDataResponse(
@@ -312,9 +338,10 @@ def get_multi_symbol_chart_data(
 
         for symbol in symbol_list:
             try:
-                klines = shioaji_service.get_historical_klines(
+                klines_result = shioaji_service.get_historical_klines(
                     symbol, interval, extended_limit
                 )
+                klines = _extract_klines_data(klines_result)
                 if klines:
                     multi_symbol_data[symbol] = klines
                     logger.info(f"Fetched {len(klines)} data points for {symbol}")
@@ -405,7 +432,8 @@ def benchmark_polars_vs_pandas(
             indicators_config["rsi"] = {"periods": [14]}
 
         # 獲取測試數據
-        klines = shioaji_service.get_historical_klines(symbol, interval, limit)
+        klines_result = shioaji_service.get_historical_klines(symbol, interval, limit)
+        klines = _extract_klines_data(klines_result)
 
         if not klines:
             return {"error": "無法獲取K線數據", "symbol": symbol}
@@ -437,7 +465,7 @@ def benchmark_polars_vs_pandas(
         pandas_start = time.perf_counter()
 
         pandas_result = technical_analysis_service.calculate_all_indicators(
-            klines, indicators_config
+            _extract_klines_data(klines), indicators_config
         )
 
         pandas_end = time.perf_counter()

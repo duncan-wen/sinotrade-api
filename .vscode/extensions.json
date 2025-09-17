@@ -9,6 +9,7 @@
   ],
   "unwantedRecommendations": [
     "ms-python.isort", // 避免使用 isort,因為我們用 Ruff 處理 import 排序
-    "ms-python.black-formatter" // 已改用 Ruff formatter
+    "ms-python.black-formatter", // 已改用 Ruff formatter
+    "ms-python.pylance" // 在 Cursor 中使用內建 Pyright,避免衝突
   ]
 }

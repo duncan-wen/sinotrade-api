@@ -11,11 +11,11 @@ import {
 } from 'lightweight-charts'
 import { View } from 'react-native'
 import {
-  klineWebSocketService,
+  klineSocketIOService,
   KlineData,
   KlineMessage,
   TickData,
-} from '@/services/klineWebsocket'
+} from '@/services/klineSocketIO'
 
 export interface KLineData {
   time: string
@@ -59,6 +59,7 @@ export function TradingChart({
     code: string
     exchange: string
   } | null>(null)
+  const [isWebSocketConnected, setIsWebSocketConnected] = useState(false)
 
   // 獲取歷史K線數據
   useEffect(() => {
@@ -113,21 +114,31 @@ export function TradingChart({
   useEffect(() => {
     if (!enableRealtime) return
 
+    // 檢查是否在瀏覽器環境且服務可用
+    if (!klineSocketIOService) {
+      console.warn('⚠️ Socket.IO 服務不可用 (SSR環境)')
+      return
+    }
+
     const handleKlineMessage = (message: KlineMessage) => {
-      console.log('📊 處理圖表消息:', message)
+      console.log('📊 處理圖表消息:', message.type, message.symbol)
 
       if (message.type === 'historical_klines') {
-        // 處理歷史數據
-        const historicalData = Array.isArray(message.data)
-          ? message.data
-          : [message.data]
+        // 處理歷史數據 - Socket.IO 數據結構
+        const historicalData = message.klines || []
+        console.log('📈 處理歷史K線數據:', historicalData)
         setKlineData((prevData) => {
           // 合併歷史數據,避免重複
           const existingTimestamps = new Set(prevData.map((d) => d.time))
           const newData = historicalData
             .filter((d) => {
+              // 安全檢查數據結構
+              if (!d || typeof d !== 'object') {
+                console.warn('過濾無效數據結構:', d)
+                return false
+              }
               const timestamp = d.timestamp || d.time
-              return !existingTimestamps.has(timestamp)
+              return timestamp && !existingTimestamps.has(timestamp)
             })
             .filter((d) => {
               // 驗證歷史數據的有效性
@@ -164,18 +175,13 @@ export function TradingChart({
             return aTime - bTime
           })
         })
-      } else if (message.type === 'kline') {
-        // 處理即時K線更新
-        const rawData = message.data as any
+      } else if (message.type === 'kline_update') {
+        // 處理即時K線更新 - Socket.IO 結構
+        const klineData = message.kline
 
-        // 從後端數據中提取K線字段(後端在data中包含symbol字段)
-        const klineData: KlineData = {
-          timestamp: rawData.timestamp,
-          open: rawData.open,
-          high: rawData.high,
-          low: rawData.low,
-          close: rawData.close,
-          volume: rawData.volume,
+        if (!klineData) {
+          console.warn('K線更新數據為空:', message)
+          return
         }
 
         // 驗證K線數據的有效性
@@ -237,17 +243,12 @@ export function TradingChart({
           }
         })
       } else if (message.type === 'tick') {
-        // 處理即時tick更新 - 實現K棒跳動效果
-        const rawData = message.data as any
+        // 處理即時tick更新 - Socket.IO 結構
+        const tickData = message.tick
 
-        // 從後端數據中提取tick字段
-        const tickData: TickData = {
-          symbol: rawData.symbol,
-          timestamp: rawData.timestamp,
-          price: rawData.price,
-          volume: rawData.volume || 0,
-          amount: rawData.amount || 0,
-          total_volume: rawData.total_volume || 0,
+        if (!tickData) {
+          console.warn('Tick數據為空:', message)
+          return
         }
 
         console.log('⚡ 處理tick數據:', tickData)
@@ -351,29 +352,69 @@ export function TradingChart({
             return updatedData
           }
 
-          // 如果tick已經超出當前K線時間範圍,保持原有數據
-          // 新的K線會由後端的kline消息處理
-          console.log('⏳ tick超出當前K線時間範圍,等待新K線')
-          return prevData
+          // 如果tick已經超出當前K線時間範圍,創建新的K線
+          console.log('📊 tick超出當前K線時間範圍,創建新K線')
+
+          // 計算新K線的開始時間 (對齊到5分鐘邊界)
+          const tickMinutes = currentTime.getMinutes()
+          const alignedMinutes = Math.floor(tickMinutes / 5) * 5
+          const newKlineStartTime = new Date(currentTime)
+          newKlineStartTime.setMinutes(alignedMinutes, 0, 0) // 設定到5分鐘邊界
+
+          const newKline = {
+            time: newKlineStartTime.toISOString(),
+            open: tickPrice,
+            high: tickPrice,
+            low: tickPrice,
+            close: tickPrice,
+            volume: tickData.volume || 0,
+          }
+
+          console.log('🆕 創建新K線:', {
+            time: newKline.time,
+            price: tickPrice,
+            originalTickTime: formatTime(currentTime),
+            alignedTime: formatTime(newKlineStartTime),
+          })
+
+          return [...prevData, newKline].slice(-200) // 保留最新200根K線
         })
       }
     }
 
     const connectWebSocket = async () => {
       try {
-        await klineWebSocketService.connect()
+        console.log('🔗 準備連接 WebSocket,當前狀態:', isWebSocketConnected)
+
+        // 避免重複連接
+        if (isWebSocketConnected) {
+          console.log('⚠️ WebSocket 已連接,跳過重複連接')
+          // 只重新訂閱即可
+          klineSocketIOService.subscribe(symbol, handleKlineMessage)
+          return
+        }
+
+        // Socket.IO 自動連接,無需手動 connect
+        setIsWebSocketConnected(true)
 
         // WebSocket連接成功後立即訂閱
-        klineWebSocketService.subscribe(symbol, handleKlineMessage)
+        klineSocketIOService.subscribe(symbol, handleKlineMessage)
       } catch (error) {
         console.error('WebSocket連接失敗:', error)
+        setIsWebSocketConnected(false)
       }
     }
 
     connectWebSocket()
 
     return () => {
-      klineWebSocketService.unsubscribe(symbol)
+      console.log('🧹 清理 WebSocket 訂閱:', symbol)
+      if (klineSocketIOService) {
+        klineSocketIOService.unsubscribe()
+        // 注意:不調用 disconnect(),因為其他組件可能還在使用同一個 WebSocket 連接
+      }
+      // 重置連接狀態,允許下次重新連接
+      setIsWebSocketConnected(false)
     }
   }, [symbol, enableRealtime])
 
@@ -513,12 +554,14 @@ export function TradingChart({
         const timestamp = new Date(item.time).getTime()
         // 將 UTC 時間轉換為台灣時間 (UTC+8)
         const taipeiTimestamp = timestamp + 8 * 60 * 60 * 1000 // +8小時
+        /*
         console.log('K線時間戳調試:', {
           原始: item.time,
           UTC毫秒: timestamp,
           台灣毫秒: taipeiTimestamp,
           台灣時間: new Date(taipeiTimestamp).toLocaleString('zh-TW'),
         })
+        */
         return {
           time: (taipeiTimestamp / 1000) as Time,
           open: item.open,

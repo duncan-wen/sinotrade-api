@@ -19,11 +19,7 @@
   "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
   "python.terminal.activateEnvironment": true,
 
-  // IntelliCode 設定(已禁用避免錯誤)
-  "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
-  "vsintellicode.python.completionsEnabled": false,
-
-  // Python 語言伺服器設定
+  // Python 語言伺服器設定 - 使用 Cursor 內建 Pyright
   "python.languageServer": "None",
 
   // SQLTools 設定
@@ -77,5 +73,10 @@
     "**/*.pyc": true,
     // "**/.venv": true,
     "**/node_modules": true
-  }
+  },
+  // Cursor Pyright 設定 - 針對 Python 類型檢查和自動完成
+  "cursorpyright.analysis.autoImportCompletions": true,
+  "cursorpyright.analysis.typeCheckingMode": "off",
+  "cursorpyright.analysis.autoSearchPaths": true,
+  "cursorpyright.analysis.diagnosticMode": "workspace"
 }

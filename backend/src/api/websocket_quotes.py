@@ -14,7 +14,7 @@ from src.services.shioaji_service import shioaji_service
 class WebSocketManager:
     """WebSocket 連接管理器"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # 儲存所有活動的 WebSocket 連接
         self.active_connections: dict[str, WebSocket] = {}
         # 每個連接訂閱的股票
@@ -76,11 +76,18 @@ class WebSocketManager:
         logger.info("[CLEANUP] 所有 WebSocket 訂閱已清理")
 
     def _normalize_symbol(self, symbol: str) -> str:
-        """標準化symbol格式,將 TSE2330 等轉換為 2330"""
+        """標準化symbol格式,將 TSE2330 等轉換為 2330,處理期貨代碼映射"""
         if not symbol:
             return symbol
 
-        # 移除常見的前綴
+        # 🚀 簡化期貨代碼映射 - 直接使用 TXFR1/TXFR2, MXFR1/MXFR2
+        # 不再需要複雜的合約代碼轉換,直接使用標準化符號
+
+        # 如果已經是標準化符號,直接返回
+        if symbol in ["TXFR1", "TXFR2", "MXFR1", "MXFR2"]:
+            return symbol
+
+        # 移除常見的股票前綴
         prefixes = ["TSE", "OTC", "OES"]
         for prefix in prefixes:
             if symbol.startswith(prefix) and len(symbol) > len(prefix):
@@ -123,6 +130,23 @@ class WebSocketManager:
     def _subscribe_to_shioaji(self, symbol: str):
         """向 Shioaji 訂閱股票"""
         try:
+            # 顯示當前回調狀態
+            logger.info(f"📋 當前回調數量: {len(shioaji_service.quote_callbacks)}")
+            logger.info(
+                f"📋 回調列表: {[cb.__name__ for cb in shioaji_service.quote_callbacks]}"
+            )
+
+            # 確保 WebSocket 回調已註冊 (防止 hot reload 時丟失)
+            if tick_broadcast_callback not in shioaji_service.quote_callbacks:
+                logger.warning("⚠️ WebSocket 回調未註冊,重新註冊...")
+                shioaji_service.add_quote_callback(tick_broadcast_callback)
+                logger.info("✅ WebSocket 回調重新註冊完成")
+                logger.info(
+                    f"📋 註冊後回調數量: {len(shioaji_service.quote_callbacks)}"
+                )
+            else:
+                logger.info("✅ WebSocket 回調已存在,無需重新註冊")
+
             success = shioaji_service.subscribe_quote(symbol)
             if success:
                 logger.info(f"開始從 Shioaji 訂閱 {symbol}")
@@ -144,8 +168,8 @@ class WebSocketManager:
 
     async def broadcast_tick(self, quote: Quote):
         """廣播 Tick 資料給訂閱的客戶端 (用於 K 線圖)"""
-        logger.debug(
-            f"[TICK] 收到tick數據: symbol={quote.symbol}, timestamp={quote.timestamp}"
+        logger.info(
+            f"🔄 [TICK] 收到tick數據: symbol={quote.symbol}, close={quote.close}, timestamp={quote.timestamp}"
         )
 
         # 檢查是否有任何客戶端訂閱了這個symbol
@@ -188,7 +212,7 @@ class WebSocketManager:
             logger.error(f"tick時間戳處理錯誤,無法廣播: {e}")
             return
 
-        message = {
+        message: dict[str, Any] = {
             "type": "tick",
             "data": {
                 "symbol": quote.symbol,
@@ -201,11 +225,10 @@ class WebSocketManager:
         }
 
         # 發送給所有訂閱該股票的客戶端
-        logger.debug(
-            f"[TICK] 廣播tick消息給 {len(self.symbol_subscribers[target_symbol])} 個客戶端"
-        )
+        subscribers = self.symbol_subscribers.get(target_symbol, set())
+        logger.debug(f"[TICK] 廣播tick消息給 {len(subscribers)} 個客戶端")
         disconnected_clients = []
-        for client_id in self.symbol_subscribers[target_symbol]:
+        for client_id in subscribers:
             if client_id in self.active_connections:
                 try:
                     await self.active_connections[client_id].send_text(
@@ -430,7 +453,10 @@ async def websocket_klines_endpoint(websocket: WebSocket, client_id: str):
                         "2454": 850.0,  # 聯發科
                         "3008": 2300.0,  # 大立光
                         "TXFF": 22800.0,  # 台指期貨
-                        "MXFF": 18500.0,  # 小台指期貨
+                        "TXFR1": 22800.0,  # 大台指近月
+                        "TXFR2": 22850.0,  # 大台指遠月
+                        "MXFR1": 18500.0,  # 小台指近月
+                        "MXFR2": 18550.0,  # 小台指遠月
                     }
 
                     base_price = base_prices.get(captured_symbol, 100.0)  # 預設價格
