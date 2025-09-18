@@ -22,7 +22,7 @@ import {
   HistogramData,
   Time,
 } from 'lightweight-charts'
-import { View } from 'react-native'
+// Removed react-native import - using standard div
 import {
   klineSocketIOService,
   KlineData,
@@ -1172,9 +1172,9 @@ export function TradingChart({
   }, [klineData, isVolumeVisible, symbol]) // 添加symbol確保商品切換時自動調整價格範圍
 
   return (
-    <View className={`bg-white rounded-lg border border-gray-200 ${className}`}>
+    <div className={`bg-white rounded-lg border border-gray-200 ${className}`}>
       {/* 圖表標題 */}
-      <View className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">
@@ -1259,10 +1259,10 @@ export function TradingChart({
             </button>
           </div>
         </div>
-      </View>
+      </div>
 
       {/* 圖表容器 */}
-      <View className="relative">
+      <div className="relative">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
             <div className="text-gray-500">載入圖表中...</div>
@@ -1273,10 +1273,10 @@ export function TradingChart({
           className="w-full min-w-0"
           style={{ height: `${height}px` }}
         />
-      </View>
+      </div>
 
       {/* 圖表工具欄 */}
-      <View className="p-3 border-t border-gray-200 bg-gray-50">
+      <div className="p-3 border-t border-gray-200 bg-gray-50">
         <div className="flex items-center space-x-4 text-sm">
           <div className="flex items-center space-x-2">
             <span className="text-gray-600">技術指標:</span>
@@ -1334,7 +1334,7 @@ export function TradingChart({
             )}
           </div>
         </div>
-      </View>
-    </View>
+      </div>
+    </div>
   )
 }

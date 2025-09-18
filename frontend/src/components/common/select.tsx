@@ -1,16 +1,10 @@
 import {
   Select,
-  SelectTrigger,
-  SelectInput,
-  SelectIcon,
-  SelectPortal,
-  SelectBackdrop,
   SelectContent,
-  SelectDragIndicator,
-  SelectDragIndicatorWrapper,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
-import { ChevronDownIcon } from '@/components/ui/icon'
 
 export default function SelectComponent(props: {
   className?: string
@@ -23,30 +17,23 @@ export default function SelectComponent(props: {
     value,
     onValueChange,
     placeholder = 'Select option',
+    className,
+    options,
     ...restProps
   } = props
 
   return (
-    <Select defaultValue={value} onValueChange={onValueChange} {...restProps}>
-      <SelectTrigger variant="rounded" size="md">
-        <SelectInput placeholder={placeholder} />
-        <SelectIcon className="mr-3" as={ChevronDownIcon} />
+    <Select value={value} onValueChange={onValueChange} {...restProps}>
+      <SelectTrigger className={className}>
+        <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectPortal>
-        <SelectBackdrop />
-        <SelectContent>
-          <SelectDragIndicatorWrapper>
-            <SelectDragIndicator />
-          </SelectDragIndicatorWrapper>
-          {props.options.map((option) => (
-            <SelectItem
-              key={option.value}
-              label={option.label}
-              value={option.value}
-            />
-          ))}
-        </SelectContent>
-      </SelectPortal>
+      <SelectContent>
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
     </Select>
   )
 }

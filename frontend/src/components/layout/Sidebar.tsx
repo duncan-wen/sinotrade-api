@@ -1,8 +1,7 @@
-// @ts-nocheck
 'use client'
 import React from 'react'
-import { View, Text } from 'react-native-web'
-import { Button, ButtonText } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 
 interface SidebarProps {
   isOpen?: boolean
@@ -52,98 +51,98 @@ export function Sidebar({ isOpen = true }: SidebarProps) {
   ]
 
   return (
-    <View
-      className={`bg-gray-50 border-r border-gray-200 min-h-screen transition-all duration-300 ${
+    <aside
+      className={`bg-gradient-to-b from-card/80 to-card/60 backdrop-blur-md border-r border-border/50 h-full transition-all duration-300 shadow-lg ${
         isOpen
-          ? 'w-80 lg:relative lg:translate-x-0 absolute z-50 lg:z-auto'
+          ? 'w-80 lg:relative lg:translate-x-0 absolute z-40 lg:z-auto'
           : 'w-20 hidden lg:block'
       }`}
     >
       {/* 主選單 */}
-      <View className="p-4">
-        <Text
-          className={`text-lg font-semibold text-gray-900 mb-4 ${!isOpen && 'hidden'}`}
+      <div className="p-4">
+        <h2
+          className={`text-lg font-semibold text-foreground mb-4 ${!isOpen && 'hidden'}`}
         >
           主要功能
-        </Text>
+        </h2>
 
-        <View className="space-y-2">
+        <div className="space-y-2">
           {menuItems.map((item, index) => (
             <Button
               key={index}
-              variant={item.active ? 'solid' : 'outline'}
-              action={item.active ? 'primary' : 'default'}
-              className={`w-full justify-start ${item.active ? 'bg-blue-50 border-blue-200' : 'bg-transparent border-transparent hover:bg-gray-100'}`}
+              variant={item.active ? 'default' : 'ghost'}
+              className={`w-full justify-start ${
+                item.active
+                  ? 'bg-primary/10 border-primary/20 text-primary'
+                  : 'hover:bg-muted'
+              }`}
             >
-              <View className="flex-row items-center">
-                <Text className="text-lg mr-3">{item.icon}</Text>
+              <div className="flex items-center">
+                <span className="text-lg mr-3">{item.icon}</span>
                 {isOpen && (
-                  <ButtonText
-                    className={
-                      item.active
-                        ? 'text-blue-700 font-medium'
-                        : 'text-gray-700'
-                    }
-                  >
+                  <span className={item.active ? 'font-medium' : ''}>
                     {item.label}
-                  </ButtonText>
+                  </span>
                 )}
-              </View>
+              </div>
             </Button>
           ))}
-        </View>
-      </View>
+        </div>
+      </div>
 
       {/* 分隔線 */}
-      {isOpen && <View className="h-px bg-gray-200 mx-4 my-4" />}
+      {isOpen && <div className="h-px bg-border mx-4 my-4" />}
 
       {/* 監控清單 */}
       {isOpen && (
-        <View className="p-4 flex-1">
-          <Text className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="p-4 flex-1">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
             監控清單
-          </Text>
+          </h3>
 
-          <View className="space-y-3">
+          <div className="space-y-3">
             {watchlist.map((stock, index) => (
-              <View
-                key={index}
-                className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm"
-              >
-                <View className="flex-row items-center justify-between mb-1">
-                  <Text className="font-semibold text-gray-900 text-sm">
-                    {stock.symbol}
-                  </Text>
-                  <Text
-                    className={`text-sm font-medium ${stock.up ? 'text-green-600' : 'text-red-600'}`}
-                  >
-                    {stock.change}
-                  </Text>
-                </View>
-                <Text className="text-xs text-gray-500 mb-1">{stock.name}</Text>
-                <Text className="text-sm font-medium text-gray-900">
-                  {stock.price}
-                </Text>
-              </View>
+              <Card key={index} className="p-3">
+                <CardContent className="p-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold text-foreground text-sm">
+                      {stock.symbol}
+                    </span>
+                    <span
+                      className={`text-sm font-medium ${
+                        stock.up ? 'text-green-600' : 'text-red-600'
+                      }`}
+                    >
+                      {stock.change}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {stock.name}
+                  </p>
+                  <p className="text-sm font-medium text-foreground">
+                    {stock.price}
+                  </p>
+                </CardContent>
+              </Card>
             ))}
-          </View>
+          </div>
 
           {/* 新增按鈕 */}
           <Button variant="outline" className="w-full mt-4 border-dashed">
-            <ButtonText className="text-gray-500">+ 新增股票</ButtonText>
+            + 新增股票
           </Button>
-        </View>
+        </div>
       )}
 
       {/* 底部設定 */}
-      <View className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-border">
         <Button variant="outline" className="w-full">
-          <View className="flex-row items-center">
-            <Text className="text-lg mr-3">⚙️</Text>
-            {isOpen && <ButtonText className="text-gray-700">設定</ButtonText>}
-          </View>
+          <div className="flex items-center">
+            <span className="text-lg mr-3">⚙️</span>
+            {isOpen && <span>設定</span>}
+          </div>
         </Button>
-      </View>
-    </View>
+      </div>
+    </aside>
   )
 }

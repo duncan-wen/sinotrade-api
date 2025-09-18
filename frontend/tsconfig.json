@@ -10,10 +10,8 @@
       "@/types/*": ["./src/types/*"],
       "@/styles/*": ["./src/styles/*"],
       "@/utils/*": ["./src/utils/*"],
-      "tailwind.config": ["./tailwind.config.js"],
-      "react-native": ["./node_modules/react-native-web/dist/index.d.ts"]
+      "tailwind.config": ["./tailwind.config.js"]
     },
-    "jsxImportSource": "nativewind",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "jsx": "preserve",
