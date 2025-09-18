@@ -37,6 +37,10 @@ export interface KLineData {
   low: number
   close: number
   volume?: number
+  // MA 移動平均線數據
+  ma5?: number | null
+  ma10?: number | null
+  ma20?: number | null
 }
 
 interface TradingChartProps {
@@ -88,6 +92,135 @@ export function TradingChart({
   const lastDataLengthRef = useRef<number>(0)
   const [isAutoFitEnabled, setIsAutoFitEnabled] = useState(autoFit)
   const [isVolumeVisible, setIsVolumeVisible] = useState(showVolume)
+
+  // MA 移動平均線狀態
+  const [showMA, setShowMA] = useState({
+    ma5: true,
+    ma10: true,
+    ma20: true,
+  })
+  const ma5SeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
+  const ma10SeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
+  const ma20SeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
+
+  // 更新 MA 數據的輔助函數
+  const updateMAData = (data: KLineData[]) => {
+    if (
+      !ma5SeriesRef.current ||
+      !ma10SeriesRef.current ||
+      !ma20SeriesRef.current
+    ) {
+      console.warn('❌ MA系列引用尚未初始化')
+      return
+    }
+
+    console.log(
+      '🔍 檢查原始數據MA值:',
+      data.slice(0, 3).map((d) => ({
+        time: d.time,
+        ma5: d.ma5,
+        ma10: d.ma10,
+        ma20: d.ma20,
+      }))
+    )
+
+    // 統計有效 MA 數據
+    const validMa5Count = data.filter(
+      (d) => d.ma5 !== null && d.ma5 !== undefined && !isNaN(d.ma5) && d.ma5 > 0
+    ).length
+    const validMa10Count = data.filter(
+      (d) =>
+        d.ma10 !== null && d.ma10 !== undefined && !isNaN(d.ma10) && d.ma10 > 0
+    ).length
+    const validMa20Count = data.filter(
+      (d) =>
+        d.ma20 !== null && d.ma20 !== undefined && !isNaN(d.ma20) && d.ma20 > 0
+    ).length
+
+    console.log('📊 有效MA數據統計:', {
+      總數據量: data.length,
+      有效MA5: validMa5Count,
+      有效MA10: validMa10Count,
+      有效MA20: validMa20Count,
+    })
+
+    // 準備 MA5 數據 - 使用與 candlestick 相同的時間轉換邏輯
+    const ma5Data = data
+      .filter(
+        (d) =>
+          d.ma5 !== null && d.ma5 !== undefined && !isNaN(d.ma5) && d.ma5 > 0
+      )
+      .map((d) => {
+        // 確保時間格式一致
+        const timeValue =
+          typeof d.time === 'string'
+            ? new Date(d.time).getTime() / 1000
+            : d.time
+        return {
+          time: timeValue as Time,
+          value: d.ma5!,
+        }
+      })
+
+    // 準備 MA10 數據
+    const ma10Data = data
+      .filter(
+        (d) =>
+          d.ma10 !== null &&
+          d.ma10 !== undefined &&
+          !isNaN(d.ma10) &&
+          d.ma10 > 0
+      )
+      .map((d) => {
+        const timeValue =
+          typeof d.time === 'string'
+            ? new Date(d.time).getTime() / 1000
+            : d.time
+        return {
+          time: timeValue as Time,
+          value: d.ma10!,
+        }
+      })
+
+    // 準備 MA20 數據
+    const ma20Data = data
+      .filter(
+        (d) =>
+          d.ma20 !== null &&
+          d.ma20 !== undefined &&
+          !isNaN(d.ma20) &&
+          d.ma20 > 0
+      )
+      .map((d) => {
+        const timeValue =
+          typeof d.time === 'string'
+            ? new Date(d.time).getTime() / 1000
+            : d.time
+        return {
+          time: timeValue as Time,
+          value: d.ma20!,
+        }
+      })
+
+    // 設置數據到對應的系列
+    try {
+      ma5SeriesRef.current.setData(ma5Data)
+      ma10SeriesRef.current.setData(ma10Data)
+      ma20SeriesRef.current.setData(ma20Data)
+
+      console.log('📈 MA數據已更新:', {
+        ma5: ma5Data.length,
+        ma10: ma10Data.length,
+        ma20: ma20Data.length,
+      })
+
+      if (ma5Data.length > 0) {
+        console.log('🔍 MA5樣本數據:', ma5Data.slice(0, 2))
+      }
+    } catch (error) {
+      console.error('❌ 設置MA數據時發生錯誤:', error)
+    }
+  }
 
   // 獲取歷史K線數據
   useEffect(() => {
@@ -201,9 +334,18 @@ export function TradingChart({
           })
         }
 
-        // 使用智能計算的limit參數
-        const apiUrl = `/api/klines/${symbol}?interval=${interval}&limit=${Math.floor(smartLimit)}`
-        console.log('🔗 API請求(智能limit):', apiUrl)
+        // 使用智能計算的limit參數，包含 MA 技術指標
+        // 為了保證 MA 計算，增加額外的數據量
+        const maAdjustedLimit = Math.floor(smartLimit) + 50 // 額外增加50根K線供MA計算
+        const apiUrl = `/api/klines/${symbol}?interval=${interval}&limit=${maAdjustedLimit}&ma_periods=5,10,20&include_indicators=true`
+        console.log(
+          '🔗 API請求(MA調整後limit):',
+          apiUrl,
+          '原始limit:',
+          Math.floor(smartLimit),
+          '調整後:',
+          maAdjustedLimit
+        )
 
         const response = await fetch(apiUrl)
         const result = await response.json()
@@ -338,16 +480,45 @@ export function TradingChart({
             setContractInfo(result.contract)
           }
 
-          // 確保數據格式統一,API數據應該已經是正確格式
-          const formattedData = result.data.map((d: any) => ({
-            time: d.time || d.timestamp,
-            open: d.open,
-            high: d.high,
-            low: d.low,
-            close: d.close,
-            volume: d.volume,
-          }))
+          // 處理包含技術指標的數據格式
+          let formattedData: KLineData[]
+
+          if (result.data[0] && result.data[0].kline) {
+            // 新格式：包含技術指標的數據
+            console.log('📈 檢測到技術指標數據格式')
+            formattedData = result.data.map((d: any) => ({
+              time: d.timestamp,
+              open: d.kline.open,
+              high: d.kline.high,
+              low: d.kline.low,
+              close: d.kline.close,
+              volume: d.kline.volume,
+              // 添加 MA 數據
+              ma5: d.ma?.ma5 || null,
+              ma10: d.ma?.ma10 || null,
+              ma20: d.ma?.ma20 || null,
+            }))
+          } else {
+            // 舊格式：只有基本 OHLCV 數據
+            console.log('📊 使用基本 OHLCV 數據格式')
+            formattedData = result.data.map((d: any) => ({
+              time: d.time || d.timestamp,
+              open: d.open,
+              high: d.high,
+              low: d.low,
+              close: d.close,
+              volume: d.volume,
+              ma5: null,
+              ma10: null,
+              ma20: null,
+            }))
+          }
+
           setKlineData(formattedData)
+
+          // 立即處理 MA 數據
+          console.log('🔄 在數據載入後立即更新MA')
+          setTimeout(() => updateMAData(formattedData), 100)
         }
       } catch (error) {
         console.error('獲取歷史K線數據失敗:', error)
@@ -491,26 +662,57 @@ export function TradingChart({
         }
 
         setKlineData((prevData) => {
-          const newKline = {
-            time: klineData.timestamp,
-            open: klineData.open,
-            high: klineData.high,
-            low: klineData.low,
-            close: klineData.close,
-            volume: klineData.volume,
-          }
-
           // 檢查是否是更新現有K線還是新增
           const existingIndex = prevData.findIndex(
-            (d) => d.time === newKline.time
+            (d) => d.time === klineData.timestamp
           )
+
           if (existingIndex >= 0) {
-            // 更新現有K線
+            // 更新現有K線 - 保留原本的 MA 值
+            const existingKline = prevData[existingIndex]
+            const updatedKline = {
+              ...existingKline, // 保留原有的所有數據，包括 MA 值
+              time: klineData.timestamp,
+              open: klineData.open,
+              high: klineData.high,
+              low: klineData.low,
+              close: klineData.close,
+              volume: klineData.volume,
+              // MA 值保持不變
+              ma5: existingKline.ma5,
+              ma10: existingKline.ma10,
+              ma20: existingKline.ma20,
+            }
+
             const updatedData = [...prevData]
-            updatedData[existingIndex] = newKline
+            updatedData[existingIndex] = updatedKline
+            console.log('🔄 更新現有K線，保留MA值:', {
+              時間: updatedKline.time,
+              MA5: updatedKline.ma5,
+              MA10: updatedKline.ma10,
+              MA20: updatedKline.ma20,
+            })
             return updatedData
           } else {
-            // 新增K線
+            // 新增K線 - 新K線暫時沒有MA值
+            const newKline = {
+              time: klineData.timestamp,
+              open: klineData.open,
+              high: klineData.high,
+              low: klineData.low,
+              close: klineData.close,
+              volume: klineData.volume,
+              // 新K線的MA值為null，等後端計算
+              ma5: null,
+              ma10: null,
+              ma20: null,
+            }
+
+            console.log('🆕 新增K線（MA值待計算）:', {
+              時間: newKline.time,
+              價格: newKline.close,
+            })
+
             return [...prevData, newKline]
               .sort((a, b) => {
                 const aTime = new Date(a.time).getTime()
@@ -617,11 +819,15 @@ export function TradingChart({
           // 如果tick時間還在當前K線的時間範圍內,更新收盤價
           if (currentTime < klineEndTime) {
             const updatedKline = {
-              ...latestKline,
+              ...latestKline, // 保留所有原有數據，包括 MA 值
               high: Math.max(latestKline.high, tickPrice), // 更新高點
               low: Math.min(latestKline.low, tickPrice), // 更新低點
               close: tickPrice, // 更新收盤價(即時跳動)
               volume: (latestKline.volume || 0) + (tickData.volume || 0), // 累積成交量
+              // 明確保留 MA 值
+              ma5: latestKline.ma5,
+              ma10: latestKline.ma10,
+              ma20: latestKline.ma20,
             }
 
             console.log('🔄 更新K線:', {
@@ -651,6 +857,10 @@ export function TradingChart({
             low: tickPrice,
             close: tickPrice,
             volume: tickData.volume || 0,
+            // 新K線的MA值為null，等後端計算
+            ma5: null,
+            ma10: null,
+            ma20: null,
           }
 
           console.log('🆕 創建新K線:', {
@@ -842,6 +1052,34 @@ export function TradingChart({
       })
     }
 
+    // 創建 MA 移動平均線系列 - 確保使用正確的價格軸，並且初始可見性正確
+    const ma5Series = chart.addLineSeries({
+      color: '#FF6B6B', // MA5 紅色
+      lineWidth: 2,
+      title: 'MA5',
+      visible: true, // 🔧 初始設為 true，讓 useEffect 控制可見性
+      priceScaleId: 'right', // 使用與 K 線相同的價格軸
+      lastValueVisible: false,
+    })
+
+    const ma10Series = chart.addLineSeries({
+      color: '#4ECDC4', // MA10 青色
+      lineWidth: 2,
+      title: 'MA10',
+      visible: true, // 🔧 初始設為 true，讓 useEffect 控制可見性
+      priceScaleId: 'right', // 使用與 K 線相同的價格軸
+      lastValueVisible: false,
+    })
+
+    const ma20Series = chart.addLineSeries({
+      color: '#45B7D1', // MA20 藍色
+      lineWidth: 2,
+      title: 'MA20',
+      visible: true, // 🔧 初始設為 true，讓 useEffect 控制可見性
+      priceScaleId: 'right', // 使用與 K 線相同的價格軸
+      lastValueVisible: false,
+    })
+
     // 明確設置台灣時區
     chart.applyOptions({
       timeScale: {
@@ -852,6 +1090,14 @@ export function TradingChart({
     chartRef.current = chart
     candlestickSeriesRef.current = candlestickSeries
     volumeSeriesRef.current = volumeSeries
+    ma5SeriesRef.current = ma5Series
+    ma10SeriesRef.current = ma10Series
+    ma20SeriesRef.current = ma20Series
+
+    // 🔧 初始化後立即設置正確的 MA 可見性
+    ma5Series.applyOptions({ visible: showMA.ma5 })
+    ma10Series.applyOptions({ visible: showMA.ma10 })
+    ma20Series.applyOptions({ visible: showMA.ma20 })
 
     // 使用官方配置後,不再需要複雜的視圖保持邏輯
     // 只需簡單的日誌記錄來驗證功能正常
@@ -874,7 +1120,49 @@ export function TradingChart({
       window.removeEventListener('resize', handleResize)
       chart.remove()
     }
-  }, [height, width, isVolumeVisible, autoFit])
+  }, [height, width, isVolumeVisible, autoFit]) // 🔧 移除 showMA 依賴，避免重新創建圖表
+
+  // 當 klineData 更新時檢查是否需要更新 MA 數據
+  useEffect(() => {
+    if (klineData.length > 0) {
+      // 只有在數據長度顯著變化時才全量更新 MA（例如初始載入或數據重置）
+      const currentLength = klineData.length
+      const previousLength = lastDataLengthRef.current
+
+      if (
+        previousLength === 0 || // 初始載入
+        Math.abs(currentLength - previousLength) > 5 // 數據長度顯著變化
+      ) {
+        console.log('🔄 數據長度顯著變化，重新設置MA數據:', {
+          前: previousLength,
+          後: currentLength,
+        })
+        updateMAData(klineData)
+      } else {
+        console.log('📊 跳過MA全量更新（實時更新中）:', {
+          前: previousLength,
+          後: currentLength,
+        })
+      }
+    }
+  }, [klineData])
+
+  // 動態更新 MA 線條可見性
+  useEffect(() => {
+    console.log('🎛️ MA可見性狀態更新:', showMA)
+    if (ma5SeriesRef.current) {
+      console.log('🔴 設置MA5可見性:', showMA.ma5)
+      ma5SeriesRef.current.applyOptions({ visible: showMA.ma5 })
+    }
+    if (ma10SeriesRef.current) {
+      console.log('🟢 設置MA10可見性:', showMA.ma10)
+      ma10SeriesRef.current.applyOptions({ visible: showMA.ma10 })
+    }
+    if (ma20SeriesRef.current) {
+      console.log('🔵 設置MA20可見性:', showMA.ma20)
+      ma20SeriesRef.current.applyOptions({ visible: showMA.ma20 })
+    }
+  }, [showMA])
 
   // 動態更新自適應配置
   useEffect(() => {
@@ -1012,13 +1300,17 @@ export function TradingChart({
             !isNaN(lastBar.time as number)
           ) {
             candlestickSeriesRef.current.update(lastBar)
+            // TODO: 增量更新時應該只更新最後一個 MA 點，這裡暫時用全量更新
+            // updateMAData(formattedData) // 🚫 禁用：避免 MA 線消失
           } else {
             console.error('❌ lastBar時間戳無效,使用setData:', lastBar.time) // TODO: 未來可清理
             candlestickSeriesRef.current.setData(formattedData)
+            // updateMAData(formattedData) // 🚫 禁用：避免 MA 線消失
           }
         } catch (error) {
           console.warn('⚠️ update()失敗,回退到setData():', error.message) // TODO: 未來可清理
           candlestickSeriesRef.current.setData(formattedData)
+          // updateMAData(formattedData) // 🚫 禁用：避免 MA 線消失
         }
       } else if (lastDataLengthRef.current > 0) {
         // 更新現有K線:使用update方法
@@ -1036,18 +1328,26 @@ export function TradingChart({
             !isNaN(lastBar.time as number)
           ) {
             candlestickSeriesRef.current.update(lastBar)
+            // TODO: 更新現有K線時應該只更新最後一個 MA 點，這裡暫時用全量更新
+            // updateMAData(formattedData) // 🚫 禁用：避免 MA 線消失
           } else {
             console.error('❌ lastBar時間戳無效,使用setData:', lastBar.time) // TODO: 未來可清理
             candlestickSeriesRef.current.setData(formattedData)
+            // updateMAData(formattedData) // 🚫 禁用：避免 MA 線消失
           }
         } catch (error) {
           console.warn('⚠️ update()失敗,回退到setData():', error.message) // TODO: 未來可清理
           candlestickSeriesRef.current.setData(formattedData)
+          // updateMAData(formattedData) // 🚫 禁用：避免 MA 線消失
         }
       } else {
         // 初始載入:全量更新
         console.log('🔄 初始載入K線數據') // TODO: 未來可清理
         candlestickSeriesRef.current.setData(formattedData)
+
+        // 設置 MA 數據 - 使用包含MA數據的 klineData 而不是 formattedData
+        console.log('🔄 使用完整數據設置MA（包含MA值）')
+        updateMAData(klineData)
 
         /**
          * 🔧 [重要修正] 條件性視圖調整機制
@@ -1278,13 +1578,54 @@ export function TradingChart({
       {/* 圖表工具欄 */}
       <div className="p-3 border-t border-gray-200 bg-gray-50">
         <div className="flex items-center space-x-4 text-sm">
-          <div className="flex items-center space-x-2">
-            <span className="text-gray-600">技術指標:</span>
-            <button className="text-blue-600 hover:text-blue-800">MA</button>
-            <button className="text-blue-600 hover:text-blue-800">MACD</button>
-            <button className="text-blue-600 hover:text-blue-800">RSI</button>
-            <button className="text-blue-600 hover:text-blue-800">KD</button>
-          </div>
+          {/* 🔧 只有當有數據時才顯示 MA 控制 */}
+          {klineData.length > 0 && (
+            <div className="flex items-center space-x-2">
+              <span className="text-gray-600">移動平均線:</span>
+              <button
+                onClick={() => {
+                  console.log(
+                    '🔴 MA5按鈕被點擊，當前狀態:',
+                    showMA.ma5,
+                    '→',
+                    !showMA.ma5
+                  )
+                  setShowMA((prev) => ({ ...prev, ma5: !prev.ma5 }))
+                }}
+                className={`px-2 py-1 text-xs rounded transition-all ${
+                  showMA.ma5
+                    ? 'bg-red-500 text-white hover:bg-red-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                MA5
+              </button>
+              <button
+                onClick={() =>
+                  setShowMA((prev) => ({ ...prev, ma10: !prev.ma10 }))
+                }
+                className={`px-2 py-1 text-xs rounded transition-all ${
+                  showMA.ma10
+                    ? 'bg-teal-500 text-white hover:bg-teal-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                MA10
+              </button>
+              <button
+                onClick={() =>
+                  setShowMA((prev) => ({ ...prev, ma20: !prev.ma20 }))
+                }
+                className={`px-2 py-1 text-xs rounded transition-all ${
+                  showMA.ma20
+                    ? 'bg-blue-500 text-white hover:bg-blue-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                MA20
+              </button>
+            </div>
+          )}
           <div className="flex items-center space-x-4">
             <label className="flex items-center space-x-2">
               <input

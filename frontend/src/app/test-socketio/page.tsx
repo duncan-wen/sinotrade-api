@@ -8,7 +8,7 @@ export default function TestSocketIOPage() {
   const [connectionStatus, setConnectionStatus] = useState<any>({})
   const [messages, setMessages] = useState<KlineMessage[]>([])
   const [isSubscribed, setIsSubscribed] = useState(false)
-  const [symbol, setSymbol] = useState('CDFR1')
+  const [symbol, setSymbol] = useState('TXFR1') // 🔧 暫時改用台指期貨測試 MA 功能
 
   // 更新連接狀態
   useEffect(() => {
