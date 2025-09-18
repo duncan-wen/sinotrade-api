@@ -110,6 +110,35 @@ def on_tick_callback(exchange, tick: TickSTKv1):
     }
 ```
 
+### 連續期貨合約最佳實踐
+```python
+# ✅ 正確做法：使用官方連續期貨合約
+def get_futures_contract(symbol: str):
+    """獲取期貨合約 - 官方連續合約自動換月"""
+    try:
+        if symbol == "TXFR1":
+            return api.Contracts.Futures.TXF.TXFR1  # 大台指近月
+        elif symbol == "TXFR2":
+            return api.Contracts.Futures.TXF.TXFR2  # 大台指次月
+        elif symbol == "MXFR1":
+            return api.Contracts.Futures.MXF.MXFR1  # 小台指近月
+        elif symbol == "MXFR2":
+            return api.Contracts.Futures.MXF.MXFR2  # 小台指次月
+    except Exception as e:
+        logger.error(f"期貨合約獲取失敗: {symbol}, {e}")
+        return None
+
+# 🚀 獲取連續歷史數據
+kbars = api.kbars(
+    contract=api.Contracts.Futures.TXF.TXFR1,
+    start="2023-01-15",
+    end="2023-01-16"
+)
+
+# ❌ 避免：手動計算結算日和合約切換
+# 官方連續合約會自動處理這些邏輯
+```
+
 ### 數據類型使用場景
 | 類型       | 用途             | 更新頻率 | 適用場景   |
 | ---------- | ---------------- | -------- | ---------- |
