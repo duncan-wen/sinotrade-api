@@ -8,7 +8,7 @@ export default function TestSocketIOPage() {
   const [connectionStatus, setConnectionStatus] = useState<any>({})
   const [messages, setMessages] = useState<KlineMessage[]>([])
   const [isSubscribed, setIsSubscribed] = useState(false)
-  const [symbol, setSymbol] = useState('MXFR1')
+  const [symbol, setSymbol] = useState('CDFR1')
 
   // 更新連接狀態
   useEffect(() => {
@@ -95,6 +95,55 @@ export default function TestSocketIOPage() {
         {connectionStatus.stats?.lastError && (
           <p style={{ color: 'red' }}>
             <strong>最後錯誤:</strong> {connectionStatus.stats.lastError}
+          </p>
+        )}
+      </div>
+
+      {/* 期貨選擇 */}
+      <div
+        style={{
+          marginBottom: '20px',
+          padding: '15px',
+          backgroundColor: '#f8f9fa',
+          borderRadius: '5px',
+        }}
+      >
+        <h3>📈 期貨選擇</h3>
+        <div style={{ marginBottom: '10px' }}>
+          <label htmlFor="symbol-select" style={{ marginRight: '10px' }}>
+            選擇期貨:
+          </label>
+          <select
+            id="symbol-select"
+            value={symbol}
+            onChange={(e) => setSymbol(e.target.value)}
+            disabled={isSubscribed}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '5px',
+              border: '1px solid #ccc',
+              backgroundColor: isSubscribed ? '#e9ecef' : 'white',
+              minWidth: '200px',
+            }}
+          >
+            <option value="TXFR1">台指期貨近月 (TXFR1)</option>
+            <option value="TXFR2">台指期貨次月 (TXFR2)</option>
+            <option value="MXFR1">小台指近月 (MXFR1)</option>
+            <option value="MXFR2">小台指次月 (MXFR2)</option>
+            <option value="CDFR1">台積電期貨近月 (CDFR1)</option>
+            <option value="CDFR2">台積電期貨次月 (CDFR2)</option>
+          </select>
+          <span
+            style={{ marginLeft: '15px', color: '#666', fontWeight: 'bold' }}
+          >
+            當前選擇: {symbol}
+          </span>
+        </div>
+        {isSubscribed && (
+          <p
+            style={{ color: '#dc3545', fontSize: '14px', margin: '5px 0 0 0' }}
+          >
+            ⚠️ 訂閱期間無法更換期貨，請先取消訂閱
           </p>
         )}
       </div>

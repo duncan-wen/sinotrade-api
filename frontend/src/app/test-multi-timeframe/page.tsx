@@ -12,7 +12,19 @@ export default function TestMultiTimeframePage() {
   const [interval, setInterval] = useState('60m')
   const [enableRealtime, setEnableRealtime] = useState(true)
 
-  const testSymbols = ['2408', '2330', '2317', '2454', '3008', 'TXFR2', 'MXFR2']
+  const testSymbols = [
+    'CDFR1',
+    'CDFR2',
+    'TXFR1',
+    'TXFR2',
+    'MXFR1',
+    'MXFR2',
+    '2408',
+    '2330',
+    '2317',
+    '2454',
+    '3008',
+  ]
 
   const timeframes = [
     { value: '1m', label: '1分鐘' },

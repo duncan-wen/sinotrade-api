@@ -853,180 +853,74 @@ class ShioajiService:
                     except KeyError:
                         logger.warning(f"Futures contract not found by code: {symbol}")
 
-                # 🚀 簡化期貨處理 - 使用標準化近月/遠月符號
-                if symbol in ["TXFR1", "TXFR2"]:  # 大台指近月/遠月
-                    # TXF 大台指期貨處理邏輯
+                # 🚀 通用期貨處理 - 支援所有 *R1/*R2 標準化符號
+                if symbol.endswith(("R1", "R2")):  # 所有期貨的近月/次月
+                    # 提取期貨群組名稱 (例如: CDFR1 -> CDF, TXFR1 -> TXF)
+                    group_name = symbol[:-2]  # 移除 R1/R2 後綴
+
                     try:
-                        # 使用官方文檔的方式:api.Contracts.Futures.TXF
-                        txf_group = self.api.Contracts.Futures.TXF
+                        # 使用 getattr 動態取得期貨群組
+                        futures_group = getattr(self.api.Contracts.Futures, group_name)
+                        logger.info(f"✅ 找到期貨群組 {group_name}: {futures_group}")
 
-                        # 動態選擇當前主力合約:根據結算日期規則
-                        # 每月第三個星期三下午3點換合約
-                        import calendar
-                        from datetime import datetime
-
-                        def get_current_txf_contract():
-                            now = datetime.now()
-                            current_year = now.year
-                            current_month = now.month
-
-                            # 計算當月第三個星期三
-                            wednesdays_in_month = []
-                            for week in calendar.monthcalendar(
-                                current_year, current_month
-                            ):
-                                if week[2] != 0:  # 星期三是索引 2,0 表示該週沒有這一天
-                                    wednesdays_in_month.append(week[2])
-
-                            # 取第三個星期三(索引 2)
-                            if len(wednesdays_in_month) >= 3:
-                                third_wednesday = wednesdays_in_month[2]
-                            else:
-                                # 如果當月沒有第三個星期三,使用最後一個
-                                third_wednesday = (
-                                    wednesdays_in_month[-1]
-                                    if wednesdays_in_month
-                                    else 1
-                                )
-
-                            # 第三個星期三下午3點的時間戳
-                            settlement_time = datetime(
-                                current_year, current_month, third_wednesday, 15, 0
-                            )
-
-                            # 判斷是否已過結算時間
-                            if now >= settlement_time:
-                                # 已過結算,使用下個月合約
-                                if current_month == 12:
-                                    target_month = 1
-                                    target_year = current_year + 1
-                                else:
-                                    target_month = current_month + 1
-                                    target_year = current_year
-                            else:
-                                # 未過結算,使用當月合約
-                                target_month = current_month
-                                target_year = current_year
-
-                            # 格式化為期貨合約代碼:TXF202510
-                            # 期貨月份代碼映射
-                            month_codes = {
-                                1: "F",
-                                2: "G",
-                                3: "H",
-                                4: "J",
-                                5: "K",
-                                6: "M",
-                                7: "N",
-                                8: "Q",
-                                9: "U",
-                                10: "V",
-                                11: "X",
-                                12: "Z",
-                            }
-                            month_code = month_codes[target_month]
-                            year_code = str(target_year)[-1]  # 只取年份最後一位
-                            contract_code = f"TXF{month_code}{year_code}"
-                            logger.info(
-                                f"計算出的主力合約: {contract_code} (當前時間: {now}, 結算時間: {settlement_time})"
-                            )
-                            return contract_code
-
-                        # 🚀 簡化邏輯:根據 symbol 選擇近月或遠月
+                        # 嘗試直接取得標準化符號 (Shioaji 提供的 *R1/*R2)
                         try:
-                            txf_contracts = list(txf_group)
-                            logger.info(
-                                f"Available TXF contracts: {[c.code for c in txf_contracts[:5]]}"
+                            contract = getattr(futures_group, symbol)
+                            if contract:
+                                logger.info(
+                                    f"✅ 直接找到標準化合約: {symbol} -> {contract.symbol}"
+                                )
+                                return contract
+                        except AttributeError:
+                            logger.warning(f"標準化符號 {symbol} 不存在, 嘗試手動選擇")
+
+                        # 如果標準化符號不存在, 手動選擇近月/次月合約
+                        contracts_list = list(futures_group)
+                        if contracts_list:
+                            # 按交割日期排序, 選擇近月或次月
+                            sorted_contracts = sorted(
+                                [
+                                    c
+                                    for c in contracts_list
+                                    if hasattr(c, "delivery_date") and c.delivery_date
+                                ],
+                                key=lambda x: x.delivery_date,
                             )
 
-                            if txf_contracts:
-                                # 按交割日期排序,選擇近月或遠月
-                                sorted_contracts = sorted(
-                                    [c for c in txf_contracts if c.delivery_date],
-                                    key=lambda x: x.delivery_date,
+                            if symbol.endswith("R1") and len(sorted_contracts) >= 1:
+                                # 近月合約
+                                selected_contract = sorted_contracts[0]
+                                logger.info(
+                                    f"✅ {group_name} 近月: {selected_contract.code}"
                                 )
-
-                                if symbol == "TXFR1" and len(sorted_contracts) >= 1:
-                                    # 近月合約
-                                    selected_contract = sorted_contracts[0]
-                                    logger.info(
-                                        f"✅ 大台指近月: {selected_contract.code}"
-                                    )
-                                    return selected_contract
-                                elif symbol == "TXFR2" and len(sorted_contracts) >= 2:
-                                    # 遠月合約
-                                    selected_contract = sorted_contracts[1]
-                                    logger.info(
-                                        f"✅ 大台指遠月: {selected_contract.code}"
-                                    )
-                                    return selected_contract
-                                else:
-                                    # 回退到第一個可用合約
-                                    selected_contract = (
-                                        sorted_contracts[0]
-                                        if sorted_contracts
-                                        else txf_contracts[0]
-                                    )
-                                    logger.info(
-                                        f"✅ 大台指回退: {selected_contract.code}"
-                                    )
-                                    return selected_contract
-                        except Exception as e:
-                            logger.error(f"Error accessing TXF contracts: {e}")
-
-                    except Exception as e:
-                        logger.error(f"Error accessing TXF group: {e}")
-                        return None
-
-                elif symbol in ["MXFR1", "MXFR2"]:  # 小台指近月/遠月
-                    # 🚀 小台指期貨簡化邏輯
-                    try:
-                        # 嘗試 MXF 群組
-                        try:
-                            mxf_group = self.api.Contracts.Futures.MXF
-                            mxf_contracts = list(mxf_group)
-                            logger.info(
-                                f"Available MXF contracts: {[c.code for c in mxf_contracts[:5]]}"
-                            )
-
-                            if mxf_contracts:
-                                # 按交割日期排序,選擇近月或遠月
-                                sorted_contracts = sorted(
-                                    [c for c in mxf_contracts if c.delivery_date],
-                                    key=lambda x: x.delivery_date,
+                                return selected_contract
+                            elif symbol.endswith("R2") and len(sorted_contracts) >= 2:
+                                # 次月合約
+                                selected_contract = sorted_contracts[1]
+                                logger.info(
+                                    f"✅ {group_name} 次月: {selected_contract.code}"
                                 )
-
-                                if symbol == "MXFR1" and len(sorted_contracts) >= 1:
-                                    # 近月合約
-                                    selected_contract = sorted_contracts[0]
-                                    logger.info(
-                                        f"✅ 小台指近月: {selected_contract.code}"
-                                    )
-                                    return selected_contract
-                                elif symbol == "MXFR2" and len(sorted_contracts) >= 2:
-                                    # 遠月合約
-                                    selected_contract = sorted_contracts[1]
-                                    logger.info(
-                                        f"✅ 小台指遠月: {selected_contract.code}"
-                                    )
-                                    return selected_contract
-                                else:
-                                    # 回退到第一個可用合約
-                                    selected_contract = (
-                                        sorted_contracts[0]
-                                        if sorted_contracts
-                                        else mxf_contracts[0]
-                                    )
-                                    logger.info(
-                                        f"✅ 小台指回退: {selected_contract.code}"
-                                    )
-                                    return selected_contract
-                        except Exception as e:
-                            logger.error(f"Error accessing MXF group: {e}")
+                                return selected_contract
+                            else:
+                                # 回退到第一個可用合約
+                                selected_contract = (
+                                    sorted_contracts[0]
+                                    if sorted_contracts
+                                    else contracts_list[0]
+                                )
+                                logger.info(
+                                    f"✅ {group_name} 回退: {selected_contract.code}"
+                                )
+                                return selected_contract
+                        else:
+                            logger.error(f"期貨群組 {group_name} 沒有可用合約")
                             return None
 
+                    except AttributeError as e:
+                        logger.error(f"期貨群組 {group_name} 不存在: {e}")
+                        return None
                     except Exception as e:
-                        logger.error(f"Error in MXF processing: {e}")
+                        logger.error(f"處理期貨 {symbol} 時發生錯誤: {e}")
                         return None
 
         except (KeyError, AttributeError):

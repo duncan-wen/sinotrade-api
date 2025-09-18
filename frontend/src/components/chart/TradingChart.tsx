@@ -87,6 +87,7 @@ export function TradingChart({
   } | null>(null)
   const lastDataLengthRef = useRef<number>(0)
   const [isAutoFitEnabled, setIsAutoFitEnabled] = useState(autoFit)
+  const [isVolumeVisible, setIsVolumeVisible] = useState(showVolume)
 
   // 獲取歷史K線數據
   useEffect(() => {
@@ -620,6 +621,7 @@ export function TradingChart({
               high: Math.max(latestKline.high, tickPrice), // 更新高點
               low: Math.min(latestKline.low, tickPrice), // 更新低點
               close: tickPrice, // 更新收盤價(即時跳動)
+              volume: (latestKline.volume || 0) + (tickData.volume || 0), // 累積成交量
             }
 
             console.log('🔄 更新K線:', {
@@ -705,8 +707,8 @@ export function TradingChart({
     if (!chartContainerRef.current) return
 
     // 計算圖表高度分配
-    const mainChartHeight = showVolume ? Math.floor(height * 0.7) : height
-    const volumeChartHeight = showVolume ? Math.floor(height * 0.3) : 0
+    const mainChartHeight = isVolumeVisible ? Math.floor(height * 0.7) : height
+    const volumeChartHeight = isVolumeVisible ? Math.floor(height * 0.3) : 0
 
     // 創建圖表
     const chart = createChart(chartContainerRef.current, {
@@ -725,9 +727,15 @@ export function TradingChart({
         mode: 1, // Normal crosshair mode
         vertLine: {
           labelVisible: true, // 顯示時間標籤
+          width: 1,
+          color: '#758696',
+          style: 3, // dashed
         },
         horzLine: {
           labelVisible: true, // 顯示價格標籤
+          width: 1,
+          color: '#758696',
+          style: 3, // dashed
         },
       },
       localization: {
@@ -747,23 +755,29 @@ export function TradingChart({
       },
       leftPriceScale: {
         borderColor: '#cccccc',
-        visible: showVolume, // 只有顯示成交量時才顯示左側軸
+        visible: isVolumeVisible, // 只有顯示成交量時才顯示左側軸
         scaleMargins: {
-          top: 0.7, // 成交量圖表在下方 30%
-          bottom: 0,
+          top: 0.8, // 成交量在下方 20%
+          bottom: 0, // 底部固定
         },
+        // 確保價格軸刻度和標籤顯示
+        ticksVisible: true,
+        entireTextOnly: false,
       },
       rightPriceScale: {
         borderColor: '#cccccc',
-        scaleMargins: showVolume
+        scaleMargins: isVolumeVisible
           ? {
               top: 0.05,
-              bottom: 0.35, // 為成交量留出空間
+              bottom: 0.25, // 為成交量留出 20% 空間（對應 top: 0.8）
             }
           : {
               top: 0.05,
               bottom: 0.05, // 無成交量時正常邊距
             },
+        // 確保價格軸刻度和標籤顯示
+        ticksVisible: true,
+        entireTextOnly: false,
       },
       timeScale: {
         borderColor: '#cccccc',
@@ -818,7 +832,7 @@ export function TradingChart({
 
     // 創建成交量系列(如果需要顯示)
     let volumeSeries = null
-    if (showVolume) {
+    if (isVolumeVisible) {
       volumeSeries = chart.addHistogramSeries({
         color: '#999999', // 預設灰色,實際顏色由數據決定
         priceFormat: {
@@ -860,7 +874,7 @@ export function TradingChart({
       window.removeEventListener('resize', handleResize)
       chart.remove()
     }
-  }, [height, width, showVolume, autoFit])
+  }, [height, width, isVolumeVisible, autoFit])
 
   // 動態更新自適應配置
   useEffect(() => {
@@ -1069,7 +1083,7 @@ export function TradingChart({
     setLastDataUpdateTime(Date.now())
 
     // 設置成交量數據 - 台股顏色慣例:上漲紅色,下跌綠色
-    if (volumeSeriesRef.current && showVolume) {
+    if (volumeSeriesRef.current && isVolumeVisible) {
       const volumeData: HistogramData[] = klineData
         .filter((item) => {
           // 使用與K線數據相同的過濾邏輯
@@ -1105,6 +1119,7 @@ export function TradingChart({
 
       if (volumeData.length > 0) {
         console.log('📊 設置成交量數據:', volumeData.length, '條')
+
         // 成交量總是全量更新,避免歷史數據丟失
         volumeSeriesRef.current.setData(volumeData)
       }
@@ -1154,7 +1169,7 @@ export function TradingChart({
       console.log('🔒 自適應已停用,保持用戶調整的視圖位置')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [klineData, showVolume, symbol]) // 添加symbol確保商品切換時自動調整價格範圍
+  }, [klineData, isVolumeVisible, symbol]) // 添加symbol確保商品切換時自動調整價格範圍
 
   return (
     <View className={`bg-white rounded-lg border border-gray-200 ${className}`}>
@@ -1168,6 +1183,7 @@ export function TradingChart({
             <p className="text-sm text-gray-500">
               {interval} K線圖 {enableRealtime && '• 即時更新'}
               {contractInfo?.exchange && ` • ${contractInfo.exchange}`}
+              {isVolumeVisible && ' • 含成交量'}
             </p>
           </div>
           <div className="flex space-x-2">
@@ -1273,8 +1289,8 @@ export function TradingChart({
             <label className="flex items-center space-x-2">
               <input
                 type="checkbox"
-                checked={showVolume}
-                onChange={() => {}}
+                checked={isVolumeVisible}
+                onChange={(e) => setIsVolumeVisible(e.target.checked)}
                 className="rounded"
               />
               <span className="text-sm text-gray-600">顯示成交量</span>
