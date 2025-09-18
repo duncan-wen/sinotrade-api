@@ -13,9 +13,10 @@
 *.yaml text eol=lf
 *.yml text eol=lf
 
-# Windows 批次檔案需要 CRLF
-*.bat text eol=crlf
-*.cmd text eol=crlf
+# Windows 腳本檔案不進行行結束符轉換
+*.bat -text
+*.cmd -text
+*.ps1 -text
 
 # 二進制檔案
 *.png binary
