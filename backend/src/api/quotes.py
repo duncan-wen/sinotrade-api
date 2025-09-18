@@ -4,12 +4,11 @@ from datetime import datetime
 from typing import Any
 
 import pandas as pd
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 from loguru import logger
 
-from src.models.domain import APIUser, Quote
+from src.models.domain import Quote
 from src.models.technical_indicators import ChartDataResponse
-from src.services.auth_service import get_current_user
 from src.services.cache_service import get_cached_quote
 from src.services.polars_technical_analysis_service import (
     polars_technical_analysis_service,
@@ -39,7 +38,9 @@ def _extract_klines_data(result: Any) -> list[dict[str, Any]]:
 
 
 @router.get("/quote/{symbol}", response_model=Quote)
-def get_quote(symbol: str, user: APIUser = Depends(get_current_user)) -> Quote:
+def get_quote(
+    symbol: str,
+) -> Quote:  # user: APIUser = Depends(get_current_user)  # 暫時註解掉驗證
     """
     Fetches a real-time quote for a given financial instrument symbol.
     It first checks the cache, and if not found, subscribes to the quote stream.
@@ -177,7 +178,7 @@ def get_chart_data_with_indicators(
     use_polars: bool = Query(
         default=True, description="使用 Polars + polars_talib 高效能計算"
     ),
-    user: APIUser = Depends(get_current_user),
+    # user: APIUser = Depends(get_current_user),  # 暫時註解掉驗證
 ) -> ChartDataResponse:
     """
     獲取完整的圖表數據(K線 + 技術指標)
@@ -380,7 +381,7 @@ def get_multi_symbol_chart_data(
         description="技術指標,逗號分隔 (ma,kd,macd,bbands) - 多商品模式支援較少指標",
     ),
     ma_periods: str = Query(default="5,20,60", description="均線週期,逗號分隔"),
-    user: APIUser = Depends(get_current_user),
+    # user: APIUser = Depends(get_current_user),  # 暫時註解掉驗證
 ) -> dict[str, Any]:
     """
     🚀 多商品並行技術指標計算 (使用 Polars 高效能引擎)

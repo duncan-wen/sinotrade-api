@@ -8,7 +8,7 @@ import { TradingChart } from '@/components/chart/TradingChart'
 import Select from '@/components/common/select'
 
 export default function TestMultiTimeframePage() {
-  const [symbol, setSymbol] = useState('TXFR2')
+  const [symbol, setSymbol] = useState('TXFR1')
   const [interval, setInterval] = useState('60m')
   const [enableRealtime, setEnableRealtime] = useState(true)
 
