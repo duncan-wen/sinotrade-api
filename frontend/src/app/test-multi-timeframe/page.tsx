@@ -8,8 +8,8 @@ import { TradingChart } from '@/components/chart/TradingChart'
 import Select from '@/components/common/select'
 
 export default function TestMultiTimeframePage() {
-  const [symbol, setSymbol] = useState('2408')
-  const [interval, setInterval] = useState('5m')
+  const [symbol, setSymbol] = useState('TXFR2')
+  const [interval, setInterval] = useState('60m')
   const [enableRealtime, setEnableRealtime] = useState(true)
 
   const testSymbols = ['2408', '2330', '2317', '2454', '3008', 'TXFR2', 'MXFR2']
@@ -111,6 +111,7 @@ export default function TestMultiTimeframePage() {
             height={600}
             showVolume={true}
             className="w-full"
+            onIntervalChange={setInterval}
           />
         </div>
 

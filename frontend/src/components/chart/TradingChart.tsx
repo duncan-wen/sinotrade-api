@@ -1,14 +1,14 @@
 /**
  * TradingChart.tsx - 台股 K線圖表組件
  *
- * 🔧 [2025-09-18] 重要修正：時間間隔切換 K線消失問題
+ * 🔧 [2025-09-18] 重要修正:時間間隔切換 K線消失問題
  *
- * 主要修正內容：
- * 1. 狀態重置機制：防止切換時間間隔時的狀態混亂
- * 2. 安全回退機制：處理時間戳格式衝突，確保圖表穩定運行
- * 3. 強制視圖調整：確保新數據正確顯示在可視範圍內
+ * 主要修正內容:
+ * 1. 狀態重置機制:防止切換時間間隔時的狀態混亂
+ * 2. 安全回退機制:處理時間戳格式衝突,確保圖表穩定運行
+ * 3. 強制視圖調整:確保新數據正確顯示在可視範圍內
  *
- * ⚠️ 清理提醒：搜尋 "TODO: 未來可清理" 可找到所有可移除的調試代碼
+ * ⚠️ 清理提醒:搜尋 "TODO: 未來可清理" 可找到所有可移除的調試代碼
  */
 
 // @ts-nocheck
@@ -49,6 +49,7 @@ interface TradingChartProps {
   interval?: string // K線間隔,默認5m
   enableRealtime?: boolean // 是否啟用即時更新
   autoFit?: boolean // 是否啟用自動適應圖表,默認true
+  onIntervalChange?: (interval: string) => void // 時間間隔變更回調
 }
 
 export function TradingChart({
@@ -58,9 +59,10 @@ export function TradingChart({
   height = 400,
   width,
   showVolume = true,
-  interval = '5m',
+  interval = '1d',
   enableRealtime = true,
-  autoFit = true,
+  autoFit = false,
+  onIntervalChange,
 }: TradingChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
@@ -111,10 +113,10 @@ export function TradingChart({
         let marketOpen, marketClose, currentTime, startTime
 
         if (isFutures) {
-          // 期貨連續交易，不限制時間範圍
+          // 期貨連續交易,不限制時間範圍
           currentTime = now
           startTime = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000) // 7天前
-          console.log('📅 期貨交易時間：連續交易，無時間限制', {
+          console.log('📅 期貨交易時間:連續交易,無時間限制', {
             商品代碼: symbol,
             當前時間: currentTime.toLocaleTimeString('zh-TW'),
             查詢範圍: '過去7天',
@@ -150,15 +152,15 @@ export function TradingChart({
         let smartLimit: number
 
         if (isFutures) {
-          // 期貨連續交易策略：根據時間間隔設定較大的 limit
+          // 期貨連續交易策略:根據時間間隔設定較大的 limit
           if (interval === '60m' || interval === '1h') {
-            smartLimit = 300 // 期貨24小時交易，需要更多數據
+            smartLimit = 300 // 期貨24小時交易,需要更多數據
           } else if (interval === '15m') {
             smartLimit = 200 // 15分鐘間隔
           } else if (['1d', '1w', '1M'].includes(interval)) {
             smartLimit = 500 // 長期間隔
           } else {
-            // 分鐘級別（1m, 5m）：期貨連續交易
+            // 分鐘級別(1m, 5m):期貨連續交易
             smartLimit = 800 // 期貨需要更多數據覆蓋連續交易
           }
           console.log('🧠 期貨智能K線數量計算:', {
@@ -169,20 +171,20 @@ export function TradingChart({
         } else {
           // 股票交易策略
           if (interval === '60m' || interval === '1h') {
-            // 1小時：匹配後端30天配置，每天4根K線 = 120根
+            // 1小時:匹配後端30天配置,每天4根K線 = 120根
             smartLimit = 150 // 留點緩衝
           } else if (interval === '15m') {
-            // 15分鐘：匹配後端3天配置，每天16根K線 = 48根
+            // 15分鐘:匹配後端3天配置,每天16根K線 = 48根
             smartLimit = 60 // 留點緩衝
           } else if (
             interval === '1d' ||
             interval === '1w' ||
             interval === '1M'
           ) {
-            // 長期間隔：使用較大的limit獲取足夠歷史數據
+            // 長期間隔:使用較大的limit獲取足夠歷史數據
             smartLimit = 200
           } else {
-            // 分鐘級別（1m, 5m）：使用當日交易時段計算
+            // 分鐘級別(1m, 5m):使用當日交易時段計算
             const tradingMinutes = Math.ceil(
               (currentTime.getTime() - startTime.getTime()) / (1000 * 60)
             )
@@ -200,19 +202,19 @@ export function TradingChart({
 
         // 使用智能計算的limit參數
         const apiUrl = `/api/klines/${symbol}?interval=${interval}&limit=${Math.floor(smartLimit)}`
-        console.log('🔗 API請求（智能limit）:', apiUrl)
+        console.log('🔗 API請求(智能limit):', apiUrl)
 
         const response = await fetch(apiUrl)
         const result = await response.json()
 
-        // 前端過濾：股票保留當日交易時段的數據，期貨保留全部數據
+        // 前端過濾:股票保留當日交易時段的數據,期貨保留全部數據
         if (result.data && result.data.length > 0) {
           const originalLength = result.data.length
 
           if (isFutures) {
-            // 期貨連續交易，保留全部數據
+            // 期貨連續交易,保留全部數據
             console.log(
-              `📊 期貨連續交易: 保留全部 ${originalLength} 條數據，無時間限制`
+              `📊 期貨連續交易: 保留全部 ${originalLength} 條數據,無時間限制`
             )
           } else {
             // 只對股票的短期分鐘級別時間間隔進行當日交易時段過濾
@@ -259,7 +261,7 @@ export function TradingChart({
               // 處理多種時間格式
               let date
               if (typeof timeStr === 'string') {
-                // 明確指定為台灣時區（UTC+8）
+                // 明確指定為台灣時區(UTC+8)
                 if (timeStr.includes('+') || timeStr.includes('Z')) {
                   // 已有時區信息,直接解析
                   date = new Date(timeStr)
@@ -320,9 +322,9 @@ export function TradingChart({
 
             // 如果數據不足,顯示警告
             if (isDataInsufficient) {
-              console.warn('⚠️ 數據範圍限制：後端tick聚合只保留最近1-2小時數據')
+              console.warn('⚠️ 數據範圍限制:後端tick聚合只保留最近1-2小時數據')
               console.warn(
-                '💡 建議：修改後端支援完整當日時間範圍或使用混合數據源'
+                '💡 建議:修改後端支援完整當日時間範圍或使用混合數據源'
               )
             }
           }
@@ -713,6 +715,7 @@ export function TradingChart({
       layout: {
         background: { color: '#ffffff' },
         textColor: '#333',
+        attributionLogo: false, // 隱藏 TradingView logo
       },
       grid: {
         vertLines: { color: '#f0f0f0' },
@@ -730,7 +733,7 @@ export function TradingChart({
       localization: {
         // 修正 hover 時的時間顯示
         timeFormatter: (time) => {
-          // time 是 Unix 時間戳（秒）
+          // time 是 Unix 時間戳(秒)
           const date = new Date((time as number) * 1000)
           return date.toLocaleString('zh-TW', {
             year: 'numeric',
@@ -773,7 +776,7 @@ export function TradingChart({
         // 確保時間軸標籤顯示
         visible: true,
         tickMarkFormatter: (time, tickMarkType, locale) => {
-          // time 現在是 Unix 時間戳（秒）
+          // time 現在是 Unix 時間戳(秒)
           const date = new Date((time as number) * 1000) // 轉換為毫秒
           if (tickMarkType >= 2) {
             // Day or bigger
@@ -878,12 +881,12 @@ export function TradingChart({
     console.log('📊 K線數據樣本:', klineData.slice(-3)) // TODO: 未來可清理 - 顯示最後3條K線
 
     if (!candlestickSeriesRef.current || !klineData.length) {
-      // TODO: 未來可清理 - 調試用，檢查無數據的原因
+      // TODO: 未來可清理 - 調試用,檢查無數據的原因
       if (!candlestickSeriesRef.current) {
         console.warn('⚠️ candlestickSeriesRef 未初始化')
       }
       if (!klineData.length) {
-        console.warn('⚠️ klineData 為空，當前interval:', interval)
+        console.warn('⚠️ klineData 為空,當前interval:', interval)
       }
       return
     }
@@ -891,14 +894,14 @@ export function TradingChart({
     /**
      * 🔧 [重要修正] 時間間隔切換狀態重置機制
      *
-     * 問題：當用戶切換時間間隔（如從1小時到15分鐘）時，lastDataLengthRef
-     *      保持著上一個間隔的數據長度，導致圖表誤判為"增量更新"，
+     * 問題:當用戶切換時間間隔(如從1小時到15分鐘)時,lastDataLengthRef
+     *      保持著上一個間隔的數據長度,導致圖表誤判為"增量更新",
      *      造成 K線消失或顯示異常
      *
-     * 解決：每次數據更新時重置 lastDataLengthRef 為0，強制使用 setData()
-     *      進行完整數據重新載入，確保切換間隔時顯示正確
+     * 解決:每次數據更新時重置 lastDataLengthRef 為0,強制使用 setData()
+     *      進行完整數據重新載入,確保切換間隔時顯示正確
      *
-     * 日期：2025-09-18
+     * 日期:2025-09-18
      */
     if (lastDataLengthRef.current > 0) {
       console.log('🔄 重置數據長度記錄 (切換時間間隔)') // TODO: 未來可清理
@@ -932,7 +935,7 @@ export function TradingChart({
         return true
       })
       .map((item, index) => {
-        // 根據官方文檔,使用 Unix 時間戳（秒）
+        // 根據官方文檔,使用 Unix 時間戳(秒)
         const timestamp = new Date(item.time).getTime() / 1000 // 轉換為秒
 
         // 確保時間戳是有效數字
@@ -950,14 +953,14 @@ export function TradingChart({
         }
       })
       .filter((item) => item !== null) // 過濾掉無效項目
-      // 確保按時間升序排序（Unix 時間戳）
+      // 確保按時間升序排序(Unix 時間戳)
       .sort((a, b) => (a.time as number) - (b.time as number))
 
     if (formattedData.length > 0) {
       console.log('🔄 設置K線數據到圖表:', formattedData.length, '條')
       console.log('📈 K線數據樣本:', formattedData.slice(-2)) // 顯示最後2條
 
-      // TODO: 未來可清理 - 調試用，檢查時間間隔切換問題
+      // TODO: 未來可清理 - 調試用,檢查時間間隔切換問題
       console.log('📊 當前時間間隔:', interval)
       console.log('📊 數據時間範圍:', {
         第一條: new Date(
@@ -973,21 +976,21 @@ export function TradingChart({
       const isNewData = formattedData.length > lastDataLengthRef.current
 
       if (lastDataLengthRef.current > 0 && isNewData) {
-        // 增量更新：只更新最後一根K線,官方配置自動保持視圖
-        console.log('🔄 增量更新K線數據（官方配置保持視圖）') // TODO: 未來可清理
+        // 增量更新:只更新最後一根K線,官方配置自動保持視圖
+        console.log('🔄 增量更新K線數據(官方配置保持視圖)') // TODO: 未來可清理
         const lastBar = formattedData[formattedData.length - 1]
 
         /**
          * 🔧 [重要修正] 時間戳格式衝突安全回退機制 - 增量更新
          *
-         * 問題：切換時間間隔時，舊的數據格式可能與新數據產生衝突，
-         *      lightweight-charts 的 update() 方法會拋出錯誤：
+         * 問題:切換時間間隔時,舊的數據格式可能與新數據產生衝突,
+         *      lightweight-charts 的 update() 方法會拋出錯誤:
          *      "Cannot update oldest data, last time=[object Object]"
          *
-         * 解決：使用 try-catch 捕獲更新錯誤，自動回退到 setData()
-         *      進行完整數據重載，確保圖表在任何情況下都能正常顯示
+         * 解決:使用 try-catch 捕獲更新錯誤,自動回退到 setData()
+         *      進行完整數據重載,確保圖表在任何情況下都能正常顯示
          *
-         * 日期：2025-09-18
+         * 日期:2025-09-18
          */
         try {
           if (
@@ -1000,18 +1003,18 @@ export function TradingChart({
             candlestickSeriesRef.current.setData(formattedData)
           }
         } catch (error) {
-          console.warn('⚠️ update()失敗，回退到setData():', error.message) // TODO: 未來可清理
+          console.warn('⚠️ update()失敗,回退到setData():', error.message) // TODO: 未來可清理
           candlestickSeriesRef.current.setData(formattedData)
         }
       } else if (lastDataLengthRef.current > 0) {
-        // 更新現有K線：使用update方法
-        console.log('🔄 更新現有K線數據（官方配置保持視圖）') // TODO: 未來可清理
+        // 更新現有K線:使用update方法
+        console.log('🔄 更新現有K線數據(官方配置保持視圖)') // TODO: 未來可清理
         const lastBar = formattedData[formattedData.length - 1]
 
         /**
          * 🔧 [重要修正] 時間戳格式衝突安全回退機制 - 更新現有K線
          * 同上述增量更新的問題和解決方案
-         * 日期：2025-09-18
+         * 日期:2025-09-18
          */
         try {
           if (
@@ -1024,29 +1027,29 @@ export function TradingChart({
             candlestickSeriesRef.current.setData(formattedData)
           }
         } catch (error) {
-          console.warn('⚠️ update()失敗，回退到setData():', error.message) // TODO: 未來可清理
+          console.warn('⚠️ update()失敗,回退到setData():', error.message) // TODO: 未來可清理
           candlestickSeriesRef.current.setData(formattedData)
         }
       } else {
-        // 初始載入：全量更新
+        // 初始載入:全量更新
         console.log('🔄 初始載入K線數據') // TODO: 未來可清理
         candlestickSeriesRef.current.setData(formattedData)
 
         /**
          * 🔧 [重要修正] 條件性視圖調整機制
          *
-         * 問題：切換時間間隔時，新數據的時間範圍可能與當前視圖範圍不匹配，
-         *      導致 K線超出可視範圍，用戶看不到新載入的數據
+         * 問題:切換時間間隔時,新數據的時間範圍可能與當前視圖範圍不匹配,
+         *      導致 K線超出可視範圍,用戶看不到新載入的數據
          *
-         * 解決：根據autoFit設定決定是否執行 fitContent()，
+         * 解決:根據autoFit設定決定是否執行 fitContent(),
          *      只有在啟用自適應時才自動調整視圖
          *
-         * 日期：2025-09-18
+         * 日期:2025-09-18
          */
         if (isAutoFitEnabled) {
           setTimeout(() => {
             if (chartRef.current?.timeScale) {
-              console.log('🔄 自適應：強制調整視圖適應新數據') // TODO: 未來可清理
+              console.log('🔄 自適應:強制調整視圖適應新數據') // TODO: 未來可清理
               chartRef.current.timeScale().fitContent()
             }
           }, 100)
@@ -1056,7 +1059,7 @@ export function TradingChart({
       // 更新數據長度記錄
       lastDataLengthRef.current = formattedData.length
     } else {
-      // TODO: 未來可清理 - 調試用，分析空數據情況
+      // TODO: 未來可清理 - 調試用,分析空數據情況
       console.warn('⚠️ 沒有K線數據!')
       console.log('📊 當前時間間隔:', interval)
       console.log('📊 原始數據:', klineData?.slice(0, 3))
@@ -1097,7 +1100,7 @@ export function TradingChart({
             color: isUp ? '#ff4444' : '#00C851', // 台股慣例:上漲紅色,下跌綠色
           }
         })
-        // 確保與K線數據相同的排序（Unix 時間戳）
+        // 確保與K線數據相同的排序(Unix 時間戳)
         .sort((a, b) => (a.time as number) - (b.time as number))
 
       if (volumeData.length > 0) {
@@ -1107,21 +1110,21 @@ export function TradingChart({
       }
     }
 
-    // 🔧 [2025-09-18] 條件性智能自動調整策略：商品切換和初始載入
+    // 🔧 [2025-09-18] 條件性智能自動調整策略:商品切換和初始載入
     const isInitialLoad = lastDataLengthRef.current === 0
     const hasValidData = klineData.length > 0 && chartRef.current
 
-    // 需要自動調整的情況：
+    // 需要自動調整的情況:
     // 1. 啟用自適應功能時
     // 2. 初始載入時
-    // 3. 有有效數據時（包含商品切換，解決價格範圍差異問題）
+    // 3. 有有效數據時(包含商品切換,解決價格範圍差異問題)
     const shouldAutoFit =
       isAutoFitEnabled &&
       (isInitialLoad || hasValidData) &&
       klineData.length > 0
 
     if (shouldAutoFit && chartRef.current) {
-      console.log('🎯 自適應：自動調整價格範圍:', {
+      console.log('🎯 自適應:自動調整價格範圍:', {
         原因: isInitialLoad ? '初始載入' : '數據更新/商品切換',
         數據長度: klineData.length,
         前一次長度: lastDataLengthRef.current,
@@ -1132,7 +1135,7 @@ export function TradingChart({
       // 先調整時間軸
       chartRef.current.timeScale().fitContent()
 
-      // 延遲調整價格軸，確保數據渲染完成
+      // 延遲調整價格軸,確保數據渲染完成
       setTimeout(() => {
         if (chartRef.current && candlestickSeriesRef.current) {
           // 強制重新計算並適應價格範圍
@@ -1144,11 +1147,11 @@ export function TradingChart({
           // 再次調整時間軸以確保完整顯示
           chartRef.current.timeScale().fitContent()
 
-          console.log('✅ 自適應：價格範圍自動調整完成')
+          console.log('✅ 自適應:價格範圍自動調整完成')
         }
       }, 150) // 增加延遲時間確保價格調整生效
     } else if (!isAutoFitEnabled) {
-      console.log('🔒 自適應已停用，保持用戶調整的視圖位置')
+      console.log('🔒 自適應已停用,保持用戶調整的視圖位置')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [klineData, showVolume, symbol]) // 添加symbol確保商品切換時自動調整價格範圍
@@ -1168,17 +1171,75 @@ export function TradingChart({
             </p>
           </div>
           <div className="flex space-x-2">
-            <button className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200">
+            <button
+              onClick={() => onIntervalChange?.('1m')}
+              className={`px-3 py-1 text-xs rounded hover:bg-gray-200 transition-all ${
+                interval === '1m'
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-gray-100'
+              }`}
+            >
               1分
             </button>
-            <button className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200">
+            <button
+              onClick={() => onIntervalChange?.('5m')}
+              className={`px-3 py-1 text-xs rounded hover:bg-gray-200 transition-all ${
+                interval === '5m'
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-gray-100'
+              }`}
+            >
               5分
             </button>
-            <button className="px-3 py-1 text-xs bg-blue-500 text-white rounded">
+            <button
+              onClick={() => onIntervalChange?.('15m')}
+              className={`px-3 py-1 text-xs rounded hover:bg-gray-200 transition-all ${
+                interval === '15m'
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-gray-100'
+              }`}
+            >
+              15分
+            </button>
+            <button
+              onClick={() => onIntervalChange?.('60m')}
+              className={`px-3 py-1 text-xs rounded hover:bg-gray-200 transition-all ${
+                interval === '60m'
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-gray-100'
+              }`}
+            >
+              1小時
+            </button>
+            <button
+              onClick={() => onIntervalChange?.('1d')}
+              className={`px-3 py-1 text-xs rounded hover:bg-gray-200 transition-all ${
+                interval === '1d'
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-gray-100'
+              }`}
+            >
               日線
             </button>
-            <button className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200">
+            <button
+              onClick={() => onIntervalChange?.('1w')}
+              className={`px-3 py-1 text-xs rounded hover:bg-gray-200 transition-all ${
+                interval === '1w'
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-gray-100'
+              }`}
+            >
               週線
+            </button>
+            <button
+              onClick={() => onIntervalChange?.('1M')}
+              className={`px-3 py-1 text-xs rounded hover:bg-gray-200 transition-all ${
+                interval === '1M'
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-gray-100'
+              }`}
+            >
+              月線
             </button>
           </div>
         </div>

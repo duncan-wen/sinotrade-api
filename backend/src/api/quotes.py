@@ -280,7 +280,7 @@ def get_chart_data_with_indicators(
 
 @router.get("/debug/kbar-raw/{symbol}")
 def debug_kbar_raw_data(symbol: str):
-    """調試端點：檢查 Shioaji KBar API 原始數據"""
+    """調試端點:檢查 Shioaji KBar API 原始數據"""
     try:
         from datetime import datetime, timedelta
 
@@ -659,7 +659,7 @@ def _get_performance_recommendation(speedup: float, memory_efficiency: float) ->
 
 def _get_data_source(interval: str) -> str:
     """確定資料來源類型"""
-    # 統一KBar API策略：所有支援的間隔都使用官方KBar API
+    # 統一KBar API策略:所有支援的間隔都使用官方KBar API
     if interval in ["1m", "5m", "15m", "60m", "1d", "1w", "1M"]:
         return "official_kbar"
     else:

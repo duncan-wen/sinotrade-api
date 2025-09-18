@@ -321,22 +321,22 @@ class ShioajiService:
                     "days": 1,
                     "pandas_rule": None,
                     "desc": "1-minute",
-                },  # 1分鐘：當日開盤到收盤（約240根K線）
+                },  # 1分鐘:當日開盤到收盤(約240根K線)
                 "5m": {
                     "days": 1,
                     "pandas_rule": "5T",
                     "desc": "5-minute",
-                },  # 5分鐘：當日開盤到收盤（約48根K線）
+                },  # 5分鐘:當日開盤到收盤(約48根K線)
                 "15m": {
                     "days": 3,
                     "pandas_rule": "15T",
                     "desc": "15-minute",
-                },  # 15分鐘：3天（約48根K線）
+                },  # 15分鐘:3天(約48根K線)
                 "60m": {
                     "days": 30,
                     "pandas_rule": "60T",
                     "desc": "1-hour",
-                },  # 1小時：30天（約120根K線，每天4根）
+                },  # 1小時:30天(約120根K線,每天4根)
                 "1d": {"days": limit + 30, "pandas_rule": "1D", "desc": "daily"},
                 "1w": {"days": limit * 7 + 60, "pandas_rule": "1W", "desc": "weekly"},
                 "1M": {"days": limit * 30 + 90, "pandas_rule": "1M", "desc": "monthly"},
@@ -478,7 +478,7 @@ class ShioajiService:
             # 2. 獲取最新的tick數據,生成當前未完成的5分鐘K線
             current_5m_data = self._get_klines_from_ticks(contract, symbol, "5m", 1)
 
-            # 3. 合併數據：檢查最新的歷史數據和當前tick數據是否為同一時段
+            # 3. 合併數據:檢查最新的歷史數據和當前tick數據是否為同一時段
             if current_5m_data and len(current_5m_data) > 0:
                 current_bar = current_5m_data[0]
                 current_time = datetime.fromisoformat(
@@ -495,7 +495,7 @@ class ShioajiService:
                     )
 
                     # 如果tick數據的時間段與最後一條歷史數據相同,則替換
-                    # 5分鐘K線的時間邊界：例如 13:05 包含 13:05:00 - 13:09:59
+                    # 5分鐘K線的時間邊界:例如 13:05 包含 13:05:00 - 13:09:59
                     current_5m_start = current_time.replace(
                         minute=(current_time.minute // 5) * 5, second=0, microsecond=0
                     )
