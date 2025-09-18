@@ -8,10 +8,10 @@ import { TradingChart } from '@/components/chart/TradingChart'
 import Select from '@/components/common/select'
 
 export default function Test5MinChartPage() {
-  const [symbol, setSymbol] = useState('2330')
+  const [symbol, setSymbol] = useState('2408')
   const [enableRealtime, setEnableRealtime] = useState(true)
 
-  const testSymbols = ['2330', '2317', '2454', '3008', 'TXFF', 'MXFF']
+  const testSymbols = ['2408', '2330', '2317', '2454', '3008', 'TXFF', 'MXFF']
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">

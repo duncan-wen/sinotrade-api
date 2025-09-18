@@ -3,6 +3,7 @@
 from datetime import datetime
 from typing import Any
 
+import pandas as pd
 from fastapi import APIRouter, Depends, Query
 from loguru import logger
 
@@ -275,6 +276,96 @@ def get_chart_data_with_indicators(
             indicators_config={},
             source="error",
         )
+
+
+@router.get("/debug/kbar-raw/{symbol}")
+def debug_kbar_raw_data(symbol: str):
+    """調試端點：檢查 Shioaji KBar API 原始數據"""
+    try:
+        from datetime import datetime, timedelta
+
+        # 獲取合約
+        contract = shioaji_service._get_contract(symbol)
+        if not contract:
+            return {"error": f"找不到合約 {symbol}"}
+
+        # 獲取當天數據
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=1)
+
+        logger.info(f"🔍 調試 KBar API 原始數據: {symbol}")
+        logger.info(
+            f"   時間範圍: {start_date.strftime('%Y-%m-%d')} ~ {end_date.strftime('%Y-%m-%d')}"
+        )
+
+        # 直接調用 Shioaji KBar API
+        kbars = shioaji_service.api.kbars(
+            contract=contract,
+            start=start_date.strftime("%Y-%m-%d"),
+            end=end_date.strftime("%Y-%m-%d"),
+        )
+
+        if not kbars or len(kbars.ts) == 0:
+            return {"error": "沒有數據"}
+
+        # 轉換為易讀格式
+        raw_data = []
+        for i in range(len(kbars.ts)):
+            ts = pd.to_datetime(kbars.ts[i], unit="ns")
+            raw_data.append(
+                {
+                    "time": ts.strftime("%Y-%m-%d %H:%M:%S"),
+                    "open": float(kbars.Open[i]),
+                    "high": float(kbars.High[i]),
+                    "low": float(kbars.Low[i]),
+                    "close": float(kbars.Close[i]),
+                    "volume": int(kbars.Volume[i]),
+                }
+            )
+
+        # 分析數據
+        total_count = len(raw_data)
+        zero_volume_count = sum(1 for d in raw_data if d["volume"] == 0)
+        time_intervals = []
+
+        if total_count >= 2:
+            for i in range(1, min(20, total_count)):
+                prev_time = pd.to_datetime(raw_data[i - 1]["time"])
+                curr_time = pd.to_datetime(raw_data[i]["time"])
+                diff_minutes = (curr_time - prev_time).total_seconds() / 60
+                time_intervals.append(diff_minutes)
+
+        # 檢查特定時間段
+        target_times = []
+        for item in raw_data:
+            time_part = item["time"].split(" ")[1][:5]  # 取 HH:MM
+            if time_part in ["12:20", "12:21", "12:22", "12:23", "12:24", "12:25"]:
+                target_times.append(
+                    {
+                        "time": time_part,
+                        "volume": item["volume"],
+                        "close": item["close"],
+                    }
+                )
+
+        return {
+            "symbol": symbol,
+            "analysis": {
+                "total_count": total_count,
+                "zero_volume_count": zero_volume_count,
+                "time_intervals": time_intervals[:10],
+                "avg_interval_minutes": sum(time_intervals) / len(time_intervals)
+                if time_intervals
+                else 0,
+            },
+            "target_period_12_20_25": target_times,
+            "last_10_records": raw_data[-10:],
+            "raw_data_sample": raw_data[:10],
+        }
+
+    except Exception as e:
+        logger.error(f"調試 KBar 原始數據失敗: {e}")
+        return {"error": str(e)}
 
 
 @router.get("/chart/multi")
@@ -568,9 +659,8 @@ def _get_performance_recommendation(speedup: float, memory_efficiency: float) ->
 
 def _get_data_source(interval: str) -> str:
     """確定資料來源類型"""
-    if interval == "1d":
+    # 統一KBar API策略：所有支援的間隔都使用官方KBar API
+    if interval in ["1m", "5m", "15m", "60m", "1d", "1w", "1M"]:
         return "official_kbar"
-    elif interval in ["1w", "1M"]:
-        return "daily_aggregated"
     else:
         return "ticks_aggregated"

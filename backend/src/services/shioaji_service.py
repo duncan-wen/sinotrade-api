@@ -247,20 +247,21 @@ class ShioajiService:
             f"Requested {limit} bars, fetching {actual_limit} bars for MA calculation"
         )
 
-        # 策略選擇:
-        # 1. 日線:優先使用官方 KBar API (更穩定)
-        # 2. 周線/月線:從日線資料聚合 (效能較好)
-        # 3. 其他:從 Ticks 聚合 (精確度最高,但可能不穩定)
+        # 統一策略: 基於 KBar API 的多時間間隔支援
+        # 1. 所有間隔都使用官方 KBar API (穩定, 完整)
+        # 2. 1m: 直接返回分鐘數據
+        # 3. 其他: 從分鐘數據聚合到目標間隔
+        # 4. 支援: 1m, 5m, 15m, 60m, 1d, 1w, 1M
 
-        if interval == "1d":
-            # 日線優先使用 KBar API
-            all_data = self._get_kbars_from_api(contract, symbol, actual_limit)
-        elif interval in ["1w", "1M"]:
-            all_data = self._get_klines_from_daily_aggregation(
-                contract, symbol, interval, actual_limit
+        supported_intervals = ["1m", "5m", "15m", "60m", "1d", "1w", "1M"]
+        if interval in supported_intervals:
+            # 統一使用 KBar API + 聚合策略
+            all_data = self._get_kbars_from_api(
+                contract, symbol, actual_limit, interval
             )
         else:
-            # 分鐘線等其他時間間隔使用 Ticks 聚合
+            # 不支援的間隔回退到 Ticks 聚合
+            logger.warning(f"不支援的時間間隔 {interval}, 回退到 Tick 聚合")
             all_data = self._get_klines_from_ticks(
                 contract, symbol, interval, actual_limit
             )
@@ -306,18 +307,51 @@ class ShioajiService:
         return actual_limit
 
     def _get_kbars_from_api(
-        self, contract: Any, symbol: str, limit: int
+        self, contract: Any, symbol: str, limit: int, interval: str = "1d"
     ) -> list[dict[str, Any]]:
-        """使用官方 KBar API 獲取分鐘資料並聚合成日線 (修正版)"""
+        """使用官方 KBar API 獲取分鐘資料並聚合成指定間隔 (支援所有時間間隔)"""
         try:
             from datetime import datetime, timedelta
 
             end_date = datetime.now()
-            # KBar API 返回的是分鐘數據,需要更多天數來獲取足夠的日線
-            start_date = end_date - timedelta(days=limit + 30)
+
+            # 統一的時間間隔配置 - 針對不同用途優化資料長度
+            interval_mapping = {
+                "1m": {
+                    "days": 1,
+                    "pandas_rule": None,
+                    "desc": "1-minute",
+                },  # 1分鐘：當日開盤到收盤（約240根K線）
+                "5m": {
+                    "days": 1,
+                    "pandas_rule": "5T",
+                    "desc": "5-minute",
+                },  # 5分鐘：當日開盤到收盤（約48根K線）
+                "15m": {
+                    "days": 3,
+                    "pandas_rule": "15T",
+                    "desc": "15-minute",
+                },  # 15分鐘：3天（約48根K線）
+                "60m": {
+                    "days": 30,
+                    "pandas_rule": "60T",
+                    "desc": "1-hour",
+                },  # 1小時：30天（約120根K線，每天4根）
+                "1d": {"days": limit + 30, "pandas_rule": "1D", "desc": "daily"},
+                "1w": {"days": limit * 7 + 60, "pandas_rule": "1W", "desc": "weekly"},
+                "1M": {"days": limit * 30 + 90, "pandas_rule": "1M", "desc": "monthly"},
+            }
+
+            if interval in interval_mapping:
+                config = interval_mapping[interval]
+            else:
+                config = interval_mapping["1d"]
+            start_date = end_date - timedelta(days=cast(dict, config)["days"])
+            target_interval = cast(dict, config)["pandas_rule"]
+            interval_desc = cast(dict, config)["desc"]
 
             logger.info(
-                f"Using official KBar API for {symbol} (returns minute data, will aggregate to daily)"
+                f"Using official KBar API for {symbol} (returns minute data, will aggregate to {interval_desc})"
             )
             logger.info(f"Start date: {start_date.strftime('%Y-%m-%d')}")
             logger.info(f"End date: {end_date.strftime('%Y-%m-%d')}")
@@ -332,6 +366,38 @@ class ShioajiService:
                 logger.warning(f"No KBar data found for {symbol}")
                 return []
 
+            # 詳細檢查原始 KBar 數據
+            logger.info("📊 KBar API 原始數據檢查:")
+            logger.info(f"   總條數: {len(kbars.ts)}")
+            logger.info(
+                f"   時間範圍: {pd.to_datetime(kbars.ts[0], unit='ns')} ~ {pd.to_datetime(kbars.ts[-1], unit='ns')}"
+            )
+
+            # 檢查最近10條數據
+            if len(kbars.ts) >= 10:
+                logger.info("📊 最近10條原始數據:")
+                for i in range(-10, 0):
+                    ts = pd.to_datetime(kbars.ts[i], unit="ns")
+                    logger.info(
+                        f"   {ts}: O={kbars.Open[i]}, H={kbars.High[i]}, L={kbars.Low[i]}, C={kbars.Close[i]}, V={kbars.Volume[i]}"
+                    )
+
+            # 檢查零成交量分鐘
+            zero_volume_count = sum(1 for v in kbars.Volume if v == 0)
+            logger.info(f"📊 零成交量分鐘數: {zero_volume_count}/{len(kbars.Volume)}")
+
+            # 檢查時間間隔連續性
+            if len(kbars.ts) >= 2:
+                time_diffs = []
+                for i in range(1, min(20, len(kbars.ts))):  # 檢查前20個間隔
+                    diff_ns = kbars.ts[i] - kbars.ts[i - 1]
+                    diff_minutes = diff_ns / (60 * 1e9)  # 轉換為分鐘
+                    time_diffs.append(diff_minutes)
+
+                logger.info(f"📊 時間間隔分析 (分鐘): {time_diffs[:10]}")
+                avg_diff = sum(time_diffs) / len(time_diffs)
+                logger.info(f"📊 平均時間間隔: {avg_diff:.1f} 分鐘")
+
             # 轉換為 DataFrame (這些是分鐘數據)
             df = pd.DataFrame(
                 {
@@ -344,31 +410,39 @@ class ShioajiService:
                 }
             )
 
-            logger.info(f"Received {len(df)} minute bars, aggregating to daily")
+            logger.info(
+                f"Received {len(df)} minute bars, aggregating to {interval_desc}"
+            )
 
             # 設置時間索引
             df.set_index("datetime", inplace=True)
 
-            # 聚合成日線 (按日期分組)
-            daily_data = (
-                df.resample("1D")
-                .agg(
-                    {
-                        "open": "first",  # 當日第一筆的開盤價
-                        "high": "max",  # 當日最高價
-                        "low": "min",  # 當日最低價
-                        "close": "last",  # 當日最後一筆的收盤價
-                        "volume": "sum",  # 當日總成交量
-                    }
+            # 聚合成指定間隔
+            if target_interval is None:
+                # 1分鐘數據直接返回,不需要聚合
+                aggregated_data = df
+            else:
+                # 其他間隔需要聚合
+                aggregated_data = (
+                    df.resample(target_interval)
+                    .agg(
+                        {
+                            "open": "first",  # 間隔內第一筆的開盤價
+                            "high": "max",  # 間隔內最高價
+                            "low": "min",  # 間隔內最低價
+                            "close": "last",  # 間隔內最後一筆的收盤價
+                            "volume": "sum",  # 間隔內總成交量
+                        }
+                    )
+                    .dropna()
                 )
-                .dropna()
-            )
 
             # 轉換為標準格式
             klines = []
-            for timestamp, row in daily_data.iterrows():
+            for timestamp, row in aggregated_data.iterrows():
                 kline = {
                     "timestamp": cast(pd.Timestamp, timestamp).isoformat(),
+                    "time": cast(pd.Timestamp, timestamp).isoformat(),  # 添加time字段
                     "open": float(row["open"]),
                     "high": float(row["high"]),
                     "low": float(row["low"]),
@@ -377,12 +451,80 @@ class ShioajiService:
                 }
                 klines.append(kline)
 
-            logger.info(f"Aggregated to {len(klines)} daily bars")
+            logger.info(f"Aggregated to {len(klines)} {interval_desc} bars")
             return klines[-limit:] if len(klines) > limit else klines
 
         except Exception as e:
             logger.error(f"Failed to get KBars from official API: {e}")
             return []
+
+    def _get_klines_hybrid_5m(
+        self, contract: Any, symbol: str, limit: int
+    ) -> list[dict[str, Any]]:
+        """混合策略: 使用 KBar API 獲取歷史5分鐘數據 + Tick聚合獲取最新數據"""
+        try:
+            from datetime import datetime
+
+            logger.info(f"使用混合策略獲取 {symbol} 的5分鐘K線")
+
+            # 1. 使用 KBar API 獲取歷史5分鐘數據
+            historical_data = self._get_kbars_from_api(contract, symbol, limit, "5m")
+            logger.info(f"KBar API 獲取到 {len(historical_data)} 條歷史5分鐘數據")
+
+            if not historical_data:
+                logger.warning("KBar API 未獲取到數據,回退到tick聚合")
+                return self._get_klines_from_ticks(contract, symbol, "5m", limit)
+
+            # 2. 獲取最新的tick數據,生成當前未完成的5分鐘K線
+            current_5m_data = self._get_klines_from_ticks(contract, symbol, "5m", 1)
+
+            # 3. 合併數據：檢查最新的歷史數據和當前tick數據是否為同一時段
+            if current_5m_data and len(current_5m_data) > 0:
+                current_bar = current_5m_data[0]
+                current_time = datetime.fromisoformat(
+                    current_bar.get("time", current_bar.get("timestamp", ""))
+                )
+
+                # 檢查最後一條歷史數據的時間
+                if historical_data:
+                    last_historical = historical_data[-1]
+                    last_time = datetime.fromisoformat(
+                        last_historical.get(
+                            "time", last_historical.get("timestamp", "")
+                        )
+                    )
+
+                    # 如果tick數據的時間段與最後一條歷史數據相同,則替換
+                    # 5分鐘K線的時間邊界：例如 13:05 包含 13:05:00 - 13:09:59
+                    current_5m_start = current_time.replace(
+                        minute=(current_time.minute // 5) * 5, second=0, microsecond=0
+                    )
+                    last_5m_start = last_time.replace(
+                        minute=(last_time.minute // 5) * 5, second=0, microsecond=0
+                    )
+
+                    if current_5m_start == last_5m_start:
+                        # 同一個5分鐘時段,用tick數據替換歷史數據
+                        logger.info(f"用tick數據更新當前5分鐘K線: {current_5m_start}")
+                        historical_data[-1] = current_bar
+                    else:
+                        # 不同時段,append新的K線
+                        logger.info(f"添加新的5分鐘K線: {current_5m_start}")
+                        historical_data.append(current_bar)
+                else:
+                    # 沒有歷史數據,直接使用tick數據
+                    historical_data = current_5m_data
+
+            logger.info(f"混合策略最終獲取到 {len(historical_data)} 條5分鐘K線")
+            return (
+                historical_data[-limit:]
+                if len(historical_data) > limit
+                else historical_data
+            )
+
+        except Exception as e:
+            logger.error(f"混合策略失敗,回退到tick聚合: {e}")
+            return self._get_klines_from_ticks(contract, symbol, "5m", limit)
 
     def _get_klines_from_daily_aggregation(
         self, contract: Any, symbol: str, interval: str, limit: int
