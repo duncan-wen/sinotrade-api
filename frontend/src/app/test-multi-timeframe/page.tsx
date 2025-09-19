@@ -9,7 +9,7 @@ import Select from '@/components/common/select'
 
 export default function TestMultiTimeframePage() {
   const [symbol, setSymbol] = useState('TXFR1')
-  const [interval, setInterval] = useState('60m')
+  const [interval, setInterval] = useState('1m')
   const [enableRealtime, setEnableRealtime] = useState(true)
 
   const testSymbols = [

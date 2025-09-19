@@ -112,21 +112,33 @@ def on_tick_callback(exchange, tick: TickSTKv1):
 
 ### 連續期貨合約最佳實踐
 ```python
-# ✅ 正確做法：使用官方連續期貨合約
-def get_futures_contract(symbol: str):
-    """獲取期貨合約 - 官方連續合約自動換月"""
-    try:
-        if symbol == "TXFR1":
-            return api.Contracts.Futures.TXF.TXFR1  # 大台指近月
-        elif symbol == "TXFR2":
-            return api.Contracts.Futures.TXF.TXFR2  # 大台指次月
-        elif symbol == "MXFR1":
-            return api.Contracts.Futures.MXF.MXFR1  # 小台指近月
-        elif symbol == "MXFR2":
-            return api.Contracts.Futures.MXF.MXFR2  # 小台指次月
-    except Exception as e:
-        logger.error(f"期貨合約獲取失敗: {symbol}, {e}")
-        return None
+# ✅ 正確做法：使用官方連續期貨合約 (通用動態方法)
+def get_futures_contract_dynamic(symbol: str):
+    """動態獲取期貨合約 - 支援所有官方R1/R2連續合約"""
+    if symbol.endswith(("R1", "R2")):
+        group_name = symbol[:-2]  # 提取群組名 (TXFR1 -> TXF)
+        try:
+            futures_group = getattr(api.Contracts.Futures, group_name)
+            contract = getattr(futures_group, symbol)
+
+            # 顯示target_code資訊
+            target_code = getattr(contract, 'target_code', None)
+            logger.info(f"連續合約 {symbol} -> 目標: {target_code}")
+            return contract
+        except AttributeError as e:
+            logger.error(f"期貨群組 {group_name} 不存在: {e}")
+            return None
+
+# 🎯 支援的連續期貨合約實例
+examples = {
+    "TXFR1": "api.Contracts.Futures.TXF.TXFR1",  # 大台指近月
+    "TXFR2": "api.Contracts.Futures.TXF.TXFR2",  # 大台指次月
+    "MXFR1": "api.Contracts.Futures.MXF.MXFR1",  # 小台指近月
+    "MXFR2": "api.Contracts.Futures.MXF.MXFR2",  # 小台指次月
+    "CDFR1": "api.Contracts.Futures.CDF.CDFR1",  # 台積電期貨近月
+    "CDFR2": "api.Contracts.Futures.CDF.CDFR2",  # 台積電期貨次月
+    # ... 其他期貨群組的R1/R2合約
+}
 
 # 🚀 獲取連續歷史數據
 kbars = api.kbars(
@@ -135,8 +147,14 @@ kbars = api.kbars(
     end="2023-01-16"
 )
 
+# 📋 連續合約資訊查看
+contract = api.Contracts.Futures.TXF.TXFR1
+print(f"合約代碼: {contract.code}")
+print(f"目標合約: {contract.target_code}")  # 指向實際月份合約
+print(f"交割日期: {contract.delivery_date}")
+
 # ❌ 避免：手動計算結算日和合約切換
-# 官方連續合約會自動處理這些邏輯
+# 官方連續合約會自動處理這些邏輯，包含target_code自動對應
 ```
 
 ### 數據類型使用場景

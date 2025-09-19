@@ -28,8 +28,10 @@ class ShioajiService:
         self._is_logged_in = False  # 登入狀態標記
         self._is_initialized = False  # 初始化狀態標記
         self._is_destroyed = False  # 銷毀狀態標記
-        self._login()
-        self._setup_callbacks()
+
+        # ✅ 延遲初始化: 避免在__init__中執行可能阻塞的操作
+        # 改為按需登錄, 提高服務啟動速度
+        logger.info("🚀 Shioaji 服務已創建, 等待首次使用時登錄")
 
     def __del__(self) -> None:
         """當物件被垃圾回收時進行完整清理"""
@@ -70,6 +72,24 @@ class ShioajiService:
         self.quote_callbacks.append(callback)
         logger.info(f"Added quote callback: {callback.__name__}")
 
+    def ensure_logged_in(self) -> bool:
+        """確保已登錄 - 按需登錄機制"""
+        if self._is_destroyed:
+            logger.error("服務已被銷毀, 無法登錄")
+            return False
+
+        if self._is_logged_in:
+            return True
+
+        try:
+            logger.info("🔐 首次使用, 開始登錄...")
+            self._login()
+            self._setup_callbacks()
+            return self._is_logged_in
+        except Exception as e:
+            logger.error(f"❌ 按需登錄失敗: {e}")
+            return False
+
     def initialize(self) -> bool:
         """初始化 Shioaji 服務"""
         if self._is_destroyed:
@@ -88,15 +108,9 @@ class ShioajiService:
                 logger.error("Shioaji API 物件無效")
                 return False
 
-            # 檢查登入狀態
-            if not self._is_logged_in:
-                logger.warning("Shioaji 未登入,先執行登入...")
-                self._login()
-
-            # 驗證登入狀態
-            if not hasattr(self.api, "login") or not self.api.login:
-                logger.error("Shioaji 登入狀態無效")
-                self._is_logged_in = False
+            # 使用按需登錄機制
+            if not self.ensure_logged_in():
+                logger.error("登錄失敗, 無法初始化")
                 return False
 
             self._is_initialized = True
@@ -236,6 +250,10 @@ class ShioajiService:
             limit: 回傳的 K 線數量
             ma_periods: 均線週期列表,用於計算額外需要的數據量 (如 [5, 20, 60])
         """
+        # ✅ 確保已登錄
+        if not self.ensure_logged_in():
+            logger.error("登錄失敗, 無法獲取K線數據")
+            return {"contract": {"symbol": symbol, "name": symbol}, "data": []}
         contract = self._get_contract(symbol)
         if not contract:
             logger.error(f"Cannot find contract for symbol: {symbol}")
@@ -853,74 +871,39 @@ class ShioajiService:
                     except KeyError:
                         logger.warning(f"Futures contract not found by code: {symbol}")
 
-                # 🚀 通用期貨處理 - 支援所有 *R1/*R2 標準化符號
-                if symbol.endswith(("R1", "R2")):  # 所有期貨的近月/次月
-                    # 提取期貨群組名稱 (例如: CDFR1 -> CDF, TXFR1 -> TXF)
-                    group_name = symbol[:-2]  # 移除 R1/R2 後綴
+                # ✅ 通用連續期貨合約處理 (動態支援所有R1/R2)
+                if symbol.endswith(("R1", "R2")):
+                    # 提取期貨群組名稱 (如: TXFR1 -> TXF, CDFR1 -> CDF)
+                    group_name = symbol[:-2]
 
                     try:
-                        # 使用 getattr 動態取得期貨群組
+                        # 動態獲取期貨群組
                         futures_group = getattr(self.api.Contracts.Futures, group_name)
-                        logger.info(f"✅ 找到期貨群組 {group_name}: {futures_group}")
 
-                        # 嘗試直接取得標準化符號 (Shioaji 提供的 *R1/*R2)
-                        try:
-                            contract = getattr(futures_group, symbol)
-                            if contract:
-                                logger.info(
-                                    f"✅ 直接找到標準化合約: {symbol} -> {contract.symbol}"
-                                )
-                                return contract
-                        except AttributeError:
-                            logger.warning(f"標準化符號 {symbol} 不存在, 嘗試手動選擇")
+                        # 嘗試直接獲取官方R1/R2合約
+                        contract = getattr(futures_group, symbol)
 
-                        # 如果標準化符號不存在, 手動選擇近月/次月合約
-                        contracts_list = list(futures_group)
-                        if contracts_list:
-                            # 按交割日期排序, 選擇近月或次月
-                            sorted_contracts = sorted(
-                                [
-                                    c
-                                    for c in contracts_list
-                                    if hasattr(c, "delivery_date") and c.delivery_date
-                                ],
-                                key=lambda x: x.delivery_date,
+                        if contract:
+                            # 顯示詳細資訊包含target_code
+                            target_info = getattr(contract, "target_code", "無")
+                            logger.info(
+                                f"✅ 獲取連續期貨合約: {symbol} -> {contract.code}"
                             )
-
-                            if symbol.endswith("R1") and len(sorted_contracts) >= 1:
-                                # 近月合約
-                                selected_contract = sorted_contracts[0]
-                                logger.info(
-                                    f"✅ {group_name} 近月: {selected_contract.code}"
-                                )
-                                return selected_contract
-                            elif symbol.endswith("R2") and len(sorted_contracts) >= 2:
-                                # 次月合約
-                                selected_contract = sorted_contracts[1]
-                                logger.info(
-                                    f"✅ {group_name} 次月: {selected_contract.code}"
-                                )
-                                return selected_contract
-                            else:
-                                # 回退到第一個可用合約
-                                selected_contract = (
-                                    sorted_contracts[0]
-                                    if sorted_contracts
-                                    else contracts_list[0]
-                                )
-                                logger.info(
-                                    f"✅ {group_name} 回退: {selected_contract.code}"
-                                )
-                                return selected_contract
+                            logger.info(
+                                f"   📍 目標合約: {target_info}, 交割日: {contract.delivery_date}"
+                            )
+                            return contract
                         else:
-                            logger.error(f"期貨群組 {group_name} 沒有可用合約")
+                            logger.error(f"❌ 連續期貨合約不存在: {symbol}")
                             return None
 
                     except AttributeError as e:
-                        logger.error(f"期貨群組 {group_name} 不存在: {e}")
+                        logger.error(
+                            f"❌ 期貨群組 {group_name} 不存在或無R1/R2合約: {e}"
+                        )
                         return None
                     except Exception as e:
-                        logger.error(f"處理期貨 {symbol} 時發生錯誤: {e}")
+                        logger.error(f"❌ 處理連續期貨合約失敗 {symbol}: {e}")
                         return None
 
         except (KeyError, AttributeError):
@@ -955,9 +938,9 @@ class ShioajiService:
             logger.debug(f"股票 {symbol} 已經訂閱,跳過重複訂閱")
             return True
 
-        # 檢查服務狀態
-        if not self._is_initialized or not self._is_logged_in:
-            logger.error(f"服務未初始化或未登入,無法訂閱 {symbol}")
+        # ✅ 確保已登錄
+        if not self.ensure_logged_in():
+            logger.error(f"登錄失敗, 無法訂閱 {symbol}")
             return False
 
         if not self.api:

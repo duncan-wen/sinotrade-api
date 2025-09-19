@@ -68,6 +68,14 @@ export function TradingChart({
   autoFit = false,
   onIntervalChange,
 }: TradingChartProps) {
+  // 🔍 [調試] 確認interval props
+  console.log(
+    '🔍 [TradingChart] 接收到的interval:',
+    interval,
+    '類型:',
+    typeof interval
+  )
+
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
@@ -102,6 +110,25 @@ export function TradingChart({
   const ma5SeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
   const ma10SeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
   const ma20SeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
+
+  // 🔧 重新計算MA值的函數（用於實時更新）
+  // ⚠️ 注意：此算法應與後端保持一致
+  const calculateRealTimeMA = (
+    data: KLineData[],
+    period: number
+  ): number | null => {
+    if (!data || data.length < period) {
+      return null
+    }
+
+    // 取最近period個K線的收盤價計算MA（與後端算法保持一致）
+    const recentData = data.slice(-period)
+    const sum = recentData.reduce((acc, item) => acc + item.close, 0)
+    const result = sum / period
+
+    // 🔧 統一精度：與後端保持一致（4位小數）
+    return Math.round(result * 10000) / 10000
+  }
 
   // 更新 MA 數據的輔助函數
   const updateMAData = (data: KLineData[]) => {
@@ -146,10 +173,20 @@ export function TradingChart({
 
     // 準備 MA5 數據 - 使用與 candlestick 相同的時間轉換邏輯
     const ma5Data = data
-      .filter(
-        (d) =>
-          d.ma5 !== null && d.ma5 !== undefined && !isNaN(d.ma5) && d.ma5 > 0
-      )
+      .map((d, index) => {
+        // 🔧 重要增強：如果後端沒有提供MA值，前端實時計算
+        let ma5Value = d.ma5
+        if (
+          ma5Value === null ||
+          ma5Value === undefined ||
+          isNaN(ma5Value) ||
+          ma5Value <= 0
+        ) {
+          ma5Value = calculateRealTimeMA(data.slice(0, index + 1), 5)
+        }
+        return { ...d, ma5: ma5Value }
+      })
+      .filter((d) => d.ma5 !== null && d.ma5 > 0)
       .map((d) => {
         // 確保時間格式一致
         const timeValue =
@@ -161,16 +198,34 @@ export function TradingChart({
           value: d.ma5!,
         }
       })
+      // 🔧 重要修復：排序並去除重複時間戳
+      .sort((a, b) => (a.time as number) - (b.time as number))
+      .reduce((acc: any[], current: any) => {
+        const lastItem = acc[acc.length - 1]
+        if (!lastItem || lastItem.time !== current.time) {
+          acc.push(current)
+        } else {
+          acc[acc.length - 1] = current
+        }
+        return acc
+      }, [])
 
     // 準備 MA10 數據
     const ma10Data = data
-      .filter(
-        (d) =>
-          d.ma10 !== null &&
-          d.ma10 !== undefined &&
-          !isNaN(d.ma10) &&
-          d.ma10 > 0
-      )
+      .map((d, index) => {
+        // 🔧 重要增強：如果後端沒有提供MA值，前端實時計算
+        let ma10Value = d.ma10
+        if (
+          ma10Value === null ||
+          ma10Value === undefined ||
+          isNaN(ma10Value) ||
+          ma10Value <= 0
+        ) {
+          ma10Value = calculateRealTimeMA(data.slice(0, index + 1), 10)
+        }
+        return { ...d, ma10: ma10Value }
+      })
+      .filter((d) => d.ma10 !== null && d.ma10 > 0)
       .map((d) => {
         const timeValue =
           typeof d.time === 'string'
@@ -181,16 +236,34 @@ export function TradingChart({
           value: d.ma10!,
         }
       })
+      // 🔧 重要修復：排序並去除重複時間戳
+      .sort((a, b) => (a.time as number) - (b.time as number))
+      .reduce((acc: any[], current: any) => {
+        const lastItem = acc[acc.length - 1]
+        if (!lastItem || lastItem.time !== current.time) {
+          acc.push(current)
+        } else {
+          acc[acc.length - 1] = current
+        }
+        return acc
+      }, [])
 
     // 準備 MA20 數據
     const ma20Data = data
-      .filter(
-        (d) =>
-          d.ma20 !== null &&
-          d.ma20 !== undefined &&
-          !isNaN(d.ma20) &&
-          d.ma20 > 0
-      )
+      .map((d, index) => {
+        // 🔧 重要增強：如果後端沒有提供MA值，前端實時計算
+        let ma20Value = d.ma20
+        if (
+          ma20Value === null ||
+          ma20Value === undefined ||
+          isNaN(ma20Value) ||
+          ma20Value <= 0
+        ) {
+          ma20Value = calculateRealTimeMA(data.slice(0, index + 1), 20)
+        }
+        return { ...d, ma20: ma20Value }
+      })
+      .filter((d) => d.ma20 !== null && d.ma20 > 0)
       .map((d) => {
         const timeValue =
           typeof d.time === 'string'
@@ -201,6 +274,17 @@ export function TradingChart({
           value: d.ma20!,
         }
       })
+      // 🔧 重要修復：排序並去除重複時間戳
+      .sort((a, b) => (a.time as number) - (b.time as number))
+      .reduce((acc: any[], current: any) => {
+        const lastItem = acc[acc.length - 1]
+        if (!lastItem || lastItem.time !== current.time) {
+          acc.push(current)
+        } else {
+          acc[acc.length - 1] = current
+        }
+        return acc
+      }, [])
 
     // 設置數據到對應的系列
     try {
@@ -322,7 +406,28 @@ export function TradingChart({
             const tradingMinutes = Math.ceil(
               (currentTime.getTime() - startTime.getTime()) / (1000 * 60)
             )
-            const intervalsInMinutes = interval === '5m' ? 5 : 1
+            const getIntervalMinutes = (intervalStr: string): number => {
+              switch (intervalStr) {
+                case '1m':
+                  return 1
+                case '5m':
+                  return 5
+                case '15m':
+                  return 15
+                case '60m':
+                case '1h':
+                  return 60
+                case '1d':
+                  return 24 * 60 // 1440分鐘
+                case '1w':
+                  return 7 * 24 * 60 // 10080分鐘
+                case '1M':
+                  return 30 * 24 * 60 // 43200分鐘(近似)
+                default:
+                  return 1
+              }
+            }
+            const intervalsInMinutes = getIntervalMinutes(interval)
             const estimatedBars = Math.ceil(tradingMinutes / intervalsInMinutes)
             const aggressiveLimit = Math.max(estimatedBars * 3, 100) // 3倍緩衝,最少100條
             smartLimit = Math.min(aggressiveLimit, 500) // 最多500條
@@ -575,6 +680,12 @@ export function TradingChart({
 
     const handleKlineMessage = (message: KlineMessage) => {
       console.log('📊 處理圖表消息:', message.type, message.symbol)
+      console.log(
+        '🔍 [調試] 當前interval值:',
+        interval,
+        '類型:',
+        typeof interval
+      )
 
       if (message.type === 'historical_klines') {
         // 處理歷史數據 - Socket.IO 數據結構
@@ -618,7 +729,8 @@ export function TradingChart({
             volume: d.volume,
           }))
 
-          return [...prevData, ...formattedNewData].sort((a, b) => {
+          // 🔧 修復：合併數據並去重
+          const mergedData = [...prevData, ...formattedNewData].sort((a, b) => {
             const aTime = new Date(a.time).getTime()
             const bTime = new Date(b.time).getTime()
             // 處理無效時間的情況
@@ -627,6 +739,18 @@ export function TradingChart({
             if (isNaN(bTime)) return -1 // 無效時間排在後面
             return aTime - bTime
           })
+
+          // 去除重複時間戳，保留最新數據
+          return mergedData.reduce((acc: any[], current: any) => {
+            const lastItem = acc[acc.length - 1]
+            if (!lastItem || lastItem.time !== current.time) {
+              acc.push(current)
+            } else {
+              // 如果時間戳相同，用新數據覆蓋
+              acc[acc.length - 1] = current
+            }
+            return acc
+          }, [])
         })
       } else if (message.type === 'kline_update') {
         // 處理即時K線更新 - Socket.IO 結構
@@ -749,6 +873,9 @@ export function TradingChart({
             return prevData
           }
 
+          // 檢查是否為長期間隔 (日線、週線、月線) - 統一定義避免重複
+          const isLongTermInterval = ['1d', '1w', '1M'].includes(interval)
+
           // 獲取最新一條K線進行即時更新
           const latestKline = prevData[prevData.length - 1]
           console.log(
@@ -795,10 +922,112 @@ export function TradingChart({
             return prevData
           }
 
-          // 計算當前K線的結束時間(5分鐘後)
-          const klineEndTime = new Date(
-            klineStartTime.getTime() + 5 * 60 * 1000
-          ) // 5分鐘
+          // 🔧 移除：統一所有時間間隔的處理邏輯，不再區分長期和短期間隔
+          // 所有間隔都使用新的 calculateKlineBoundary 函數進行統一處理
+
+          // 🔧 修復：基於tick時間計算正確的K線邊界時間
+          const getIntervalMilliseconds = (intervalStr: string): number => {
+            switch (intervalStr) {
+              case '1m':
+                return 1 * 60 * 1000 // 1分鐘
+              case '5m':
+                return 5 * 60 * 1000 // 5分鐘
+              case '15m':
+                return 15 * 60 * 1000 // 15分鐘
+              case '60m':
+              case '1h':
+                return 60 * 60 * 1000 // 1小時
+              case '1d':
+                return 24 * 60 * 60 * 1000 // 1天
+              case '1w':
+                return 7 * 24 * 60 * 60 * 1000 // 7天
+              case '1M':
+                return 30 * 24 * 60 * 60 * 1000 // 30天(近似)
+              default:
+                return 1 * 60 * 1000 // 默認1分鐘
+            }
+          }
+
+          // 🔧 改進：計算不同時間間隔的邊界對齊
+          const calculateKlineBoundary = (
+            tickTime: Date,
+            intervalStr: string
+          ) => {
+            const tickDate = new Date(tickTime)
+
+            switch (intervalStr) {
+              case '1m': {
+                // 1分鐘：對齊到整分鐘
+                const aligned = new Date(tickDate)
+                aligned.setSeconds(0, 0)
+                return aligned
+              }
+              case '5m': {
+                // 5分鐘：對齊到5分鐘邊界 (0, 5, 10, 15, ...)
+                const aligned = new Date(tickDate)
+                const minutes = aligned.getMinutes()
+                const alignedMinutes = Math.floor(minutes / 5) * 5
+                aligned.setMinutes(alignedMinutes, 0, 0)
+                return aligned
+              }
+              case '15m': {
+                // 15分鐘：對齊到15分鐘邊界 (0, 15, 30, 45)
+                const aligned = new Date(tickDate)
+                const minutes = aligned.getMinutes()
+                const alignedMinutes = Math.floor(minutes / 15) * 15
+                aligned.setMinutes(alignedMinutes, 0, 0)
+                return aligned
+              }
+              case '60m':
+              case '1h': {
+                // 1小時：對齊到整點
+                const aligned = new Date(tickDate)
+                aligned.setMinutes(0, 0, 0)
+                return aligned
+              }
+              case '1d': {
+                // 日線：對齊到當天開始 (台股開盤時間 09:00)
+                const aligned = new Date(tickDate)
+                aligned.setHours(9, 0, 0, 0)
+                // 如果當前時間早於09:00，應該屬於前一個交易日
+                if (tickDate.getHours() < 9) {
+                  aligned.setDate(aligned.getDate() - 1)
+                }
+                return aligned
+              }
+              case '1w': {
+                // 週線：對齊到週一開始
+                const aligned = new Date(tickDate)
+                const dayOfWeek = aligned.getDay() // 0=週日, 1=週一
+                const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+                aligned.setDate(aligned.getDate() - daysToMonday)
+                aligned.setHours(9, 0, 0, 0)
+                return aligned
+              }
+              case '1M': {
+                // 月線：對齊到月初
+                const aligned = new Date(tickDate)
+                aligned.setDate(1)
+                aligned.setHours(9, 0, 0, 0)
+                return aligned
+              }
+              default: {
+                // 默認1分鐘對齊
+                const aligned = new Date(tickDate)
+                aligned.setSeconds(0, 0)
+                return aligned
+              }
+            }
+          }
+
+          const currentKlineStartTime = calculateKlineBoundary(
+            currentTime,
+            interval
+          )
+          const intervalMs = getIntervalMilliseconds(interval)
+          const currentKlineEndTime = new Date(
+            currentKlineStartTime.getTime() + intervalMs
+          )
 
           // 安全的時間格式化(避免無效時間導致錯誤)
           const formatTime = (date: Date) => {
@@ -809,21 +1038,47 @@ export function TradingChart({
             }
           }
 
-          console.log('⏰ 時間檢查:', {
-            tickTime: formatTime(currentTime),
-            klineStart: formatTime(klineStartTime),
-            klineEnd: formatTime(klineEndTime),
-            isWithinRange: currentTime < klineEndTime,
+          // 🔧 重要修復：直接檢查最後一根K線是否在當前邊界時間範圍內
+          const isWithinCurrentKline =
+            klineStartTime.getTime() >= currentKlineStartTime.getTime() &&
+            klineStartTime.getTime() < currentKlineEndTime.getTime()
+
+          console.log('⏰ 時間檢查 [統一邊界版]:', {
+            間隔: interval,
+            間隔毫秒: intervalMs,
+            tick時間: formatTime(currentTime),
+            計算的K線開始: formatTime(currentKlineStartTime),
+            計算的K線結束: formatTime(currentKlineEndTime),
+            最後K線開始: formatTime(klineStartTime),
+            在當前邊界內: isWithinCurrentKline,
+            操作: isWithinCurrentKline ? '更新現有K線' : '創建新K線',
+            邊界詳情: {
+              最後K線時間戳: klineStartTime.getTime(),
+              當前邊界開始: currentKlineStartTime.getTime(),
+              當前邊界結束: currentKlineEndTime.getTime(),
+              判斷結果: isWithinCurrentKline,
+            },
+            場景分析: {
+              示例: `如果現在是09:36，應該創建09:35-09:40的K線`,
+              當前K線範圍: `${formatTime(currentKlineStartTime)} - ${formatTime(currentKlineEndTime)}`,
+              累積狀態: isWithinCurrentKline ? '更新中' : '新建K線開始累積',
+            },
           })
 
-          // 如果tick時間還在當前K線的時間範圍內,更新收盤價
-          if (currentTime < klineEndTime) {
+          // 🔧 修復：如果最後一根K線在當前時間邊界內，更新它
+          if (isWithinCurrentKline) {
             const updatedKline = {
               ...latestKline, // 保留所有原有數據，包括 MA 值
               high: Math.max(latestKline.high, tickPrice), // 更新高點
               low: Math.min(latestKline.low, tickPrice), // 更新低點
               close: tickPrice, // 更新收盤價(即時跳動)
-              volume: (latestKline.volume || 0) + (tickData.volume || 0), // 累積成交量
+              // 🔍 成交量處理：需要根據tickData.volume的含義決定
+              // 如果tickData.volume是該tick的成交量 → 累積
+              // 如果tickData.volume是累積總成交量 → 覆蓋
+              volume:
+                tickData.volume !== undefined && tickData.volume > 0
+                  ? (latestKline.volume || 0) + tickData.volume // 假設是單tick成交量
+                  : latestKline.volume || 0, // 保持原值
               // 明確保留 MA 值
               ma5: latestKline.ma5,
               ma10: latestKline.ma10,
@@ -838,20 +1093,27 @@ export function TradingChart({
 
             const updatedData = [...prevData]
             updatedData[prevData.length - 1] = updatedKline
+
+            // 🔧 重要修復：更新現有K線後立即重新計算MA
+            setTimeout(() => {
+              console.log('🔄 更新K線後重新計算MA')
+              updateMAData(updatedData)
+            }, 10)
+
             return updatedData
           }
 
-          // 如果tick已經超出當前K線時間範圍,創建新的K線
-          console.log('📊 tick超出當前K線時間範圍,創建新K線')
+          // 🔧 修復：tick不在最後一根K線的邊界內，需要創建新K線
+          console.log('📊 創建新K線 - tick超出最後一根K線的時間邊界', {
+            tickTime: formatTime(currentTime),
+            lastKlineTime: formatTime(klineStartTime),
+            newKlineStart: formatTime(currentKlineStartTime),
+            reason: 'tick時間超出最後一根K線的時間範圍',
+          })
 
-          // 計算新K線的開始時間 (對齊到5分鐘邊界)
-          const tickMinutes = currentTime.getMinutes()
-          const alignedMinutes = Math.floor(tickMinutes / 5) * 5
-          const newKlineStartTime = new Date(currentTime)
-          newKlineStartTime.setMinutes(alignedMinutes, 0, 0) // 設定到5分鐘邊界
-
+          // 🔧 統一處理：創建新K線（適用於所有時間間隔）
           const newKline = {
-            time: newKlineStartTime.toISOString(),
+            time: currentKlineStartTime.toISOString(),
             open: tickPrice,
             high: tickPrice,
             low: tickPrice,
@@ -863,14 +1125,25 @@ export function TradingChart({
             ma20: null,
           }
 
-          console.log('🆕 創建新K線:', {
+          console.log('🆕 創建新K線 [統一邊界邏輯]:', {
             time: newKline.time,
             price: tickPrice,
-            originalTickTime: formatTime(currentTime),
-            alignedTime: formatTime(newKlineStartTime),
+            interval: interval,
+            計算的邊界開始: formatTime(currentKlineStartTime),
+            計算的邊界結束: formatTime(currentKlineEndTime),
+            原始tick時間: formatTime(currentTime),
+            邊界持續時間: `${intervalMs / 1000}秒`,
           })
 
-          return [...prevData, newKline].slice(-200) // 保留最新200根K線
+          const updatedData = [...prevData, newKline].slice(-200) // 保留最新200根K線
+
+          // 🔧 重要修復：tick更新後立即重新計算MA
+          setTimeout(() => {
+            console.log('🔄 tick更新後重新計算MA')
+            updateMAData(updatedData)
+          }, 10)
+
+          return updatedData
         })
       }
     }
@@ -910,7 +1183,7 @@ export function TradingChart({
       setIsWebSocketConnected(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbol, enableRealtime]) // isWebSocketConnected 是 useEffect 的輸出,包含它會導致無限循環
+  }, [symbol, enableRealtime, interval]) // 🔧 重要修復：添加 interval 依賴，確保時間間隔變更時重新建立 WebSocket 訂閱
 
   // 初始化圖表
   useEffect(() => {
@@ -1257,6 +1530,17 @@ export function TradingChart({
       .filter((item) => item !== null) // 過濾掉無效項目
       // 確保按時間升序排序(Unix 時間戳)
       .sort((a, b) => (a.time as number) - (b.time as number))
+      // 🔧 重要修復：去除重複時間戳，只保留最後一個
+      .reduce((acc: any[], current: any) => {
+        const lastItem = acc[acc.length - 1]
+        if (!lastItem || lastItem.time !== current.time) {
+          acc.push(current)
+        } else {
+          // 如果時間戳相同，用新數據覆蓋（保留最新的OHLC數據）
+          acc[acc.length - 1] = current
+        }
+        return acc
+      }, [])
 
     if (formattedData.length > 0) {
       console.log('🔄 設置K線數據到圖表:', formattedData.length, '條')
@@ -1301,7 +1585,7 @@ export function TradingChart({
           ) {
             candlestickSeriesRef.current.update(lastBar)
             // TODO: 增量更新時應該只更新最後一個 MA 點，這裡暫時用全量更新
-            // updateMAData(formattedData) // 🚫 禁用：避免 MA 線消失
+            // updateMAData(formattedData) // 🚫 暫時禁用：使用 tick 處理中的 MA 更新
           } else {
             console.error('❌ lastBar時間戳無效,使用setData:', lastBar.time) // TODO: 未來可清理
             candlestickSeriesRef.current.setData(formattedData)
@@ -1416,6 +1700,17 @@ export function TradingChart({
         })
         // 確保與K線數據相同的排序(Unix 時間戳)
         .sort((a, b) => (a.time as number) - (b.time as number))
+        // 🔧 重要修復：去除重複時間戳，與K線數據保持一致
+        .reduce((acc: HistogramData[], current: HistogramData) => {
+          const lastItem = acc[acc.length - 1]
+          if (!lastItem || lastItem.time !== current.time) {
+            acc.push(current)
+          } else {
+            // 如果時間戳相同，用新數據覆蓋（保留最新的成交量數據）
+            acc[acc.length - 1] = current
+          }
+          return acc
+        }, [])
 
       if (volumeData.length > 0) {
         console.log('📊 設置成交量數據:', volumeData.length, '條')
