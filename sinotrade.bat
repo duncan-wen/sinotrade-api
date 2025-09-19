@@ -7,8 +7,8 @@ if "%1"=="install" goto install
 if "%1"=="install-frontend" goto install-frontend
 if "%1"=="install-backend" goto install-backend
 if "%1"=="dev" goto dev
-if "%1"=="frontend" goto frontend
-if "%1"=="backend" goto backend
+if "%1"=="fe" goto fe
+if "%1"=="be" goto be
 if "%1"=="fullstack" goto fullstack
 if "%1"=="types" goto types
 if "%1"=="clean" goto clean
@@ -23,8 +23,8 @@ echo   sinotrade install           - Install all dependencies (backend + fronten
 echo   sinotrade install-backend   - Install backend dependencies only
 echo   sinotrade install-frontend  - Install frontend dependencies only
 echo   sinotrade dev               - Start both frontend and backend servers
-echo   sinotrade frontend          - Start frontend development server only
-echo   sinotrade backend           - Start backend development server only
+echo   sinotrade fe                - Start frontend development server only
+echo   sinotrade be                - Start backend development server only
 echo   sinotrade fullstack         - Same as 'dev' (alias)
 echo   sinotrade types             - Generate TypeScript types
 echo   sinotrade clean             - Clean cache files
@@ -52,11 +52,11 @@ goto end
 call scripts-windows\dev-fullstack.bat
 goto end
 
-:frontend
+:fe
 call scripts-windows\dev-frontend.bat
 goto end
 
-:backend
+:be
 call scripts-windows\dev-backend.bat
 goto end
 
