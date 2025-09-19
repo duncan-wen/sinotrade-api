@@ -397,13 +397,17 @@ class ProfessionalChart {
       let maCreated = false
 
       // 方法1: createIndicator - 正確的官方文檔方式 (false + candle_pane)
+      let maPaneId: string | undefined
       if (typeof this.chart.createIndicator === 'function') {
         try {
           console.log('📊 嘗試方法1: createIndicator (官方文檔方式)')
-          this.chart.createIndicator('MA', false, { id: 'candle_pane' })
+          // 🔧 修復：保存返回的 paneId
+          maPaneId = this.chart.createIndicator('MA', false, {
+            id: 'candle_pane',
+          })
           maCreated = true
           console.log(
-            '✅ MA指標創建成功（方法1: createIndicator false + candle_pane）'
+            `✅ MA指標創建成功（方法1: createIndicator false + candle_pane），paneId: ${maPaneId}`
           )
         } catch (e) {
           console.log('📊 方法1失敗:', e.message)
@@ -414,7 +418,8 @@ class ProfessionalChart {
       if (!maCreated && typeof this.chart.createIndicator === 'function') {
         try {
           console.log('📊 嘗試方法2: createIndicator 對象配置')
-          this.chart.createIndicator(
+          // 🔧 修復：保存返回的 paneId
+          maPaneId = this.chart.createIndicator(
             {
               name: 'MA',
               precision: 2,
@@ -431,7 +436,9 @@ class ProfessionalChart {
             { id: 'candle_pane' }
           ) // false + candle_pane = 添加到主圖
           maCreated = true
-          console.log('✅ MA指標創建成功（方法2: 對象配置）')
+          console.log(
+            `✅ MA指標創建成功（方法2: 對象配置），paneId: ${maPaneId}`
+          )
         } catch (e) {
           console.log('📊 方法2失敗:', e.message)
         }
@@ -444,11 +451,14 @@ class ProfessionalChart {
       ) {
         try {
           console.log('📊 嘗試方法3: createTechnicalIndicator')
-          this.chart.createTechnicalIndicator('MA', false, {
+          // 🔧 修復：保存返回的 paneId
+          maPaneId = this.chart.createTechnicalIndicator('MA', false, {
             id: 'candle_pane',
           })
           maCreated = true
-          console.log('✅ MA指標創建成功（方法3: createTechnicalIndicator）')
+          console.log(
+            `✅ MA指標創建成功（方法3: createTechnicalIndicator），paneId: ${maPaneId}`
+          )
         } catch (e) {
           console.log('📊 方法3失敗:', e.message)
         }
@@ -478,7 +488,10 @@ class ProfessionalChart {
       // 🔧 預設啟用 MA 指標
       if (maCreated) {
         this.activeIndicators.add('MA')
-        this.indicatorPanes.set('MA', 'candle_pane')
+        // 🔧 修復：使用實際返回的 paneId，如果沒有則使用預設值
+        const actualPaneId = maPaneId || 'candle_pane'
+        this.indicatorPanes.set('MA', actualPaneId)
+        console.log(`📊 MA 指標 paneId 設置為: ${actualPaneId}`)
       }
 
       // 🧹 初始化完成後清理重複指標
@@ -841,11 +854,11 @@ class ProfessionalChart {
             if (type === 'main') {
               // 主圖指標
               if (indicatorName === 'BOLL') {
-                paneId = this.chart.createIndicator('BOLL', false, {
+                paneId = this.chart.createIndicator('BOLL', true, {
                   id: 'candle_pane',
                 })
               } else {
-                paneId = this.chart.createIndicator(indicatorName, false, {
+                paneId = this.chart.createIndicator(indicatorName, true, {
                   id: 'candle_pane',
                 })
               }
