@@ -224,7 +224,7 @@ export default function TestKLineChartProPage() {
           </div>
         )}
 
-        {/* SimpleTradingChart */}
+        {/* SimpleTradingChart
         {(currentChart === 'simple' || currentChart === 'both') && (
           <div>
             <h2 className="text-xl font-semibold mb-4 flex items-center">
@@ -244,7 +244,7 @@ export default function TestKLineChartProPage() {
               className="shadow-lg"
             />
           </div>
-        )}
+        )} */}
       </div>
 
       {/* 實現說明 */}

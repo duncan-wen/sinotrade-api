@@ -143,7 +143,7 @@ def get_historical_klines(
             return {
                 "symbol": symbol,
                 "interval": interval,
-                "data": [indicator.dict() for indicator in technical_data],
+                "data": [indicator.model_dump() for indicator in technical_data],
                 "count": len(technical_data),
                 "source": _get_data_source(interval),
                 "indicators_included": True,
@@ -290,9 +290,29 @@ def debug_kbar_raw_data(symbol: str):
         if not contract:
             return {"error": f"找不到合約 {symbol}"}
 
-        # 獲取當天數據
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=1)
+        # 獲取數據, 如果是假日則抓取上個工作日(禮拜五)
+        current_date = datetime.now()
+
+        # 檢查是否為假日(週六=5, 週日=6)
+        weekday = current_date.weekday()
+        if weekday == 5:  # 週六
+            # 抓取前一天的禮拜五
+            target_date = current_date - timedelta(days=1)
+            logger.info(
+                f"📅 今天是週六, 自動切換到上個禮拜五: {target_date.strftime('%Y-%m-%d')}"
+            )
+        elif weekday == 6:  # 週日
+            # 抓取前兩天的禮拜五
+            target_date = current_date - timedelta(days=2)
+            logger.info(
+                f"📅 今天是週日, 自動切換到上個禮拜五: {target_date.strftime('%Y-%m-%d')}"
+            )
+        else:
+            # 平日就使用當天
+            target_date = current_date
+
+        end_date = target_date
+        start_date = target_date - timedelta(days=1)
 
         logger.info(f"🔍 調試 KBar API 原始數據: {symbol}")
         logger.info(
@@ -476,7 +496,7 @@ def get_multi_symbol_chart_data(
             )
             result["data"][symbol] = {
                 "count": len(display_data),
-                "data": [indicator.dict() for indicator in display_data],
+                "data": [indicator.model_dump() for indicator in display_data],
             }
 
         logger.info(f"Multi-symbol calculation completed: {result['summary']}")

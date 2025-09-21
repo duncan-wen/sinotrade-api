@@ -36,6 +36,7 @@ export interface KlineMessage {
 class KlineSocketIOService {
   private socket: Socket | null = null
   private currentSymbol: string | null = null
+  private currentInterval: string | null = null
   private messageCallback: ((message: KlineMessage) => void) | null = null
   private reconnectAttempts = 0
   private readonly maxReconnectAttempts = 5
@@ -63,6 +64,7 @@ class KlineSocketIOService {
     return {
       ...this.connectionStats,
       currentSymbol: this.currentSymbol,
+      currentInterval: this.currentInterval,
       hasCallback: !!this.messageCallback,
     }
   }
@@ -125,8 +127,8 @@ class KlineSocketIOService {
       }
 
       // 如果有之前的訂閱,重新訂閱
-      if (this.currentSymbol) {
-        this.subscribeToSymbol(this.currentSymbol)
+      if (this.currentSymbol && this.currentInterval) {
+        this.subscribeToSymbol(this.currentSymbol, this.currentInterval)
       }
     })
 
@@ -181,7 +183,7 @@ class KlineSocketIOService {
       this.handleMessage({
         type: 'tick',
         symbol: data.symbol,
-        interval: '5m', // 假設是5分鐘
+        interval: this.currentInterval || '5m', // 使用當前間隔
         tick: data,
         timestamp: data.timestamp,
       })
@@ -220,27 +222,36 @@ class KlineSocketIOService {
   /**
    * 訂閱指定股票的K線數據
    */
-  subscribe(symbol: string, callback: (message: KlineMessage) => void): void {
-    console.log('📊 訂閱K線數據:', symbol)
+  subscribe(
+    symbol: string,
+    callback: (message: KlineMessage) => void,
+    interval: string = '5m'
+  ): void {
+    console.log('📊 訂閱K線數據:', symbol, '間隔:', interval)
 
     // 保存回調函數
     this.messageCallback = callback
 
-    // 保存當前訂閱的symbol到localStorage,用於頁面刷新恢復
+    // 保存當前訂閱的symbol和interval到localStorage,用於頁面刷新恢復
     if (typeof window !== 'undefined') {
       localStorage.setItem('lastSubscribedSymbol', symbol)
+      localStorage.setItem('lastSubscribedInterval', interval)
     }
 
-    // 如果已經訂閱了其他股票,先取消
-    if (this.currentSymbol && this.currentSymbol !== symbol) {
+    // 如果已經訂閱了其他股票或間隔,先取消
+    if (
+      (this.currentSymbol && this.currentSymbol !== symbol) ||
+      (this.currentInterval && this.currentInterval !== interval)
+    ) {
       this.unsubscribe()
     }
 
     this.currentSymbol = symbol
+    this.currentInterval = interval
 
     // 確保連接後再訂閱
     if (this.isConnected) {
-      this.subscribeToSymbol(symbol)
+      this.subscribeToSymbol(symbol, interval)
     } else {
       console.log('⏳ 等待 Socket.IO 連接建立...')
       this.connect()
@@ -250,16 +261,16 @@ class KlineSocketIOService {
   /**
    * 實際執行訂閱操作
    */
-  private subscribeToSymbol(symbol: string): void {
+  private subscribeToSymbol(symbol: string, interval: string): void {
     if (!this.socket?.connected) {
       console.warn('⚠️ Socket.IO 未連接,無法訂閱')
       return
     }
 
-    console.log('📡 發送K線訂閱請求:', symbol)
+    console.log('📡 發送K線訂閱請求:', symbol, '間隔:', interval)
     this.socket.emit('subscribe_klines', {
       symbol: symbol,
-      interval: '5m',
+      interval: interval,
     })
   }
 
@@ -275,12 +286,14 @@ class KlineSocketIOService {
     }
 
     this.currentSymbol = null
+    this.currentInterval = null
     this.messageCallback = null
     this.connectionStats.subscriptions = 0
 
     // 清除localStorage
     if (typeof window !== 'undefined') {
       localStorage.removeItem('lastSubscribedSymbol')
+      localStorage.removeItem('lastSubscribedInterval')
     }
   }
 
@@ -296,6 +309,7 @@ class KlineSocketIOService {
     }
 
     this.currentSymbol = null
+    this.currentInterval = null
     this.messageCallback = null
     this.isConnecting = false
     this.connectionStats = {
