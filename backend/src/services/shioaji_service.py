@@ -336,20 +336,20 @@ class ShioajiService:
             # 統一的時間間隔配置 - 針對不同用途優化資料長度
             interval_mapping = {
                 "1m": {
-                    "days": 1,
+                    "days": 3,
                     "pandas_rule": None,
                     "desc": "1-minute",
-                },  # 1分鐘:當日開盤到收盤(約240根K線)
+                },  # 1分鐘:3天確保獲得足夠數據(約720根K線)
                 "5m": {
-                    "days": 1,
+                    "days": 5,
                     "pandas_rule": "5T",
                     "desc": "5-minute",
-                },  # 5分鐘:當日開盤到收盤(約48根K線)
+                },  # 5分鐘:5天確保獲得足夠數據(約240根K線)
                 "15m": {
-                    "days": 3,
+                    "days": 7,
                     "pandas_rule": "15T",
                     "desc": "15-minute",
-                },  # 15分鐘:3天(約48根K線)
+                },  # 15分鐘:7天(約134根K線)
                 "60m": {
                     "days": 30,
                     "pandas_rule": "60T",
