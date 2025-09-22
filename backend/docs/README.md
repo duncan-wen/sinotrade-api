@@ -1,12 +1,12 @@
 # 📚 SinoTrade API - 文檔中心
 
-歡迎來到 SinoTrade API 文檔中心！這裡包含了所有你需要的技術文檔和使用指南。
+歡迎來到 SinoTrade API 文檔中心!這裡包含了所有你需要的技術文檔和使用指南。
 
 ## 📋 文檔目錄
 
 ### 🚀 快速開始
 
-- **[快速參考卡](./quick-reference-card.md)** - 最常用的代碼和 API，一頁搞定
+- **[快速參考卡](./quick-reference-card.md)** - 最常用的代碼和 API,一頁搞定
 - **[商品代碼使用手冊](./symbol-usage-guide.md)** - 完整的期貨和股票代碼使用指南
 
 ### 📊 商品代碼參考
@@ -99,13 +99,13 @@ curl "http://localhost:8000/api/klines/CDFR1?interval=1d&limit=10"
 
 ### 3️⃣ 前端測試
 
-訪問：`http://localhost:3000/test-socketio`
+訪問:`http://localhost:3000/test-socketio`
 
 ## 📞 技術支援
 
 ### 🐛 問題回報
 
-如遇到問題，請提供：
+如遇到問題,請提供:
 
 - 使用的商品代碼
 - API 請求內容
@@ -126,7 +126,7 @@ curl "http://localhost:8000/api/klines/CDFR1?interval=1d&limit=10"
 
 ## 📝 貢獻指南
 
-歡迎貢獻文檔改進：
+歡迎貢獻文檔改進:
 
 1. 發現錯誤或遺漏
 2. 提出功能建議
@@ -135,5 +135,5 @@ curl "http://localhost:8000/api/klines/CDFR1?interval=1d&limit=10"
 
 ---
 
-_📅 最後更新：2025-09-18_
+_📅 最後更新:2025-09-18_
 _🏢 SinoTrade API 開發團隊_

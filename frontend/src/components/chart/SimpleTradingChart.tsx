@@ -4,10 +4,10 @@
  * 基於 Lightweight Charts 的簡潔版實現
  * 適用於需要簡單顯示的場景
  *
- * 🎯 特性：
+ * 🎯 特性:
  * - 基礎K線顯示
  * - 成交量圖表
- * - 移動平均線（MA5、MA10、MA20）
+ * - 移動平均線(MA5、MA10、MA20)
  * - 實時更新支援
  * - 輕量化設計
  */
@@ -41,19 +41,19 @@ export interface KLineData {
   ma20?: number | null
 }
 
-// 🔧 K線邊界計算函數（與 TradingChart 保持一致）
+// 🔧 K線邊界計算函數(與 TradingChart 保持一致)
 const calculateKlineBoundary = (tickTime: Date, intervalStr: string) => {
   const tickDate = new Date(tickTime)
 
   switch (intervalStr) {
     case '1m': {
-      // 1分鐘：對齊到整分鐘
+      // 1分鐘:對齊到整分鐘
       const aligned = new Date(tickDate)
       aligned.setSeconds(0, 0)
       return aligned
     }
     case '5m': {
-      // 5分鐘：對齊到5分鐘邊界 (0, 5, 10, 15, ...)
+      // 5分鐘:對齊到5分鐘邊界 (0, 5, 10, 15, ...)
       const aligned = new Date(tickDate)
       const minutes = aligned.getMinutes()
       const alignedMinutes = Math.floor(minutes / 5) * 5
@@ -61,7 +61,7 @@ const calculateKlineBoundary = (tickTime: Date, intervalStr: string) => {
       return aligned
     }
     case '15m': {
-      // 15分鐘：對齊到15分鐘邊界 (0, 15, 30, 45)
+      // 15分鐘:對齊到15分鐘邊界 (0, 15, 30, 45)
       const aligned = new Date(tickDate)
       const minutes = aligned.getMinutes()
       const alignedMinutes = Math.floor(minutes / 15) * 15
@@ -69,16 +69,16 @@ const calculateKlineBoundary = (tickTime: Date, intervalStr: string) => {
       return aligned
     }
     case '1h': {
-      // 1小時：對齊到整點
+      // 1小時:對齊到整點
       const aligned = new Date(tickDate)
       aligned.setMinutes(0, 0, 0)
       return aligned
     }
     case '1d': {
-      // 日線：對齊到當天開始 (台股開盤時間 09:00)
+      // 日線:對齊到當天開始 (台股開盤時間 09:00)
       const aligned = new Date(tickDate)
       aligned.setHours(9, 0, 0, 0)
-      // 如果當前時間早於09:00，應該屬於前一個交易日
+      // 如果當前時間早於09:00,應該屬於前一個交易日
       if (tickDate.getHours() < 9) {
         aligned.setDate(aligned.getDate() - 1)
       }
@@ -162,7 +162,7 @@ export default function SimpleTradingChart({
           let formattedData: KLineData[]
 
           if (result.data[0] && result.data[0].kline) {
-            // 新格式：包含技術指標
+            // 新格式:包含技術指標
             formattedData = result.data.map((d: any) => ({
               time: d.timestamp,
               open: d.kline.open,
@@ -175,7 +175,7 @@ export default function SimpleTradingChart({
               ma20: d.ma?.ma20 || null,
             }))
           } else {
-            // 舊格式：基本OHLCV
+            // 舊格式:基本OHLCV
             formattedData = result.data.map((d: any) => ({
               time: d.time || d.timestamp,
               open: d.open,
@@ -241,7 +241,7 @@ export default function SimpleTradingChart({
           const latestKline = prevData[prevData.length - 1]
           const latestKlineTime = new Date(latestKline.time)
 
-          // 🔧 重要修復：檢查最後一根K線是否在當前邊界時間範圍內
+          // 🔧 重要修復:檢查最後一根K線是否在當前邊界時間範圍內
           const isWithinCurrentKline =
             latestKlineTime.getTime() >= currentKlineStartTime.getTime() &&
             latestKlineTime.getTime() < currentKlineEndTime.getTime()

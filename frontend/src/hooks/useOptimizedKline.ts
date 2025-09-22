@@ -151,7 +151,7 @@ export const useOptimizedKline = (
           break
 
         case 'hybrid':
-          // 混合策略：短期用smart，長期用time-driven
+          // 混合策略:短期用smart,長期用time-driven
           if (
             ['1m', '5m', '15m'].includes(interval) &&
             smartManagerRef.current
@@ -371,11 +371,11 @@ export const KlineOptimizationGuide = {
    * 📊 間隔策略建議
    */
   intervalStrategies: {
-    '1m': '建議使用smart策略，預載入效果最佳',
-    '5m': '建議使用smart策略，平衡性能和準確性',
-    '15m': '建議使用hybrid策略，減少計算負擔',
-    '1h': '建議使用time-driven策略，時間精確',
-    '1d': '建議交給後端處理，前端只負責渲染',
+    '1m': '建議使用smart策略,預載入效果最佳',
+    '5m': '建議使用smart策略,平衡性能和準確性',
+    '15m': '建議使用hybrid策略,減少計算負擔',
+    '1h': '建議使用time-driven策略,時間精確',
+    '1d': '建議交給後端處理,前端只負責渲染',
   },
 
   /**

@@ -244,7 +244,7 @@ klineSocketIOService.subscribe("CAFR1");
 
 ### 📅 合約轉換
 
-- 近月合約 (R1) 流動性較好，適合短期交易
+- 近月合約 (R1) 流動性較好,適合短期交易
 - 次月合約 (R2) 適合較長期的投資策略
 
 ### 💾 數據連續性
@@ -256,16 +256,16 @@ klineSocketIOService.subscribe("CAFR1");
 
 ## 🆕 新增期貨商品
 
-當台灣期貨交易所推出新的期貨商品時：
+當台灣期貨交易所推出新的期貨商品時:
 
-1. **自動支援**：系統會自動支援新的 `*R1/*R2` 格式
-2. **API 更新**：不需要修改 API 代碼
-3. **前端更新**：可在前端下拉選單中新增選項
+1. **自動支援**:系統會自動支援新的 `*R1/*R2` 格式
+2. **API 更新**:不需要修改 API 代碼
+3. **前端更新**:可在前端下拉選單中新增選項
 
-### 範例：新增期貨商品
+### 範例:新增期貨商品
 
 ```javascript
-// 假設新推出 XYZ 期貨，直接使用即可
+// 假設新推出 XYZ 期貨,直接使用即可
 klineSocketIOService.subscribe("XYZR1"); // 近月
 klineSocketIOService.subscribe("XYZR2"); // 次月
 ```
@@ -274,7 +274,7 @@ klineSocketIOService.subscribe("XYZR2"); // 次月
 
 ## 📝 定期更新
 
-本文件會定期更新以反映：
+本文件會定期更新以反映:
 
 - 新上市的期貨商品
 - 下市的期貨商品
@@ -283,5 +283,5 @@ klineSocketIOService.subscribe("XYZR2"); // 次月
 
 ---
 
-_最後更新：2025-09-18_
-_資料來源：台灣期貨交易所、永豐金證券 Shioaji API_
+_最後更新:2025-09-18_
+_資料來源:台灣期貨交易所、永豐金證券 Shioaji API_

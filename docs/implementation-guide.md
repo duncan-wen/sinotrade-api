@@ -2,7 +2,7 @@
 
 ## 📋 **立即可執行的優化方案**
 
-基於您當前的架構，我推薦按以下順序實施：
+基於您當前的架構,我推薦按以下順序實施:
 
 ---
 
@@ -11,6 +11,7 @@
 ### **1.1 前端緩存優化**
 
 #### **安裝依賴**
+
 ```bash
 cd frontend
 pnpm add react-window react-window-infinite-loader
@@ -18,42 +19,49 @@ pnpm add @tanstack/react-query-persist-client-core
 ```
 
 #### **集成智能緩存**
+
 ```typescript
 // frontend/src/lib/queryClient.ts (修改現有文件)
-import { createOptimizedQueryClient, setupPersistence } from './cache-strategies'
+import {
+  createOptimizedQueryClient,
+  setupPersistence,
+} from "./cache-strategies";
 
-export const queryClient = createOptimizedQueryClient()
+export const queryClient = createOptimizedQueryClient();
 
 // 在 app 初始化時設置持久化
-if (typeof window !== 'undefined') {
-  setupPersistence(queryClient)
+if (typeof window !== "undefined") {
+  setupPersistence(queryClient);
 }
 ```
 
 #### **在圖表組件中使用**
+
 ```typescript
 // frontend/src/components/chart/TradingChart.tsx
-import { useSmartPreload, DataCompressor } from '@/lib/cache-strategies'
+import { useSmartPreload, DataCompressor } from "@/lib/cache-strategies";
 
 export function TradingChart({ symbol, interval }: TradingChartProps) {
   // 添加智能預載入
-  useSmartPreload(symbol)
+  useSmartPreload(symbol);
 
   // 在 API 調用中使用數據壓縮
   const { data: klineData } = useQuery({
-    queryKey: ['klines', symbol, interval],
+    queryKey: ["klines", symbol, interval],
     queryFn: async () => {
-      const response = await fetch(`/api/klines/${symbol}?interval=${interval}`)
-      const compressed = await response.json()
+      const response = await fetch(
+        `/api/klines/${symbol}?interval=${interval}`
+      );
+      const compressed = await response.json();
 
       // 解壓縮數據
       if (compressed.compressed) {
-        return DataCompressor.decompressKlines(compressed)
+        return DataCompressor.decompressKlines(compressed);
       }
-      return compressed
+      return compressed;
     },
-    select: (data) => data?.slice(-200) // 只保留最近200根K線
-  })
+    select: (data) => data?.slice(-200), // 只保留最近200根K線
+  });
 
   // ... 其他邏輯
 }
@@ -62,6 +70,7 @@ export function TradingChart({ symbol, interval }: TradingChartProps) {
 ### **1.2 後端緩存優化**
 
 #### **安裝 Redis**
+
 ```bash
 # Docker 方式 (推薦)
 docker run -d --name redis -p 6379:6379 redis:alpine
@@ -73,12 +82,14 @@ docker run -d --name redis -p 6379:6379 redis:alpine
 ```
 
 #### **安裝 Python 依賴**
+
 ```bash
 cd backend
 pip install redis aioredis cachetools polars
 ```
 
 #### **集成智能緩存**
+
 ```python
 # backend/src/api/klines.py (修改現有API)
 from src.services.smart_cache_service import smart_cache, get_klines_cached
@@ -120,6 +131,7 @@ def compress_klines_data(klines: List[Dict]) -> Dict:
 ### **1.3 WebSocket 優化**
 
 #### **集成 WebSocket 管理器**
+
 ```python
 # backend/src/api/websocket.py (新建或修改)
 from fastapi import WebSocket, WebSocketDisconnect
@@ -159,11 +171,12 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 
 ---
 
-## 🚀 **Phase 2: 中期優化 (2-3週)**
+## 🚀 **Phase 2: 中期優化 (2-3 週)**
 
 ### **2.1 數據庫優化**
 
 #### **添加索引**
+
 ```sql
 -- backend/migrations/add_performance_indexes.sql
 CREATE INDEX IF NOT EXISTS idx_klines_symbol_time ON klines (symbol, timestamp DESC);
@@ -175,6 +188,7 @@ ON klines (symbol, interval, timestamp DESC);
 ```
 
 #### **數據清理策略**
+
 ```python
 # backend/src/tasks/data_cleanup.py
 async def cleanup_old_data():
@@ -201,24 +215,31 @@ async def cleanup_old_data():
 ### **2.2 前端渲染優化**
 
 #### **虛擬化長列表**
+
 ```typescript
 // frontend/src/components/VirtualizedOrderBook.tsx
-import { FixedSizeList as List } from 'react-window'
+import { FixedSizeList as List } from "react-window";
 
 interface OrderBookProps {
-  orders: Order[]
-  height: number
+  orders: Order[];
+  height: number;
 }
 
 export const VirtualizedOrderBook: React.FC<OrderBookProps> = ({
   orders,
-  height
+  height,
 }) => {
-  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => (
+  const Row = ({
+    index,
+    style,
+  }: {
+    index: number;
+    style: React.CSSProperties;
+  }) => (
     <div style={style}>
       <OrderRow order={orders[index]} />
     </div>
-  )
+  );
 
   return (
     <List
@@ -229,47 +250,52 @@ export const VirtualizedOrderBook: React.FC<OrderBookProps> = ({
     >
       {Row}
     </List>
-  )
-}
+  );
+};
 ```
 
 #### **防抖更新**
+
 ```typescript
 // frontend/src/hooks/useThrottledUpdate.ts
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef } from "react";
 
 export const useThrottledUpdate = <T>(
   callback: (value: T) => void,
   delay: number = 100
 ) => {
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
-  return useCallback((value: T) => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-    }
+  return useCallback(
+    (value: T) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
 
-    timeoutRef.current = setTimeout(() => {
-      callback(value)
-    }, delay)
-  }, [callback, delay])
-}
+      timeoutRef.current = setTimeout(() => {
+        callback(value);
+      }, delay);
+    },
+    [callback, delay]
+  );
+};
 
 // 在 TradingChart 中使用
 const throttledUpdateChart = useThrottledUpdate((newData) => {
   if (chartRef.current) {
-    chartRef.current.setData(newData)
+    chartRef.current.setData(newData);
   }
-}, 100) // 100ms 防抖
+}, 100); // 100ms 防抖
 ```
 
 ---
 
-## 🎖️ **Phase 3: 高級優化 (1-2月)**
+## 🎖️ **Phase 3: 高級優化 (1-2 月)**
 
 ### **3.1 微服務拆分**
 
 #### **Market Data Service**
+
 ```python
 # services/market-data/main.py
 from fastapi import FastAPI
@@ -288,6 +314,7 @@ async def get_market_data(symbol: str):
 ```
 
 #### **Chart Service**
+
 ```python
 # services/chart-service/main.py
 from fastapi import FastAPI
@@ -305,6 +332,7 @@ async def calculate_indicators(request: IndicatorRequest):
 ### **3.2 監控與告警**
 
 #### **性能監控面板**
+
 ```python
 # backend/src/api/monitoring.py
 @router.get("/metrics")
@@ -327,20 +355,21 @@ async def get_metrics():
 ```
 
 #### **前端性能面板**
+
 ```typescript
 // frontend/src/components/PerformanceMonitor.tsx
 export const PerformanceMonitor: React.FC = () => {
-  const [metrics, setMetrics] = useState<PerformanceMetrics>()
+  const [metrics, setMetrics] = useState<PerformanceMetrics>();
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      const response = await fetch('/api/metrics')
-      const data = await response.json()
-      setMetrics(data)
-    }, 5000) // 每5秒更新
+      const response = await fetch("/api/metrics");
+      const data = await response.json();
+      setMetrics(data);
+    }, 5000); // 每5秒更新
 
-    return () => clearInterval(interval)
-  }, [])
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="performance-monitor">
@@ -348,8 +377,8 @@ export const PerformanceMonitor: React.FC = () => {
       <div>活躍連接: {metrics?.websocket?.active_connections}</div>
       <div>記憶體使用: {metrics?.system?.memory_usage}MB</div>
     </div>
-  )
-}
+  );
+};
 ```
 
 ---
@@ -357,6 +386,7 @@ export const PerformanceMonitor: React.FC = () => {
 ## 📊 **效果測量**
 
 ### **性能基準測試**
+
 ```bash
 # 安裝測試工具
 npm install -g lighthouse artillery
@@ -369,32 +399,36 @@ artillery quick --count 100 --num 10 http://localhost:8000/api/klines/TXFR1
 ```
 
 ### **監控指標**
+
 ```typescript
 // 關鍵性能指標 (KPI)
 const performanceTargets = {
-  'API 響應時間': '< 200ms',
-  '首屏載入時間': '< 2s',
-  '緩存命中率': '> 80%',
-  'WebSocket 延遲': '< 50ms',
-  '記憶體使用': '< 300MB',
-  '並發用戶': '> 100'
-}
+  "API 響應時間": "< 200ms",
+  首屏載入時間: "< 2s",
+  緩存命中率: "> 80%",
+  "WebSocket 延遲": "< 50ms",
+  記憶體使用: "< 300MB",
+  並發用戶: "> 100",
+};
 ```
 
 ---
 
 ## 🎯 **實施建議**
 
-### **本週就可以開始：**
-1. ✅ **安裝 Redis** - 立即提升API響應速度
-2. ✅ **前端緩存優化** - 減少重複API調用
+### **本週就可以開始:**
+
+1. ✅ **安裝 Redis** - 立即提升 API 響應速度
+2. ✅ **前端緩存優化** - 減少重複 API 調用
 3. ✅ **數據壓縮** - 降低網路傳輸量
 
-### **2週內完成：**
+### **2 週內完成:**
+
 4. ✅ **WebSocket 優化** - 提升實時數據性能
 5. ✅ **虛擬化渲染** - 支援大數據集顯示
 
-### **1月內完成：**
+### **1 月內完成:**
+
 6. ✅ **監控系統** - 掌握系統性能狀況
 7. ✅ **自動化測試** - 確保優化效果
 
@@ -402,7 +436,7 @@ const performanceTargets = {
 
 ## 💡 **快速開始**
 
-想要立即看到效果？執行以下命令：
+想要立即看到效果？執行以下命令:
 
 ```bash
 # 1. 啟動 Redis
@@ -423,4 +457,4 @@ pip install redis aioredis
 # 觀察 Network 面板的響應時間變化
 ```
 
-您想從哪個部分開始？我可以幫您詳細實施任何一個優化方案！
+您想從哪個部分開始？我可以幫您詳細實施任何一個優化方案!

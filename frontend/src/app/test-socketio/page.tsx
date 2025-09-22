@@ -143,7 +143,7 @@ export default function TestSocketIOPage() {
           <p
             style={{ color: '#dc3545', fontSize: '14px', margin: '5px 0 0 0' }}
           >
-            ⚠️ 訂閱期間無法更換期貨，請先取消訂閱
+            ⚠️ 訂閱期間無法更換期貨,請先取消訂閱
           </p>
         )}
       </div>

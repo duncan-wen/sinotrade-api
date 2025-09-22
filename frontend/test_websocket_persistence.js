@@ -57,4 +57,4 @@ if (testWebSocketRecovery()) {
   console.log('❌ WebSocket恢復測試失敗')
 }
 
-console.log('🎯 測試完成！請刷新頁面檢查是否能自動恢復訂閱')
+console.log('🎯 測試完成!請刷新頁面檢查是否能自動恢復訂閱')

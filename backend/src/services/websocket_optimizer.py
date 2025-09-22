@@ -58,7 +58,7 @@ class WebSocketManager:
         # 客戶端連接池
         self.clients: dict[str, ClientInfo] = {}
 
-        # 訂閱索引：subscription_key -> set of client_ids
+        # 訂閱索引:subscription_key -> set of client_ids
         self.subscriptions: dict[str, set[str]] = defaultdict(set)
 
         # 批量推送緩衝區
@@ -85,7 +85,7 @@ class WebSocketManager:
         }
 
         # 啟動後台任務
-        asyncio.create_task(self._background_tasks())
+        _ = asyncio.create_task(self._background_tasks())
 
     async def connect_client(
         self, websocket: WebSocket, client_id: str, user_id: str | None = None
@@ -330,7 +330,7 @@ class WebSocketManager:
             logger.warning(f"🐌 批量推送緩慢: {flush_duration:.3f}s")
 
     async def _background_tasks(self):
-        """後台任務：心跳、清理、統計"""
+        """後台任務:心跳、清理、統計"""
         while True:
             try:
                 await asyncio.sleep(10)  # 每10秒運行一次

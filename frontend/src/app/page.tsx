@@ -121,7 +121,7 @@ export default function Home() {
                     <span className="text-lg">📈</span>
                   </div>
                   <h4 className="font-semibold text-green-800 dark:text-green-300">
-                    熱門股票
+                    台股熱門
                   </h4>
                 </div>
                 <p className="text-sm text-green-700 dark:text-green-400 mb-3">
@@ -145,7 +145,7 @@ export default function Home() {
                   </h4>
                 </div>
                 <p className="text-sm text-blue-700 dark:text-blue-400 mb-3">
-                  一鍵買賣，即時成交
+                  一鍵買賣,即時成交
                 </p>
                 <Button
                   size="sm"
@@ -159,21 +159,22 @@ export default function Home() {
               <div className="group p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20 rounded-xl border border-purple-200/50 dark:border-purple-800/30 hover:shadow-md transition-all duration-300 cursor-pointer">
                 <div className="flex items-center space-x-3 mb-3">
                   <div className="p-2 bg-purple-500/10 rounded-lg">
-                    <span className="text-lg">🔍</span>
+                    <span className="text-lg">🇺🇸</span>
                   </div>
                   <h4 className="font-semibold text-purple-800 dark:text-purple-300">
-                    市場分析
+                    美股分析
                   </h4>
                 </div>
                 <p className="text-sm text-purple-700 dark:text-purple-400 mb-3">
-                  AI 智能推薦
+                  AAPL、TSLA、NVDA 專業圖表
                 </p>
                 <Button
                   size="sm"
                   variant="outline"
                   className="w-full border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white"
+                  onClick={() => (window.location.href = '/us-stocks')}
                 >
-                  查看分析
+                  進入美股
                 </Button>
               </div>
             </div>
@@ -237,15 +238,25 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden shadow-lg border-0">
+          <Card
+            className="overflow-hidden shadow-lg border-0 cursor-pointer hover:shadow-xl transition-shadow duration-300"
+            onClick={() => (window.location.href = '/us-stocks')}
+          >
             <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-b">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-green-500/10 rounded-lg">
-                  <span className="text-lg">🍎</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-green-500/10 rounded-lg">
+                    <span className="text-lg">🍎</span>
+                  </div>
+                  <div>
+                    <CardTitle>AAPL</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      蘋果公司股價
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle>AAPL</CardTitle>
-                  <p className="text-sm text-muted-foreground">蘋果公司股價</p>
+                <div className="text-xs text-blue-600 font-medium">
+                  🇺🇸 點擊查看美股專區
                 </div>
               </div>
             </CardHeader>

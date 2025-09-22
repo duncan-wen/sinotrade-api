@@ -156,7 +156,7 @@ class SmartCacheService:
             return False
 
     async def invalidate_pattern(self, pattern: str) -> int:
-        """批量失效緩存（使用模式匹配）"""
+        """批量失效緩存(使用模式匹配)"""
         if not self.redis:
             return 0
 
@@ -300,7 +300,7 @@ def performance_monitor(operation_name: str):
                     f"📊 {operation_name}: {duration:.3f}s, {memory_delta:+.1f}MB"
                 )
 
-                # 如果性能異常，記錄警告
+                # 如果性能異常,記錄警告
                 if duration > 1.0:  # 超過1秒
                     logger.warning(f"🐌 {operation_name} 性能異常: {duration:.3f}s")
 
@@ -343,7 +343,7 @@ async def get_klines_cached(symbol: str, interval: str, limit: int = 100):
     if cached_data:
         return cached_data
 
-    # 緩存未命中，計算數據
+    # 緩存未命中,計算數據
     klines_data = await calculate_klines(symbol, interval, limit)
 
     # 存入緩存

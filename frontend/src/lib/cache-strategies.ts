@@ -58,7 +58,7 @@ export const setupPersistence = (queryClient: QueryClient) => {
     storage: window.localStorage,
     key: 'sinotrade-cache',
     serialize: (data) => {
-      // 只持久化重要數據，減少存儲空間
+      // 只持久化重要數據,減少存儲空間
       const filtered = {
         ...data,
         clientState: {
@@ -101,7 +101,7 @@ export const useSmartPreload = (currentSymbol: string) => {
       await Promise.allSettled(preloadTasks)
     }
 
-    // 延遲預載入，避免影響當前頁面性能
+    // 延遲預載入,避免影響當前頁面性能
     const timer = setTimeout(preloadRelated, 1000)
     return () => clearTimeout(timer)
   }, [currentSymbol, queryClient])

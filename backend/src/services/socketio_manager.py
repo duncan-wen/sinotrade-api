@@ -4,11 +4,34 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
+from dotenv import load_dotenv
 from fastapi_socketio import SocketManager
 from loguru import logger
 
 from src.services.subscription_manager import subscription_manager
 from src.utils.symbol_mapping import get_symbol_mapping
+
+load_dotenv()
+
+
+# 註解 PolygonWebSocketManager 類 - 免費計劃不支援 WebSocket
+# class PolygonWebSocketManager:
+#     """Polygon.io WebSocket 管理器, 整合到 SocketIO 架構"""
+#
+#     def __init__(self, socket_manager: SocketManager):
+#         self.socket_manager = socket_manager
+#         self.api_key = os.getenv("POLYGON_API_KEY")
+#         self.ws_url = "wss://delayed.polygon.io/stocks"
+#         self.connection_delay = 10
+#         self.websocket = None
+#         self.is_connected = False
+#         self.is_authenticated = False
+#         self._listen_task = None
+#         self.us_subscriptions = set()
+#         self.us_clients = {}
+#         self.reconnect_attempts = 0
+#         self.max_reconnect_attempts = 5
+#         self.reconnect_delay = 5
 
 
 class SocketIOTickBroadcaster:
@@ -134,6 +157,17 @@ class SocketIOTickBroadcaster:
 def setup_socketio_events(socket_manager: SocketManager):
     """設置 Socket.IO 事件處理器"""
 
+    # 註解: 創建 Polygon.io WebSocket 管理器 - 免費計劃不支援
+    # polygon_manager = PolygonWebSocketManager(socket_manager)
+
+    # 註解: 延遲啟動 Polygon.io WebSocket 連接 - 免費計劃不支援
+    # async def delayed_polygon_connect():
+    #     await asyncio.sleep(polygon_manager.connection_delay)
+    #     logger.info(f"⏰ {polygon_manager.connection_delay} 秒延遲後啟動 Polygon.io WebSocket")
+    #     await polygon_manager.connect()
+    #
+    # _polygon_task = asyncio.create_task(delayed_polygon_connect())
+
     @socket_manager.on("connect")
     async def handle_connect(sid, environ):
         logger.info(f"✅ Socket.IO 客戶端連接: {sid}")
@@ -150,6 +184,9 @@ def setup_socketio_events(socket_manager: SocketManager):
                 "server_info": {
                     "shioaji_logged_in": shioaji_service._is_logged_in,
                     "shioaji_initialized": shioaji_service._is_initialized,
+                    # 註解: polygon WebSocket 狀態 - 免費計劃不支援
+                    "polygon_connected": False,
+                    "polygon_authenticated": False,
                 },
             },
             room=sid,
@@ -160,10 +197,10 @@ def setup_socketio_events(socket_manager: SocketManager):
         logger.info(f"🔌 Socket.IO 客戶端斷線: {sid}")
 
         try:
-            # 🚀 清理客戶端的所有訂閱
+            # 清理客戶端的所有訂閱 (台股)
             symbols_to_unsubscribe = subscription_manager.cleanup_client(sid)
 
-            logger.info(f"客戶端 {sid} 需要清理的訂閱: {symbols_to_unsubscribe}")
+            logger.info(f"客戶端 {sid} 需要清理的台股訂閱: {symbols_to_unsubscribe}")
 
             # 向 Shioaji 取消訂閱沒有其他訂閱者的商品
             from src.services.shioaji_service import shioaji_service
@@ -177,6 +214,9 @@ def setup_socketio_events(socket_manager: SocketManager):
                         logger.warning(f"⚠️ Shioaji 取消訂閱失敗: {symbol}")
                 except Exception as e:
                     logger.error(f"❌ Shioaji 取消訂閱錯誤 {symbol}: {e}")
+
+            # 註解: 清理客戶端的美股訂閱 - 免費計劃不支援
+            # await polygon_manager.cleanup_client_us_subscriptions(sid)
 
         except Exception as e:
             logger.error(f"❌ 客戶端斷線清理失敗 {sid}: {e}")
@@ -209,7 +249,7 @@ def setup_socketio_events(socket_manager: SocketManager):
         interval = data.get("interval", "5m")
         logger.info(f"📊 客戶端 {sid} 訂閱K線: {symbol} ({interval})")
 
-        # 🚀 使用訂閱管理器,避免重複訂閱
+        # 使用訂閱管理器,避免重複訂閱
         need_shioaji_subscription = subscription_manager.add_subscriber(symbol, sid)
 
         if need_shioaji_subscription:
@@ -255,7 +295,7 @@ def setup_socketio_events(socket_manager: SocketManager):
         symbol = data.get("symbol")
         logger.info(f"📊 客戶端 {sid} 取消訂閱K線: {symbol}")
 
-        # 🚀 使用訂閱管理器處理取消訂閱
+        # 使用訂閱管理器處理取消訂閱
         need_shioaji_unsubscription = subscription_manager.remove_subscriber(
             symbol, sid
         )
@@ -283,3 +323,22 @@ def setup_socketio_events(socket_manager: SocketManager):
             },
             room=sid,
         )
+
+    # 註解: 美股專用事件處理器 - 免費計劃不支援 WebSocket
+    # @socket_manager.on("subscribe_us_klines")
+    # async def handle_subscribe_us_klines(sid, data):
+    #     """處理美股 K線訂閱"""
+    #     symbol = data.get("symbol", "").upper()
+    #     interval = data.get("interval", "1m")
+    #     logger.info(f"🇺🇸 客戶端 {sid} 訂閱美股K線: {symbol} ({interval})")
+    #     # ... (其餘代碼已註解)
+
+    # @socket_manager.on("unsubscribe_us_klines")
+    # async def handle_unsubscribe_us_klines(sid, data):
+    #     """處理美股 K線取消訂閱"""
+    #     # ... (代碼已註解)
+
+    # @socket_manager.on("get_polygon_status")
+    # async def handle_get_polygon_status(sid, data):
+    #     """獲取 Polygon.io 連接狀態"""
+    #     # ... (代碼已註解)

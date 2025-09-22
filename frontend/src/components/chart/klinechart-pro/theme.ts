@@ -5,7 +5,7 @@
 
 // 🎨 台股色彩主題
 export const taiwanStockColors = {
-  // 台股習慣：紅漲綠跌
+  // 台股習慣:紅漲綠跌
   up: '#FF6B6B', // 上漲紅色
   down: '#00C851', // 下跌綠色
   flat: '#888888', // 平盤灰色
@@ -31,7 +31,7 @@ export const taiwanStockColors = {
   background: '#ffffff', // 背景色
 } as const
 
-// 🌙 暗色主題（可擴展）
+// 🌙 暗色主題(可擴展)
 export const darkThemeColors = {
   up: '#FF6B6B',
   down: '#00C851',
@@ -56,7 +56,7 @@ export const darkThemeColors = {
 
 // 主題顏色介面
 export interface ThemeColors {
-  // 台股習慣：紅漲綠跌
+  // 台股習慣:紅漲綠跌
   up: string // 上漲顏色
   down: string // 下跌顏色
   flat: string // 平盤顏色

@@ -3,6 +3,7 @@
 ## 📊 **當前系統架構分析**
 
 ### 現有架構
+
 ```
 Frontend (Next.js)  ←→  Backend (FastAPI)  ←→  Shioaji API
       ↓                      ↓                    ↓
@@ -11,90 +12,90 @@ Frontend (Next.js)  ←→  Backend (FastAPI)  ←→  Shioaji API
 ```
 
 ### 性能瓶頸點
-1. **實時數據處理**：Tick → K線聚合計算量大
-2. **前端渲染**：大量K線數據重複渲染
-3. **API響應**：歷史數據查詢無優化
-4. **記憶體使用**：數據結構未優化
-5. **網路傳輸**：未壓縮、無CDN
+
+1. **實時數據處理**:Tick → K 線聚合計算量大
+2. **前端渲染**:大量 K 線數據重複渲染
+3. **API 響應**:歷史數據查詢無優化
+4. **記憶體使用**:數據結構未優化
+5. **網路傳輸**:未壓縮、無 CDN
 
 ---
 
 ## 🎯 **分層優化策略**
 
-### 🔥 **Level 1: 立即可實現 (1-2週)**
+### 🔥 **Level 1: 立即可實現 (1-2 週)**
 
 #### **1.1 前端緩存優化**
+
 ```typescript
 // 多層緩存策略
 const cacheConfig = {
   // L1: React Query (記憶體)
   staleTime: {
-    '1m': 30000,    // 30秒
-    '5m': 60000,    // 1分鐘
-    '1d': 300000,   // 5分鐘
+    "1m": 30000, // 30秒
+    "5m": 60000, // 1分鐘
+    "1d": 300000, // 5分鐘
   },
 
   // L2: localStorage (持久化)
   persistentCache: {
-    historicalData: '24h',
-    contractInfo: '7d',
-    userPreferences: '30d'
-  }
-}
+    historicalData: "24h",
+    contractInfo: "7d",
+    userPreferences: "30d",
+  },
+};
 
 // 智能預載入
 const useSmartPreload = (symbol: string) => {
   // 預載入相關商品數據
   useEffect(() => {
-    if (symbol.startsWith('TXF')) {
-      queryClient.prefetchQuery(['klines', 'MXFR1', interval])
+    if (symbol.startsWith("TXF")) {
+      queryClient.prefetchQuery(["klines", "MXFR1", interval]);
     }
-  }, [symbol])
-}
+  }, [symbol]);
+};
 ```
 
-#### **1.2 K線數據壓縮**
+#### **1.2 K 線數據壓縮**
+
 ```typescript
 // 數據壓縮傳輸
 interface CompressedKline {
-  t: number[]     // timestamps (delta編碼)
-  o: number[]     // open (差分編碼)
-  h: number[]     // high (相對於open的偏移)
-  l: number[]     // low (相對於open的偏移)
-  c: number[]     // close (相對於open的偏移)
-  v: number[]     // volume
+  t: number[]; // timestamps (delta編碼)
+  o: number[]; // open (差分編碼)
+  h: number[]; // high (相對於open的偏移)
+  l: number[]; // low (相對於open的偏移)
+  c: number[]; // close (相對於open的偏移)
+  v: number[]; // volume
 }
 
-// 壓縮比：約70%減少
+// 壓縮比:約70%減少
 ```
 
 #### **1.3 渲染優化**
+
 ```typescript
 // 虛擬化大數據集
-import { FixedSizeList as List } from 'react-window'
+import { FixedSizeList as List } from "react-window";
 
 const VirtualizedOrderBook = ({ orders }) => (
-  <List
-    height={400}
-    itemCount={orders.length}
-    itemSize={24}
-    overscanCount={5}
-  >
+  <List height={400} itemCount={orders.length} itemSize={24} overscanCount={5}>
     {OrderRow}
   </List>
-)
+);
 
 // 防抖更新
 const useThrottledUpdate = (data, delay = 100) => {
-  return useThrottle(data, delay)
-}
+  return useThrottle(data, delay);
+};
 ```
 
 ---
 
-### 🚀 **Level 2: 中期優化 (3-4週)**
+### 🚀 **Level 2: 中期優化 (3-4 週)**
 
 #### **2.1 Redis 分佈式緩存**
+
 ```python
 # 多層緩存架構
 class SmartCache:
@@ -132,6 +133,7 @@ CACHE_TTL = {
 ```
 
 #### **2.2 數據庫優化**
+
 ```sql
 -- 索引優化
 CREATE INDEX idx_klines_symbol_time ON klines (symbol, timestamp DESC);
@@ -146,6 +148,7 @@ COMPRESS klines WHERE timestamp < NOW() - INTERVAL '30 days';
 ```
 
 #### **2.3 WebSocket 連接池**
+
 ```python
 class WebSocketManager:
     def __init__(self):
@@ -167,9 +170,10 @@ class WebSocketManager:
 
 ---
 
-### 🎖️ **Level 3: 高級架構 (1-2月)**
+### 🎖️ **Level 3: 高級架構 (1-2 月)**
 
 #### **3.1 微服務拆分**
+
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Gateway       │    │  Market Data    │    │  Chart Service  │
@@ -184,6 +188,7 @@ class WebSocketManager:
 ```
 
 #### **3.2 事件驅動架構**
+
 ```python
 # 使用 Redis Streams 做事件流
 class EventStreamer:
@@ -210,6 +215,7 @@ class EventStreamer:
 ```
 
 #### **3.3 智能預載入系統**
+
 ```python
 class SmartPreloader:
     def __init__(self):
@@ -234,6 +240,7 @@ class SmartPreloader:
 ## 📈 **具體實施建議**
 
 ### **Phase 1: 快速勝利 (立即開始)**
+
 ```bash
 # 1. 安裝 Redis
 docker run -d --name redis -p 6379:6379 redis:alpine
@@ -244,10 +251,11 @@ pnpm add @tanstack/react-query-persist-client-core
 
 # 3. 後端優化
 pip install redis aioredis
-pip install polars  # 替代 pandas，性能提升 5-30x
+pip install polars  # 替代 pandas,性能提升 5-30x
 ```
 
-### **Phase 2: 架構升級 (2-4週後)**
+### **Phase 2: 架構升級 (2-4 週後)**
+
 ```yaml
 # docker-compose.yml
 services:
@@ -267,6 +275,7 @@ services:
 ```
 
 ### **Phase 3: 監控與可觀測性**
+
 ```python
 # 性能監控
 import time
@@ -301,38 +310,40 @@ def monitor_performance(func):
 
 ## 🎯 **預期性能提升**
 
-| 優化項目    | 當前       | 目標       | 提升        |
-| ----------- | ---------- | ---------- | ----------- |
-| API響應時間 | 500-1000ms | 50-200ms   | **5x**      |
-| 首屏載入    | 3-5s       | 1-2s       | **3x**      |
-| 記憶體使用  | 200-500MB  | 100-200MB  | **2x**      |
-| 並發用戶    | 10-50      | 100-500    | **10x**     |
-| 數據傳輸    | 無壓縮     | gzip+delta | **70%減少** |
+| 優化項目     | 當前       | 目標       | 提升        |
+| ------------ | ---------- | ---------- | ----------- |
+| API 響應時間 | 500-1000ms | 50-200ms   | **5x**      |
+| 首屏載入     | 3-5s       | 1-2s       | **3x**      |
+| 記憶體使用   | 200-500MB  | 100-200MB  | **2x**      |
+| 並發用戶     | 10-50      | 100-500    | **10x**     |
+| 數據傳輸     | 無壓縮     | gzip+delta | **70%減少** |
 
 ---
 
 ## 💰 **成本效益分析**
 
 ### **投入 vs 回報**
+
 ```
 Level 1 (2週):
-- 投入：20 工時
-- 回報：響應速度 3x，用戶體驗大幅提升
+- 投入:20 工時
+- 回報:響應速度 3x,用戶體驗大幅提升
 
 Level 2 (4週):
-- 投入：40 工時 + $100/月 (Redis)
-- 回報：支援 10x 用戶，系統穩定性大增
+- 投入:40 工時 + $100/月 (Redis)
+- 回報:支援 10x 用戶,系統穩定性大增
 
 Level 3 (8週):
-- 投入：80 工時 + $500/月 (基礎設施)
-- 回報：企業級可用性，可商業化部署
+- 投入:80 工時 + $500/月 (基礎設施)
+- 回報:企業級可用性,可商業化部署
 ```
 
 ### **建議優先級**
-1. 🔥 **立即執行**：前端緩存 + K線數據壓縮
-2. 🚀 **2週內**：Redis 緩存 + WebSocket 優化
-3. 🎖️ **1月內**：微服務架構 + 監控系統
+
+1. 🔥 **立即執行**:前端緩存 + K 線數據壓縮
+2. 🚀 **2 週內**:Redis 緩存 + WebSocket 優化
+3. 🎖️ **1 月內**:微服務架構 + 監控系統
 
 ---
 
-您覺得哪個層級的優化最符合您當前的需求？我可以為您詳細設計具體的實施方案！
+您覺得哪個層級的優化最符合您當前的需求？我可以為您詳細設計具體的實施方案!

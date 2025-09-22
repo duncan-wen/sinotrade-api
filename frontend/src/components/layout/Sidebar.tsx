@@ -2,22 +2,30 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { useRouter } from 'next/navigation'
 
 interface SidebarProps {
   isOpen?: boolean
 }
 
 export function Sidebar({ isOpen = true }: SidebarProps) {
+  const router = useRouter()
+
   const menuItems = [
-    { icon: '🏠', label: '首頁', active: true },
-    { icon: '📊', label: '交易', active: false },
-    { icon: '💼', label: '投資組合', active: false },
-    { icon: '📈', label: '市場數據', active: false },
-    { icon: '🔍', label: '研究分析', active: false },
-    { icon: '⚡', label: '快速下單', active: false },
-    { icon: '📋', label: '交易記錄', active: false },
-    { icon: '💰', label: '資金管理', active: false },
+    { icon: '🏠', label: '首頁', active: true, path: '/' },
+    { icon: '🇺🇸', label: '美股專區', active: false, path: '/us-stocks' },
+    { icon: '📊', label: '交易', active: false, path: '/trading' },
+    { icon: '💼', label: '投資組合', active: false, path: '/portfolio' },
+    { icon: '📈', label: '市場數據', active: false, path: '/market-data' },
+    { icon: '🔍', label: '研究分析', active: false, path: '/research' },
+    { icon: '⚡', label: '快速下單', active: false, path: '/quick-trade' },
+    { icon: '📋', label: '交易記錄', active: false, path: '/history' },
+    { icon: '💰', label: '資金管理', active: false, path: '/funds' },
   ]
+
+  const handleNavigation = (path: string) => {
+    router.push(path)
+  }
 
   const watchlist = [
     {
@@ -76,6 +84,7 @@ export function Sidebar({ isOpen = true }: SidebarProps) {
                   ? 'bg-primary/10 border-primary/20 text-primary'
                   : 'hover:bg-muted'
               }`}
+              onClick={() => handleNavigation(item.path)}
             >
               <div className="flex items-center">
                 <span className="text-lg mr-3">{item.icon}</span>
@@ -102,12 +111,28 @@ export function Sidebar({ isOpen = true }: SidebarProps) {
 
           <div className="space-y-3">
             {watchlist.map((stock, index) => (
-              <Card key={index} className="p-3">
+              <Card
+                key={index}
+                className="p-3 cursor-pointer hover:shadow-md transition-shadow duration-300"
+                onClick={() => {
+                  if (['TSLA', 'AAPL', 'NVDA'].includes(stock.symbol)) {
+                    handleNavigation('/us-stocks')
+                  } else {
+                    // 台股處理邏輯(暫時沒有專頁)
+                    console.log('點擊台股:', stock.symbol)
+                  }
+                }}
+              >
                 <CardContent className="p-0">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-foreground text-sm">
-                      {stock.symbol}
-                    </span>
+                    <div className="flex items-center space-x-1">
+                      <span className="font-semibold text-foreground text-sm">
+                        {stock.symbol}
+                      </span>
+                      {['TSLA', 'AAPL', 'NVDA'].includes(stock.symbol) && (
+                        <span className="text-xs">🇺🇸</span>
+                      )}
+                    </div>
                     <span
                       className={`text-sm font-medium ${
                         stock.up ? 'text-green-600' : 'text-red-600'

@@ -14,6 +14,8 @@ dependencies = [
     "polars>=1.33.1",
     "polars-talib>=0.1.5",
     "fastapi-socketio>=0.0.10",
+    "polygon-api-client>=1.14.0",
+    "pytz>=2025.2",
 ]
 
 [dependency-groups]
@@ -29,6 +31,7 @@ dev = [
     "pandas-stubs>=2.3.2.250827",
     "isort>=6.0.1",
     "types-requests>=2.32.4.20250913",
+    "types-pytz>=2025.2.0.20250809",
 ]
 
 [tool.ruff]

@@ -305,7 +305,7 @@ export const OptimizedTradingChart: React.FC<OptimizedTradingChartProps> = ({
         <h3 className="font-medium mb-2">📈 K線數據 (最近10根)</h3>
         {klineData.length === 0 ? (
           <p className="text-gray-500 text-center py-8">
-            暫無K線數據，點擊"開始模擬"或"測試K線"來生成數據
+            暫無K線數據,點擊"開始模擬"或"測試K線"來生成數據
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -350,13 +350,13 @@ export const OptimizedTradingChart: React.FC<OptimizedTradingChartProps> = ({
         <h4 className="font-medium mb-2">💡 使用說明:</h4>
         <ul className="space-y-1">
           <li>
-            • <strong>Smart策略</strong>: 使用預載入緩存，性能最佳，適合高頻場景
+            • <strong>Smart策略</strong>: 使用預載入緩存,性能最佳,適合高頻場景
           </li>
           <li>
-            • <strong>Time-driven策略</strong>: 使用定時器驅動，時間最準確
+            • <strong>Time-driven策略</strong>: 使用定時器驅動,時間最準確
           </li>
           <li>
-            • <strong>Hybrid策略</strong>: 短期用Smart，長期用Time-driven
+            • <strong>Hybrid策略</strong>: 短期用Smart,長期用Time-driven
           </li>
           <li>• 點擊"開始模擬"可以看到實時K線跳轉效果</li>
           <li>• 點擊"性能測試"可以比較不同策略的性能</li>

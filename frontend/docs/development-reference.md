@@ -1,10 +1,11 @@
 # SinoTrade 前端開發參考
 
-整合自所有前端文檔的精華內容，專門針對智能交易網站開發需求。
+整合自所有前端文檔的精華內容,專門針對智能交易網站開發需求。
 
 ## 📱 響應式系統
 
 ### 斷點配置
+
 ```javascript
 // tailwind.config.js
 screens: {
@@ -17,6 +18,7 @@ screens: {
 ```
 
 ### 常用響應式類別
+
 ```css
 /* 文字大小 */
 text-xs lg:text-sm      /* 小文字 */
@@ -39,6 +41,7 @@ grid-cols-1 sm:grid-cols-2 lg:grid-cols-4  /* 響應式網格 */
 ## 🧩 核心元件使用
 
 ### TradingChart 圖表
+
 ```tsx
 import { TradingChart } from '@/components/chart'
 
@@ -60,6 +63,7 @@ const { isMobile } = useResponsive()
 ```
 
 ### 按鈕元件
+
 ```tsx
 import { Button, ButtonText } from '@/components/ui/button'
 
@@ -85,6 +89,7 @@ import { Button, ButtonText } from '@/components/ui/button'
 ```
 
 ### 市場數據卡片
+
 ```tsx
 // 標準市場卡片
 <View className="bg-white rounded-lg p-3 lg:p-4 shadow-sm border border-gray-200">
@@ -102,6 +107,7 @@ import { Button, ButtonText } from '@/components/ui/button'
 ## 🏗️ 佈局系統
 
 ### MainLayout 使用
+
 ```tsx
 import { MainLayout } from '@/components/layout/MainLayout'
 
@@ -119,6 +125,7 @@ export default function TradingPage() {
 ```
 
 ### 側邊欄控制
+
 ```tsx
 // 側邊欄狀態管理
 const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -136,6 +143,7 @@ const [sidebarOpen, setSidebarOpen] = useState(true)
 ## 🎨 樣式系統
 
 ### 色彩配置 (台股專用)
+
 ```css
 /* 文字顏色 */
 text-gray-900       /* 主要文字 */
@@ -155,10 +163,11 @@ rounded-lg         /* 標準圓角 */
 ```
 
 ### 台股圖表顏色
+
 ```typescript
 const taiwanStockColors = {
-  upColor: '#ef4444',      // 上漲紅色
-  downColor: '#22c55e',    // 下跌綠色
+  upColor: '#ef4444', // 上漲紅色
+  downColor: '#22c55e', // 下跌綠色
   borderUpColor: '#ef4444',
   borderDownColor: '#22c55e',
   wickUpColor: '#ef4444',
@@ -169,6 +178,7 @@ const taiwanStockColors = {
 ## 🛠️ 開發環境
 
 ### 常用指令
+
 ```bash
 # 開發
 pnpm dev                    # 啟動開發伺服器
@@ -189,6 +199,7 @@ pnpm remove <package>      # 移除依賴
 ```
 
 ### VS Code 設置
+
 ```json
 // .vscode/settings.json
 {
@@ -208,11 +219,14 @@ pnpm remove <package>      # 移除依賴
 ## 💻 實用 Hook
 
 ### 響應式 Hook
+
 ```tsx
 import { useState, useEffect } from 'react'
 
 export function useResponsive() {
-  const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop'>('desktop')
+  const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop'>(
+    'desktop'
+  )
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -230,7 +244,7 @@ export function useResponsive() {
   return {
     isMobile: screenSize === 'mobile',
     isTablet: screenSize === 'tablet',
-    isDesktop: screenSize === 'desktop'
+    isDesktop: screenSize === 'desktop',
   }
 }
 
@@ -239,13 +253,14 @@ const { isMobile, isDesktop } = useResponsive()
 ```
 
 ### 側邊欄控制 Hook
+
 ```tsx
 export function useSidebar() {
   const [isOpen, setIsOpen] = useState(() => {
     return typeof window !== 'undefined' && window.innerWidth >= 1024
   })
 
-  const toggle = useCallback(() => setIsOpen(prev => !prev), [])
+  const toggle = useCallback(() => setIsOpen((prev) => !prev), [])
   const open = useCallback(() => setIsOpen(true), [])
   const close = useCallback(() => setIsOpen(false), [])
 
@@ -256,9 +271,10 @@ export function useSidebar() {
 ## 🔍 常見問題解決
 
 ### 1. 圖表響應式問題
+
 ```tsx
-// 問題：圖表在小螢幕被截斷
-// 解決：動態調整圖表尺寸
+// 問題:圖表在小螢幕被截斷
+// 解決:動態調整圖表尺寸
 const [chartHeight, setChartHeight] = useState(400)
 
 useEffect(() => {
@@ -272,26 +288,30 @@ useEffect(() => {
 ```
 
 ### 2. 側邊欄手機版問題
+
 ```tsx
-// 問題：手機版覆蓋層無法關閉側邊欄
-// 解決：正確的覆蓋層實作
-{sidebarOpen && (
-  <Pressable
-    className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-    onPress={() => setSidebarOpen(false)}
-  />
-)}
+// 問題:手機版覆蓋層無法關閉側邊欄
+// 解決:正確的覆蓋層實作
+{
+  sidebarOpen && (
+    <Pressable
+      className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+      onPress={() => setSidebarOpen(false)}
+    />
+  )
+}
 ```
 
 ### 3. 自適應圖表問題
+
 ```tsx
-// 問題：useEffect 依賴陣列大小變化
-// 解決：分離自適應邏輯
+// 問題:useEffect 依賴陣列大小變化
+// 解決:分離自適應邏輯
 const [isAutoFitEnabled, setIsAutoFitEnabled] = useState(autoFit)
 
 // 圖表初始化
 useEffect(() => {
-  // 初始化邏輯，不包含 isAutoFitEnabled
+  // 初始化邏輯,不包含 isAutoFitEnabled
 }, [height, width, showVolume, symbol, interval])
 
 // 自適應控制
@@ -301,7 +321,7 @@ useEffect(() => {
       timeScale: {
         shiftVisibleRangeOnNewBar: isAutoFitEnabled,
         allowShiftVisibleRangeOnWhitespaceReplacement: isAutoFitEnabled,
-      }
+      },
     })
   }
 }, [isAutoFitEnabled])
@@ -310,6 +330,7 @@ useEffect(() => {
 ## 🧪 測試要點
 
 ### 響應式測試尺寸
+
 ```javascript
 // 手機測試
 { width: 375, height: 667 }  // iPhone SE
@@ -325,6 +346,7 @@ useEffect(() => {
 ```
 
 ### 關鍵測試場景
+
 ```typescript
 // Playwright 測試範例
 test('K線圖響應式', async ({ page }) => {
@@ -347,6 +369,7 @@ test('K線圖響應式', async ({ page }) => {
 ## 📊 效能優化
 
 ### React 優化
+
 ```tsx
 // 使用 React.memo 避免不必要重渲染
 export const TradingChart = React.memo(function TradingChart(props) {
@@ -358,26 +381,33 @@ const expensiveValue = useMemo(() => {
   return computeKlineIndicators(data)
 }, [data])
 
-const handleIntervalChange = useCallback((interval: string) => {
-  onIntervalChange?.(interval)
-}, [onIntervalChange])
+const handleIntervalChange = useCallback(
+  (interval: string) => {
+    onIntervalChange?.(interval)
+  },
+  [onIntervalChange]
+)
 ```
 
 ### 圖表效能
+
 ```tsx
 // 防抖更新避免過度渲染
-const debouncedUpdate = useMemo(() =>
-  debounce((newData) => {
-    if (chartRef.current) {
-      chartRef.current.setData(newData)
-    }
-  }, 100), // 100ms 防抖
-[])
+const debouncedUpdate = useMemo(
+  () =>
+    debounce((newData) => {
+      if (chartRef.current) {
+        chartRef.current.setData(newData)
+      }
+    }, 100), // 100ms 防抖
+  []
+)
 ```
 
 ## 🎯 專案特定最佳實踐
 
 ### 時間間隔按鈕 (基於您的實現)
+
 ```tsx
 // 標準時間間隔按鈕組
 const intervals = ['1m', '5m', '15m', '60m', '1d', '1w', '1M']
@@ -400,12 +430,15 @@ const intervals = ['1m', '5m', '15m', '60m', '1d', '1w', '1M']
 ```
 
 ### WebSocket 狀態指示
+
 ```tsx
 // 連線狀態顯示
 <div className="flex items-center space-x-2">
-  <div className={`w-2 h-2 rounded-full ${
-    isConnected ? 'bg-green-500' : 'bg-red-500'
-  }`} />
+  <div
+    className={`w-2 h-2 rounded-full ${
+      isConnected ? 'bg-green-500' : 'bg-red-500'
+    }`}
+  />
   <Text className="text-xs text-gray-500">
     {isConnected ? '即時更新中' : '連線中斷'}
   </Text>
@@ -414,5 +447,5 @@ const intervals = ['1m', '5m', '15m', '60m', '1d', '1w', '1M']
 
 ---
 
-*此文檔整合了所有前端開發文檔的精華內容，專門針對 SinoTrade 智能交易網站的開發需求。*
-*移除原始文檔前，請確保此參考文檔涵蓋了您需要的所有重要內容。*
+_此文檔整合了所有前端開發文檔的精華內容,專門針對 SinoTrade 智能交易網站的開發需求。_
+_移除原始文檔前,請確保此參考文檔涵蓋了您需要的所有重要內容。_

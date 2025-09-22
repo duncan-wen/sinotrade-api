@@ -1,10 +1,11 @@
 # SinoTrade 後端開發參考
 
-整合自所有後端文檔的精華內容，專門針對智能交易網站後端開發需求。
+整合自所有後端文檔的精華內容,專門針對智能交易網站後端開發需求。
 
 ## 🚀 快速開發命令
 
 ### 主要開發命令
+
 ```bash
 # 📦 安裝依賴 (Python 3.13.5)
 uv sync --extra dev
@@ -24,6 +25,7 @@ uv run pytest --cov=src        # 含覆蓋率
 ```
 
 ### 簡化腳本 (推薦)
+
 ```bash
 cd scripts-windows
 
@@ -37,6 +39,7 @@ scripts lint mypy      # 類型檢查
 ## 📡 技術指標 API 精華
 
 ### 核心端點
+
 ```bash
 # 單商品技術指標 (推薦使用 Polars 引擎)
 GET /api/chart/{symbol}?use_polars=true&indicators=ma,kd,macd,bbands,rsi
@@ -49,22 +52,23 @@ GET /api/klines/{symbol}?interval=5m&limit=100
 ```
 
 ### 支援的技術指標
+
 ```typescript
 interface TechnicalIndicators {
   ma: {
-    periods: [5, 10, 20, 60, 120, 240];  // 移動平均線
+    periods: [5, 10, 20, 60, 120, 240]; // 移動平均線
     usage: "趨勢判斷、支撐阻力";
   };
   kd: {
-    params: { k_period: 9, d_period: 3, rsv_period: 9 };
+    params: { k_period: 9; d_period: 3; rsv_period: 9 };
     usage: "超買超賣判斷、背離分析";
   };
   macd: {
-    params: { fast: 12, slow: 26, signal: 9 };
+    params: { fast: 12; slow: 26; signal: 9 };
     usage: "趨勢轉折、動量分析";
   };
   bbands: {
-    params: { period: 20, std_multiplier: 2.0 };
+    params: { period: 20; std_multiplier: 2.0 };
     usage: "波動率分析、支撐阻力";
   };
   rsi: {
@@ -75,6 +79,7 @@ interface TechnicalIndicators {
 ```
 
 ### 效能優化建議
+
 ```bash
 # ✅ 高效能配置 (Polars 引擎)
 ?use_polars=true&indicators=ma,rsi&limit=60
@@ -89,13 +94,14 @@ interface TechnicalIndicators {
 ## 💾 市場數據類型精要
 
 ### Shioaji 數據源選擇
+
 ```python
-# 🎯 用於 K 線圖：Tick (推薦)
+# 🎯 用於 K 線圖:Tick (推薦)
 from shioaji import TickSTKv1
 
-# 優勢：
-# - 真實成交數據，時間精確到毫秒
-# - 純成交資料，無雜訊
+# 優勢:
+# - 真實成交數據,時間精確到毫秒
+# - 純成交資料,無雜訊
 # - 適合即時 K 線聚合
 
 def on_tick_callback(exchange, tick: TickSTKv1):
@@ -111,8 +117,9 @@ def on_tick_callback(exchange, tick: TickSTKv1):
 ```
 
 ### 連續期貨合約最佳實踐
+
 ```python
-# ✅ 正確做法：使用官方連續期貨合約 (通用動態方法)
+# ✅ 正確做法:使用官方連續期貨合約 (通用動態方法)
 def get_futures_contract_dynamic(symbol: str):
     """動態獲取期貨合約 - 支援所有官方R1/R2連續合約"""
     if symbol.endswith(("R1", "R2")):
@@ -153,20 +160,22 @@ print(f"合約代碼: {contract.code}")
 print(f"目標合約: {contract.target_code}")  # 指向實際月份合約
 print(f"交割日期: {contract.delivery_date}")
 
-# ❌ 避免：手動計算結算日和合約切換
-# 官方連續合約會自動處理這些邏輯，包含target_code自動對應
+# ❌ 避免:手動計算結算日和合約切換
+# 官方連續合約會自動處理這些邏輯,包含target_code自動對應
 ```
 
 ### 數據類型使用場景
-| 類型       | 用途             | 更新頻率 | 適用場景   |
-| ---------- | ---------------- | -------- | ---------- |
-| **Tick**   | K線圖、成交分析  | 每筆成交 | ✅ 即時圖表 |
+
+| 類型       | 用途             | 更新頻率 | 適用場景    |
+| ---------- | ---------------- | -------- | ----------- |
+| **Tick**   | K 線圖、成交分析 | 每筆成交 | ✅ 即時圖表 |
 | **BidAsk** | 五檔報價、流動性 | 掛單變動 | ✅ 訂單簿   |
 | **Quote**  | 完整行情顯示     | 綜合更新 | ✅ 報價面板 |
 
 ## ⚡ Polars 高效能指標計算
 
 ### 為什麼選擇 Polars？
+
 ```python
 # 性能對比實測
 pandas_version = "45.2秒 (8.2GB記憶體)"
@@ -174,11 +183,12 @@ polars_version = "4.8秒 (1.6GB記憶體)"  # 🚀 9.4x 加速
 ```
 
 ### 核心優化技巧
+
 ```python
 import polars as pl
 import polars_talib as plta
 
-# ✅ 高效能寫法：懶惰求值 + 批量計算
+# ✅ 高效能寫法:懶惰求值 + 批量計算
 def calculate_indicators_optimized(df: pl.DataFrame):
     return (
         df.lazy()  # 🚀 開啟懶惰模式
@@ -195,12 +205,13 @@ def calculate_indicators_optimized(df: pl.DataFrame):
 def multi_symbol_calculation(data: dict):
     df = pl.DataFrame(flatten_symbol_data(data))
     return df.with_columns([
-        plta.sma(pl.col("close"), 20).over("symbol").alias("ma20"),  # 🚀 關鍵：over("symbol")
+        plta.sma(pl.col("close"), 20).over("symbol").alias("ma20"),  # 🚀 關鍵:over("symbol")
         plta.rsi(pl.col("close"), 14).over("symbol").alias("rsi"),
     ])
 ```
 
 ### 記憶體優化
+
 ```python
 # 🚀 優化數據類型節省記憶體
 optimized_schema = {
@@ -217,8 +228,9 @@ optimized_schema = {
 ## 🔄 即時數據處理架構
 
 ### WebSocket 即時推送
+
 ```python
-# 後端：Tick 到 K 線聚合
+# 後端:Tick 到 K 線聚合
 class KlineAggregator:
     def __init__(self):
         self.current_klines = {}  # symbol -> {timestamp -> kline}
@@ -228,7 +240,7 @@ class KlineAggregator:
         minute_time = self.get_minute_timestamp(tick_data.timestamp)
 
         if minute_time not in self.current_klines.get(symbol, {}):
-            # 新 K 線：第一筆成交
+            # 新 K 線:第一筆成交
             kline = {
                 "timestamp": minute_time.isoformat(),
                 "open": tick_data.close,
@@ -249,6 +261,7 @@ class KlineAggregator:
 ```
 
 ### 資料流程
+
 ```
 Shioaji Tick → 後端聚合器 → WebSocket → 前端圖表
    (50ms)     → (100ms)    → (10ms)  → (即時更新)
@@ -257,6 +270,7 @@ Shioaji Tick → 後端聚合器 → WebSocket → 前端圖表
 ## 🕐 多時間框架支援
 
 ### 支援的時間間隔
+
 ```python
 SUPPORTED_INTERVALS = {
     '1m': {'limit': 200, 'source': 'ticks_aggregated'},
@@ -270,8 +284,9 @@ SUPPORTED_INTERVALS = {
 ```
 
 ### 聚合邏輯
+
 ```python
-# 周線：週一到週日
+# 周線:週一到週日
 weekly_agg = df.resample('W-SUN').agg({
     'open': 'first',   # 週一開盤
     'high': 'max',     # 一週最高
@@ -280,7 +295,7 @@ weekly_agg = df.resample('W-SUN').agg({
     'volume': 'sum'    # 一週總量
 })
 
-# 月線：月初到月末
+# 月線:月初到月末
 monthly_agg = df.resample('M').agg({
     'open': 'first',   # 月初開盤
     'high': 'max',     # 當月最高
@@ -293,6 +308,7 @@ monthly_agg = df.resample('M').agg({
 ## 🔧 Python 開發環境
 
 ### Python 3.13.5 特性
+
 ```python
 # ✅ 新的泛型語法
 type Point = tuple[float, float]
@@ -314,6 +330,7 @@ async def async_data_stream() -> AsyncGenerator[dict, None]:
 ```
 
 ### 程式碼品質配置
+
 ```toml
 # pyproject.toml
 [tool.black]
@@ -333,6 +350,7 @@ strict = true
 ## 🎯 效能監控與調優
 
 ### API 響應時間目標
+
 ```python
 # 效能目標
 PERFORMANCE_TARGETS = {
@@ -357,6 +375,7 @@ def performance_monitor(operation_name: str):
 ```
 
 ### 快取策略
+
 ```python
 # Redis 快取設計
 CACHE_STRATEGIES = {
@@ -382,15 +401,16 @@ data = get_cached_chart_data("2330", cache_key)
 ## 🔍 錯誤處理與調試
 
 ### 金融數據特有錯誤
+
 ```python
 class TradingErrorHandler:
     @staticmethod
     def handle_market_errors(error_code: str) -> str:
         error_messages = {
-            'MARKET_CLOSED': '市場已休市，顯示最後收盤價',
+            'MARKET_CLOSED': '市場已休市,顯示最後收盤價',
             'SYMBOL_NOT_FOUND': '找不到該股票代號',
-            'INSUFFICIENT_DATA': '歷史數據不足，無法計算指標',
-            'RATE_LIMIT': '請求過於頻繁，請稍後再試',
+            'INSUFFICIENT_DATA': '歷史數據不足,無法計算指標',
+            'RATE_LIMIT': '請求過於頻繁,請稍後再試',
             'CALCULATION_ERROR': '技術指標計算失敗'
         }
         return error_messages.get(error_code, '未知錯誤')
@@ -408,6 +428,7 @@ def api_call_with_retry(func, max_retries: int = 3):
 ```
 
 ### 日誌配置
+
 ```python
 import logging
 
@@ -432,6 +453,7 @@ logger.error(f"❌ API調用失敗: {error}")
 ## 🧪 測試策略
 
 ### 關鍵測試場景
+
 ```python
 import pytest
 from unittest.mock import patch
@@ -475,6 +497,7 @@ async def test_websocket_kline_updates():
 ## 📋 部署檢查清單
 
 ### 生產環境配置
+
 ```bash
 # 環境變數檢查
 export SHIOAJI_API_KEY="your_api_key"
@@ -493,6 +516,7 @@ export CORS_ORIGINS="https://yourdomain.com"
 ```
 
 ### 健康檢查端點
+
 ```python
 @app.get("/health")
 async def health_check():
@@ -511,6 +535,7 @@ async def health_check():
 ## 🔗 常用開發資源
 
 ### API 測試
+
 ```bash
 # 本地開發 API
 curl "http://localhost:8000/api/chart/2330?indicators=ma,rsi" \
@@ -524,6 +549,7 @@ wscat -c ws://localhost:8000/ws/klines/test
 ```
 
 ### 常用除錯指令
+
 ```bash
 # 查看日誌
 tail -f logs/trading_system.log
@@ -536,6 +562,7 @@ uv run python -m memory_profiler src/services/technical_analysis.py
 ```
 
 ### 相關文檔連結
+
 - [Shioaji 官方文檔](https://sinotrade.github.io/zh/)
 - [Polars 效能指南](https://pola-rs.github.io/polars/user-guide/performance/)
 - [FastAPI WebSocket](https://fastapi.tiangolo.com/advanced/websockets/)
@@ -543,5 +570,5 @@ uv run python -m memory_profiler src/services/technical_analysis.py
 
 ---
 
-*此文檔整合了所有後端開發文檔的精華內容，專門針對 SinoTrade 智能交易網站的開發需求。*
-*移除原始文檔前，請確保此參考文檔涵蓋了您需要的所有重要內容。*
+_此文檔整合了所有後端開發文檔的精華內容,專門針對 SinoTrade 智能交易網站的開發需求。_
+_移除原始文檔前,請確保此參考文檔涵蓋了您需要的所有重要內容。_

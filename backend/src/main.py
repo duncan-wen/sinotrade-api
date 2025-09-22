@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi_socketio import SocketManager
 from loguru import logger
 
-from src.api import orders, quotes
+from src.api import orders, polygon_quotes, quotes
 from src.services.shioaji_service import shioaji_service
 from src.services.socketio_manager import SocketIOTickBroadcaster, setup_socketio_events
 from src.services.subscription_manager import subscription_manager
@@ -82,14 +82,18 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Shioaji Trading API",
-    description="An API for fetching real-time market data and placing simulated orders using the Shioaji library.",
+    title="SinoTrade Multi-Source API",
+    description="整合多資料源的金融 API:台股數據使用 Shioaji,美股數據使用 Polygon.io,提供即時報價、歷史數據和模擬下單功能。",
     version="0.1.0",
     lifespan=lifespan,
     openapi_tags=[
         {
             "name": "Quotes",
-            "description": "即時報價和歷史數據相關 API",
+            "description": "台股即時報價和歷史數據 API (Shioaji)",
+        },
+        {
+            "name": "Polygon.io",
+            "description": "美股即時報價和歷史數據 API (Polygon.io)",
         },
         {
             "name": "Orders",
@@ -117,17 +121,20 @@ shioaji_service.add_quote_callback(tick_broadcaster.broadcast_tick_data)
 
 app.include_router(quotes.router, prefix="/api", tags=["Quotes"])
 app.include_router(orders.router, prefix="/api", tags=["Orders"])
+app.include_router(polygon_quotes.router, prefix="/api", tags=["Polygon.io"])
 
 
 @app.get("/")
 def read_root() -> dict[str, str]:
-    return {"message": "Welcome to the Shioaji Trading API"}
+    return {
+        "message": "Welcome to the SinoTrade Multi-Source API - 台股 (Shioaji) + 美股 (Polygon.io)"
+    }
 
 
 @app.get("/health")
 def health_check() -> dict[str, str]:
     """健康檢查端點"""
-    return {"status": "healthy", "service": "Shioaji Trading API"}
+    return {"status": "healthy", "service": "SinoTrade Multi-Source API"}
 
 
 @app.get("/api/subscriptions/status")

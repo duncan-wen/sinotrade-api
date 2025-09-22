@@ -63,7 +63,7 @@ const ApiTestDashboard: React.FC = () => {
 
   const placeOrderMutation = usePlaceOrder({
     onSuccess: (data) => {
-      alert(`下單成功！訂單ID: ${data.id}`)
+      alert(`下單成功!訂單ID: ${data.id}`)
     },
     onError: (error) => {
       alert(`下單失敗: ${error.message}`)
@@ -72,7 +72,7 @@ const ApiTestDashboard: React.FC = () => {
 
   const cancelOrderMutation = useCancelOrder({
     onSuccess: () => {
-      alert('取消訂單成功！')
+      alert('取消訂單成功!')
     },
     onError: (error) => {
       alert(`取消訂單失敗: ${error.message}`)

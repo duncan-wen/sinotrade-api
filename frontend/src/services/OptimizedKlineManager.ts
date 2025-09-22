@@ -40,8 +40,8 @@ export interface KlineEvent {
 }
 
 /**
- * 🎯 方案一：智能預載入K線管理器
- * 特點：預先計算邊界時間，零延遲判斷
+ * 🎯 方案一:智能預載入K線管理器
+ * 特點:預先計算邊界時間,零延遲判斷
  */
 export class SmartKlineManager {
   private boundaryCache = new Map<string, number[]>()
@@ -60,7 +60,7 @@ export class SmartKlineManager {
   }
 
   /**
-   * 🚀 核心方法：處理tick數據
+   * 🚀 核心方法:處理tick數據
    */
   processTick(tick: TickData, interval: string): KlineEvent {
     const startTime = performance.now()
@@ -130,7 +130,7 @@ export class SmartKlineManager {
   }
 
   /**
-   * 🎯 零延遲邊界查找（二分搜索）
+   * 🎯 零延遲邊界查找(二分搜索)
    */
   private findBoundary(timestamp: number, interval: string): number {
     const cached = this.boundaryCache.get(interval)
@@ -157,7 +157,7 @@ export class SmartKlineManager {
       }
     }
 
-    // 如果緩存中沒找到，動態計算
+    // 如果緩存中沒找到,動態計算
     return this.calculateBoundary(timestamp, interval)
   }
 
@@ -355,8 +355,8 @@ export class SmartKlineManager {
 }
 
 /**
- * 🎯 方案二：時間驅動K線管理器
- * 特點：使用定時器精確控制K線跳轉
+ * 🎯 方案二:時間驅動K線管理器
+ * 特點:使用定時器精確控制K線跳轉
  */
 export class TimeDrivenKlineManager {
   private timers = new Map<string, NodeJS.Timeout>()
@@ -431,7 +431,7 @@ export class TimeDrivenKlineManager {
       })
     }
 
-    // 創建新K線（空K線，等待第一個tick）
+    // 創建新K線(空K線,等待第一個tick)
     const newKline: KlineData = {
       time: new Date().toISOString(),
       open: currentKline?.close || 0,
@@ -464,14 +464,14 @@ export class TimeDrivenKlineManager {
   }
 
   /**
-   * 📊 更新K線數據（由tick觸發）
+   * 📊 更新K線數據(由tick觸發)
    */
   updateWithTick(tick: TickData, symbol: string, interval: string) {
     const key = `${symbol}_${interval}`
     const currentKline = this.activeKlines.get(key)
 
     if (!currentKline) {
-      // 如果沒有當前K線，創建一個
+      // 如果沒有當前K線,創建一個
       this.startInterval(symbol, interval)
       return
     }
@@ -487,7 +487,7 @@ export class TimeDrivenKlineManager {
       predicted: false,
     }
 
-    // 如果是預測K線的第一個tick，設置開盤價
+    // 如果是預測K線的第一個tick,設置開盤價
     if (currentKline.predicted) {
       updatedKline.open = tick.price
       updatedKline.high = tick.price

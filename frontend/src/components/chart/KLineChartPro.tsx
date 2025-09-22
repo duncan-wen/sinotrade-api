@@ -2,12 +2,12 @@
  * KLineChartPro.tsx - 專業K線圖表組件
  *
  * 基於 KLineChart Pro 實現的專業級金融圖表
- * 支援所有主流技術指標：MA、KD、MACD、BBands等
+ * 支援所有主流技術指標:MA、KD、MACD、BBands等
  *
- * 🚀 安裝命令：
+ * 🚀 安裝命令:
  * pnpm add klinecharts @klinecharts/pro
  *
- * 📊 特性：
+ * 📊 特性:
  * - 內建技術指標支援
  * - 實時K線更新
  * - 專業金融UI設計
@@ -79,12 +79,12 @@ interface KLineChartProProps {
   interval?: string
   enableRealtime?: boolean
   theme?: 'light' | 'dark'
-  mainIndicators?: string[] // 主圖指標，如 ['MA', 'BOLL']
-  subIndicators?: string[] // 副圖指標，如 ['MACD', 'KD']
+  mainIndicators?: string[] // 主圖指標,如 ['MA', 'BOLL']
+  subIndicators?: string[] // 副圖指標,如 ['MACD', 'KD']
   onIntervalChange?: (interval: string) => void
 }
 
-// 專業K線圖表實現（基於基礎klinecharts）
+// 專業K線圖表實現(基於基礎klinecharts)
 class ProfessionalChart {
   private chart: any = null
   private symbol: string = ''
@@ -278,7 +278,7 @@ class ProfessionalChart {
           console.warn('⚠️ 無可用的數據載入方法')
         }
 
-        // 初始化最後一根 K 線的狀態（用於實時更新）
+        // 初始化最後一根 K 線的狀態(用於實時更新)
         if (klineData.length > 0) {
           const lastKline = klineData[klineData.length - 1]
           this.lastKlineStartTime = lastKline.timestamp
@@ -309,23 +309,23 @@ class ProfessionalChart {
     const mainPaneId = 'candle_pane' //  klineChart主圖特殊paneId
 
     if (!this.chart) {
-      console.warn('⚠️ 圖表實例不存在，跳過指標設置')
+      console.warn('⚠️ 圖表實例不存在,跳過指標設置')
       return
     }
 
     try {
       let maPaneId: string | undefined
 
-      // 🔧 正確的 API 調用方式創建 MA 指標在主圖上，使用統一配置
+      // 🔧 正確的 API 調用方式創建 MA 指標在主圖上,使用統一配置
       maPaneId = this.chart.createIndicator(this.MA_CONFIG, true, {
         id: mainPaneId,
-      }) // true 類似產生圖層 + candle_pane = 添加到主圖，返回也是主圖paneId maPaneId = mainPaneId
+      }) // true 類似產生圖層 + candle_pane = 添加到主圖,返回也是主圖paneId maPaneId = mainPaneId
 
-      console.log(`✅ MA指標創建成功在主圖，paneId: ${maPaneId}`)
+      console.log(`✅ MA指標創建成功在主圖,paneId: ${maPaneId}`)
 
       // 🔧 創建其他指標在子圖中
       this.activeIndicators.add('MA')
-      // 🔧 修復：使用實際返回的 paneId，如果沒有則使用預設值
+      // 🔧 修復:使用實際返回的 paneId,如果沒有則使用預設值
       const actualPaneId = maPaneId || 'candle_pane'
       this.indicatorPanes.set('MA', actualPaneId)
 
@@ -339,7 +339,7 @@ class ProfessionalChart {
 
   // 創建子圖指標的輔助方法
   private createSubIndicators() {
-    // VOL 指標 - 創建在新的子圖中，使用統一配置
+    // VOL 指標 - 創建在新的子圖中,使用統一配置
     try {
       const paneId = this.chart.createIndicator(this.VOL_CONFIG, false) // false = 創建新子圖
 
@@ -347,12 +347,12 @@ class ProfessionalChart {
       if (paneId) {
         this.indicatorPanes.set('VOL', paneId)
       }
-      console.log('✅ VOL指標創建成功（子圖）')
+      console.log('✅ VOL指標創建成功(子圖)')
     } catch (e) {
       console.log('📊 VOL指標創建失敗:', e.message)
     }
 
-    // MACD 指標 - 創建在新的子圖中，使用統一配置
+    // MACD 指標 - 創建在新的子圖中,使用統一配置
     try {
       const paneId = this.chart.createIndicator(this.MACD_CONFIG, false) // false = 創建新子圖
 
@@ -360,12 +360,12 @@ class ProfessionalChart {
       if (paneId) {
         this.indicatorPanes.set('MACD', paneId)
       }
-      console.log('✅ MACD指標創建成功（子圖）', paneId)
+      console.log('✅ MACD指標創建成功(子圖)', paneId)
     } catch (e) {
       console.log('📊 MACD指標不支援或創建失敗:', e.message)
     }
 
-    // KDJ/KD 指標 - 創建在新的子圖中，使用統一配置
+    // KDJ/KD 指標 - 創建在新的子圖中,使用統一配置
     try {
       const paneId = this.chart.createIndicator(this.KDJ_CONFIG, false) // false = 創建新子圖
 
@@ -373,7 +373,7 @@ class ProfessionalChart {
       if (paneId) {
         this.indicatorPanes.set('KDJ', paneId)
       }
-      console.log('✅ KDJ指標創建成功（子圖）')
+      console.log('✅ KDJ指標創建成功(子圖)')
     } catch (e) {
       console.log('📊 KDJ指標創建失敗:', e.message)
     }
@@ -401,21 +401,21 @@ class ProfessionalChart {
 
         // 更新本地緩存
         if (isNewKline) {
-          // 新 K 線：追加到緩存末尾
+          // 新 K 線:追加到緩存末尾
           this.klineDataCache.push(klineData)
           console.log(
-            '📊 追加新 K 線到緩存，新長度:',
+            '📊 追加新 K 線到緩存,新長度:',
             this.klineDataCache.length
           )
         } else {
-          // 更新現有 K 線：替換最後一個元素
+          // 更新現有 K 線:替換最後一個元素
           if (this.klineDataCache.length > 0) {
             this.klineDataCache[this.klineDataCache.length - 1] = klineData
             console.log('📊 更新緩存中的最後一根 K 線')
           } else {
-            // 如果緩存為空，當作新 K 線處理
+            // 如果緩存為空,當作新 K 線處理
             this.klineDataCache.push(klineData)
-            console.log('📊 緩存為空，追加為新 K 線')
+            console.log('📊 緩存為空,追加為新 K 線')
           }
         }
 
@@ -470,7 +470,7 @@ class ProfessionalChart {
       }
       this.lastKlineStartTime = klineStartTime
 
-      // 更新圖表（新 K 線）
+      // 更新圖表(新 K 線)
       this.updateData(this.currentKline, true)
     } else {
       // 更新現有 K 線
@@ -488,7 +488,7 @@ class ProfessionalChart {
       this.currentKline.close = tickPrice
       this.currentKline.volume += tickVolume // 累積成交量
 
-      // 更新圖表（更新現有 K 線）
+      // 更新圖表(更新現有 K 線)
       this.updateData(this.currentKline, false)
     }
   }
@@ -577,7 +577,7 @@ class ProfessionalChart {
     }
   }
 
-  // 🔧 切換指標顯示/隱藏（Toggle）
+  // 🔧 切換指標顯示/隱藏(Toggle)
   toggleIndicator(
     indicatorName: string,
     type: 'main' | 'sub' = 'sub'
@@ -589,7 +589,7 @@ class ProfessionalChart {
 
     // 🔧 防止重複點擊
     if (this.toggleInProgress.has(indicatorName)) {
-      console.warn(`⚠️ ${indicatorName} 指標正在切換中，請稍候...`)
+      console.warn(`⚠️ ${indicatorName} 指標正在切換中,請稍候...`)
       return false
     }
 
@@ -624,7 +624,7 @@ class ProfessionalChart {
         // 創建指標 - 先清理可能存在的同名指標
         console.log(`📊 開始創建指標: ${indicatorName} (類型: ${type})`)
 
-        // 🔧 先清理可能已存在的同名指標，防止重複
+        // 🔧 先清理可能已存在的同名指標,防止重複
         console.log(`🧹 創建前先清理可能存在的 ${indicatorName} 指標`)
         this.removeIndicatorSimple(indicatorName)
         try {
@@ -694,11 +694,11 @@ class ProfessionalChart {
 
     console.log(`🧹 開始移除指標: ${indicatorName}`)
     try {
-      // 🔧 方法1：使用保存的 pane ID 精確移除
+      // 🔧 方法1:使用保存的 pane ID 精確移除
       const paneId = this.indicatorPanes.get(indicatorName)
       if (paneId) {
         console.log(`📊 使用保存的 paneId: ${paneId} 移除 ${indicatorName}`)
-        // 🔧 修復：正確的參數順序是 (paneId, name)
+        // 🔧 修復:正確的參數順序是 (paneId, name)
         const result = this.chart.removeIndicator(paneId, indicatorName)
         if (result !== false) {
           console.log(`✅ 使用 paneId 成功移除指標: ${indicatorName}`)
@@ -708,7 +708,7 @@ class ProfessionalChart {
         }
       }
 
-      // 🔧 方法2：嘗試直接移除指標（只傳入名稱）
+      // 🔧 方法2:嘗試直接移除指標(只傳入名稱)
       console.log(`📊 嘗試直接移除指標: ${indicatorName}`)
       const result = this.chart.removeIndicator(indicatorName)
       if (result !== false) {
@@ -736,7 +736,7 @@ class ProfessionalChart {
         } else if (typeof klinecharts.dispose === 'function') {
           klinecharts.dispose(this.container)
         } else {
-          console.warn('⚠️ 無可用的圖表銷毀方法，嘗試手動清理')
+          console.warn('⚠️ 無可用的圖表銷毀方法,嘗試手動清理')
           // 手動清理
           this.chart = null
           return
@@ -773,7 +773,7 @@ export default function KLineChartProComponent({
   const [error, setError] = useState<string | null>(null)
   const [currentInterval, setCurrentInterval] = useState(interval)
   const [activeIndicators, setActiveIndicators] = useState<Set<string>>(
-    new Set() // 🔧 初始化為空，將從圖表實例同步狀態
+    new Set() // 🔧 初始化為空,將從圖表實例同步狀態
   )
 
   // 載入 KLineChart 基礎版
@@ -786,7 +786,7 @@ export default function KLineChartProComponent({
           setIsKLineChartReady(true)
           setError(null)
         } else {
-          setError('KLineChart 載入失敗，請檢查套件是否已安裝')
+          setError('KLineChart 載入失敗,請檢查套件是否已安裝')
         }
       } catch (err) {
         console.error('載入圖表失敗:', err)
@@ -833,7 +833,7 @@ export default function KLineChartProComponent({
         const chartActiveIndicators = chart.getActiveIndicators()
         setActiveIndicators(new Set(chartActiveIndicators))
         console.log(
-          '✅ 專業K線圖表初始化完成，同步指標狀態:',
+          '✅ 專業K線圖表初始化完成,同步指標狀態:',
           chartActiveIndicators
         )
       } catch (error) {
@@ -864,7 +864,7 @@ export default function KLineChartProComponent({
 
       console.log('🔄 切換時間間隔:', currentInterval, '->', newInterval)
 
-      // 如果圖表已存在，使用 updateInterval 方法
+      // 如果圖表已存在,使用 updateInterval 方法
       if (chartInstanceRef.current) {
         try {
           await chartInstanceRef.current.updateInterval(newInterval)
@@ -872,12 +872,12 @@ export default function KLineChartProComponent({
           onIntervalChange?.(newInterval)
         } catch (error) {
           console.error('❌ 間隔更新失敗:', error)
-          // 如果更新失敗，fallback 到重新創建圖表
+          // 如果更新失敗,fallback 到重新創建圖表
           setCurrentInterval(newInterval)
           onIntervalChange?.(newInterval)
         }
       } else {
-        // 如果圖表不存在，直接更新狀態（會觸發 useEffect 創建圖表）
+        // 如果圖表不存在,直接更新狀態(會觸發 useEffect 創建圖表)
         setCurrentInterval(newInterval)
         onIntervalChange?.(newInterval)
       }
@@ -893,7 +893,7 @@ export default function KLineChartProComponent({
     }
   }, [interval, currentInterval, handleIntervalChange])
 
-  // 如果套件未安裝，顯示安裝提示
+  // 如果套件未安裝,顯示安裝提示
   if (error) {
     return (
       <div
@@ -904,7 +904,7 @@ export default function KLineChartProComponent({
             ❌ {error}
           </div>
           <div className="text-gray-600 space-y-2">
-            <p>請先安裝 KLineChart 套件：</p>
+            <p>請先安裝 KLineChart 套件:</p>
             <code className="bg-gray-100 px-3 py-1 rounded text-sm">
               pnpm add klinecharts
             </code>
@@ -982,7 +982,7 @@ export default function KLineChartProComponent({
                             chartInstanceRef.current.getActiveIndicators()
                           setActiveIndicators(new Set(chartActiveIndicators))
                           console.log(
-                            `📊 ${item.name} 指標切換成功，同步狀態:`,
+                            `📊 ${item.name} 指標切換成功,同步狀態:`,
                             chartActiveIndicators
                           )
                         } else {

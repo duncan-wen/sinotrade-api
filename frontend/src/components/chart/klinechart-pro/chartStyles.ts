@@ -218,4 +218,34 @@ export const createIndicatorStyles = (colors: ThemeColors) =>
         ],
       },
     },
+
+    // BOLL (布林通道) 指標樣式
+    boll: {
+      name: 'BOLL',
+      styles: {
+        lines: [
+          {
+            style: 'solid',
+            smooth: false,
+            size: 1,
+            dashedValue: [2, 2],
+            color: colors.ma21, // 上軌線顏色
+          },
+          {
+            style: 'solid',
+            smooth: false,
+            size: 1,
+            dashedValue: [2, 2],
+            color: colors.ma8, // 中軌線顏色 (MA)
+          },
+          {
+            style: 'solid',
+            smooth: false,
+            size: 1,
+            dashedValue: [2, 2],
+            color: colors.ma55, // 下軌線顏色
+          },
+        ],
+      },
+    },
   }) as const

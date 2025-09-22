@@ -1,8 +1,8 @@
 /**
  * KLineChart Pro 測試頁面
  *
- * 展示：
- * 1. KLineChart Pro 專業圖表（支援所有技術指標）
+ * 展示:
+ * 1. KLineChart Pro 專業圖表(支援所有技術指標)
  * 2. SimpleTradingChart 簡化版圖表
  * 3. 對比兩種圖表的特性和使用場景
  */
@@ -12,7 +12,7 @@ import React, { useState } from 'react'
 import dynamic from 'next/dynamic'
 import SimpleTradingChart from '@/components/chart/SimpleTradingChart'
 
-// 動態載入 KLineChart Pro，避免 SSR 問題
+// 動態載入 KLineChart Pro,避免 SSR 問題
 const KLineChartPro = dynamic(
   () => import('@/components/chart/KLineChartPro'),
   {
@@ -187,14 +187,14 @@ export default function TestKLineChartProPage() {
           <h4 className="text-blue-800 font-semibold mb-2">💡 使用建議</h4>
           <ul className="text-blue-700 text-sm space-y-1">
             <li>
-              <strong>KLineChart Pro：</strong>適合需要專業技術指標分析的場景
+              <strong>KLineChart Pro:</strong>適合需要專業技術指標分析的場景
             </li>
             <li>
-              <strong>SimpleTradingChart：</strong>
+              <strong>SimpleTradingChart:</strong>
               適合儀表板、概覽頁面等簡單顯示需求
             </li>
             <li>
-              <strong>安裝要求：</strong>專業版需要安裝套件{' '}
+              <strong>安裝要求:</strong>專業版需要安裝套件{' '}
               <code>pnpm add klinecharts</code>
             </li>
           </ul>
