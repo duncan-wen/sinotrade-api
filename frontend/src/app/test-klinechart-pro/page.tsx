@@ -36,6 +36,7 @@ export default function TestKLineChartProPage() {
     { value: 'TXFR2', label: 'TXFR2 (台指期近月)' },
     { value: 'TXFR1', label: 'TXFR1 (台指期遠月)' },
     { value: 'MXFR1', label: 'MXFR1 (小台指期)' },
+    { value: '2408', label: '2408 (南亞科)' },
     { value: '2330', label: '2330 (台積電)' },
     { value: '2317', label: '2317 (鴻海)' },
   ]

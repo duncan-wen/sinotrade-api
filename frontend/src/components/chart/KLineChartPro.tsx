@@ -23,6 +23,22 @@ import {
   KlineMessage,
   TickData,
 } from '@/services/klineSocketIO'
+import {
+  zhTWLocale,
+  LOCALES,
+  DEFAULT_LOCALE,
+  languageOptions,
+  themes,
+  DEFAULT_THEME,
+  type ThemeColors,
+  timeIntervalOptions,
+  indicatorOptions,
+  type IndicatorName,
+  type IndicatorType,
+  createChartStyles,
+  createIndicatorStyles,
+  ChartButton,
+} from './klinechart-pro'
 
 // 💡 現在使用基本的 klinecharts 提供專業功能
 let klinecharts: any = null
@@ -80,8 +96,12 @@ class ProfessionalChart {
   private activeIndicators: Set<string> = new Set() // 🔧 追踪已啟用的指標
   private indicatorPanes: Map<string, string> = new Map() // 🔧 追踪指標的 pane ID
   private toggleInProgress: Set<string> = new Set() // 🔧 防止重複點擊
+  private theme: keyof typeof themes = DEFAULT_THEME // 🎨 當前主題
+  private colors: ThemeColors = themes[DEFAULT_THEME] // 🎨 當前色彩配置
+  private indicatorStyles: ReturnType<typeof createIndicatorStyles> // 🎨 指標樣式配置
 
   constructor(container: HTMLElement, symbol: string, interval: string) {
+    this.updateTheme(DEFAULT_THEME)
     this.container = container
     this.symbol = symbol
     this.interval = interval
@@ -89,6 +109,33 @@ class ProfessionalChart {
     this.currentKline = null
     this.lastKlineStartTime = 0
     this.klineDataCache = []
+  }
+
+  // 🎨 更新主題配置
+  private updateTheme(themeName: keyof typeof themes) {
+    this.theme = themeName
+    this.colors = themes[themeName]
+    this.indicatorStyles = createIndicatorStyles(this.colors)
+  }
+
+  // 🔧 獲取當前主題的MA配置
+  private get MA_CONFIG() {
+    return this.indicatorStyles.ma
+  }
+
+  // 🔧 獲取當前主題的MACD配置
+  private get MACD_CONFIG() {
+    return this.indicatorStyles.macd
+  }
+
+  // 🔧 獲取當前主題的KDJ配置
+  private get KDJ_CONFIG() {
+    return this.indicatorStyles.kdj
+  }
+
+  // 🔧 獲取當前主題的VOL配置
+  private get VOL_CONFIG() {
+    return this.indicatorStyles.vol
   }
 
   // 計算 K 線邊界時間
@@ -153,121 +200,18 @@ class ProfessionalChart {
 
     try {
       // 🔧 註冊繁體中文語言包 (zh-TW)
-      klinecharts.registerLocale('zh-TW', {
-        time: '時間：',
-        open: '開：',
-        high: '高：',
-        low: '低：',
-        close: '收：',
-        volume: '成交量：',
-        turnover: '成交額：',
-        change: '漲幅：',
-        change_rate: '漲幅：',
-        last: '最新：',
-        ma: '移動平均',
-        ema: '指數移動平均',
-        sma: '簡單移動平均',
-        vol: '成交量',
-        macd: 'MACD',
-        kdj: 'KDJ',
-        rsi: 'RSI',
-        boll: '布林通道',
-        wr: '威廉指標',
-        bias: '乖離率',
-        cci: '順勢指標',
-        psy: '心理線',
-        dmi: 'DMI',
-        trix: 'TRIX',
-        obv: 'OBV',
-        vr: 'VR',
-        dma: 'DMA',
-        mtm: 'MTM',
-        roc: 'ROC',
-        ppo: 'PPO',
-        sar: 'SAR',
-        highest: '最高',
-        lowest: '最低',
-      })
+      klinecharts.registerLocale(LOCALES.ZH_TW, zhTWLocale)
       //   console.log('✅ 繁體中文語言包註冊成功')
 
       // 🔧 創建圖表實例並設定繁體中文語言
       this.chart = klinecharts.init(this.container, {
-        locale: 'zh-TW', // 設定使用繁體中文
+        locale: DEFAULT_LOCALE, // 設定使用繁體中文
       })
 
       console.log('📊 圖表實例創建成功:', this.chart)
 
-      // 配置圖表樣式（嘗試不同的 API 方法）
-      // if (typeof this.chart.setStyles === 'function') {
-      this.chart.setStyles({
-        grid: {
-          show: true,
-          horizontal: {
-            show: true,
-            size: 1,
-            color: '#f0f0f0',
-            style: 'solid',
-          },
-          vertical: {
-            show: true,
-            size: 1,
-            color: '#f0f0f0',
-            style: 'solid',
-          },
-        },
-        candle: {
-          margin: {
-            top: 0.2,
-            bottom: 0.1,
-          },
-          type: 'candle_solid',
-          bar: {
-            upColor: '#FF6B6B', // 🔧 台股習慣：上漲紅色
-            downColor: '#00C851', // 🔧 台股習慣：下跌綠色
-            noChangeColor: '#888888', // 平盤灰色
-            upBorderColor: '#FF6B6B', // 🔧 上漲邊框紅色
-            downBorderColor: '#00C851', // 🔧 下跌邊框綠色
-            noChangeBorderColor: '#888888', // 平盤邊框灰色
-            upWickColor: '#FF6B6B', // 🔧 上漲影線紅色
-            downWickColor: '#00C851', // 🔧 下跌影線綠色
-            noChangeWickColor: '#888888', // 平盤影線灰色
-          },
-          tooltip: {
-            showRule: 'always',
-            showType: 'standard',
-            labels: ['時間', '開', '高', '低', '收', '成交量'],
-          },
-        },
-        crosshair: {
-          show: true,
-          horizontal: {
-            show: true,
-            line: {
-              show: true,
-              style: 'dash',
-              dashValue: [4, 2],
-              size: 1,
-              color: '#758696',
-            },
-            text: {
-              show: true,
-            },
-          },
-          vertical: {
-            show: true,
-            line: {
-              show: true,
-              style: 'dash',
-              dashValue: [4, 2],
-              size: 1,
-              color: '#758696',
-            },
-            text: {
-              show: true,
-            },
-          },
-        },
-      })
+      // 🎨 配置圖表樣式 (使用主題化配置)
+      this.chart.setStyles(createChartStyles(this.colors))
 
       // 載入數據
       await this.loadData()
@@ -325,7 +269,7 @@ class ProfessionalChart {
         // 保存數據到本地緩存
         this.klineDataCache = [...klineData]
 
-        // 設置數據到圖表（檢查可用的 API 方法）
+        // 設置數據到圖表 - 檢查可用的 API 方法
         if (typeof this.chart.applyNewData === 'function') {
           this.chart.applyNewData(klineData)
         } else if (typeof this.chart.loadData === 'function') {
@@ -372,43 +316,10 @@ class ProfessionalChart {
     try {
       let maPaneId: string | undefined
 
-      // 🔧 正確的 API 調用方式創建 MA 指標在主圖上
-      maPaneId = this.chart.createIndicator(
-        {
-          name: 'MA',
-          precision: 2,
-          calcParams: [8, 21, 55], // MA8, MA21, MA55
-          styles: {
-            lines: [
-              {
-                style: 'solid',
-                smooth: false,
-                size: 1,
-                dashedValue: [2, 2],
-                color: '#FF6B6B',
-              }, // MA8 紅色
-              {
-                style: 'solid',
-                smooth: false,
-                size: 1,
-                dashedValue: [2, 2],
-                color: '#4169E1',
-              }, // MA21 藍色
-              {
-                style: 'solid',
-                smooth: false,
-                size: 1,
-                dashedValue: [2, 2],
-                color: '#00C851',
-              }, // MA55 綠色
-            ],
-          },
-        },
-        true,
-        {
-          id: mainPaneId,
-        }
-      ) // true 類似產生圖層 + candle_pane = 添加到主圖，返回也是主圖paneId maPaneId = mainPaneId
+      // 🔧 正確的 API 調用方式創建 MA 指標在主圖上，使用統一配置
+      maPaneId = this.chart.createIndicator(this.MA_CONFIG, true, {
+        id: mainPaneId,
+      }) // true 類似產生圖層 + candle_pane = 添加到主圖，返回也是主圖paneId maPaneId = mainPaneId
 
       console.log(`✅ MA指標創建成功在主圖，paneId: ${maPaneId}`)
 
@@ -419,8 +330,6 @@ class ProfessionalChart {
       this.indicatorPanes.set('MA', actualPaneId)
 
       this.createSubIndicators()
-      // 🧹 初始化完成後清理重複指標
-      this.cleanupDuplicateIndicators()
 
       console.log('✅ 技術指標設置完成')
     } catch (error) {
@@ -430,22 +339,10 @@ class ProfessionalChart {
 
   // 創建子圖指標的輔助方法
   private createSubIndicators() {
-    // VOL 指標 - 創建在新的子圖中 (false = 創建新子圖)
+    // VOL 指標 - 創建在新的子圖中，使用統一配置
     try {
-      const paneId = this.chart.createIndicator(
-        {
-          name: 'VOL',
-          styles: {
-            bars: [
-              {
-                upColor: '#FF6B6B', // 上漲紅色
-                downColor: '#00C851', // 下跌綠色
-              },
-            ],
-          },
-        },
-        false
-      ) // false = 創建新子圖
+      const paneId = this.chart.createIndicator(this.VOL_CONFIG, false) // false = 創建新子圖
+
       this.activeIndicators.add('VOL')
       if (paneId) {
         this.indicatorPanes.set('VOL', paneId)
@@ -455,45 +352,9 @@ class ProfessionalChart {
       console.log('📊 VOL指標創建失敗:', e.message)
     }
 
-    // MACD 指標 - 創建在新的子圖中
+    // MACD 指標 - 創建在新的子圖中，使用統一配置
     try {
-      const paneId = this.chart.createIndicator(
-        {
-          name: 'MACD',
-          styles: {
-            bars: [
-              {
-                style: 'stroke_fill', // 上漲時實心柱子
-                upColor: '#FF6B6B', // 0軸上方 - 紅色
-                downColor: '#00C851', // 0軸下方 - 綠色
-                noChangeColor: '#888888', // 零軸 - 灰色
-
-                upBorderColor: '#FF6B6B', // 上漲邊框顏色
-                downBorderColor: '#00C851', // 下跌邊框顏色
-              },
-            ],
-            lines: [
-              {
-                style: 'solid',
-                smooth: false,
-                size: 1,
-                dashedValue: [2, 2], // index 0 的這個要加應該是Bug
-                color: '#FF6B6B',
-              }, // MACD線 - 紅色
-              {
-                style: 'solid',
-                smooth: false,
-                size: 1,
-                dashedValue: [2, 2],
-                color: '#4169E1',
-              }, // Signal線 - 藍色
-            ],
-          },
-        },
-        false
-      ) // false = 創建新子圖
-
-      // this.chart.overrideIndicator(paneId)
+      const paneId = this.chart.createIndicator(this.MACD_CONFIG, false) // false = 創建新子圖
 
       this.activeIndicators.add('MACD')
       if (paneId) {
@@ -504,40 +365,10 @@ class ProfessionalChart {
       console.log('📊 MACD指標不支援或創建失敗:', e.message)
     }
 
-    // KDJ/KD 指標 - 創建在新的子圖中
+    // KDJ/KD 指標 - 創建在新的子圖中，使用統一配置
     try {
-      // 嘗試 KDJ 或 KD
-      const paneId = this.chart.createIndicator(
-        {
-          name: 'KDJ',
-          styles: {
-            lines: [
-              {
-                style: 'solid',
-                smooth: false,
-                size: 1,
-                dashedValue: [2, 2],
-                color: '#FF6B6B',
-              }, // K線 - 紅色
-              {
-                style: 'solid',
-                smooth: false,
-                size: 1,
-                dashedValue: [2, 2],
-                color: '#4169E1',
-              }, // D線 - 藍色
-              {
-                style: 'solid',
-                smooth: false,
-                size: 1,
-                dashedValue: [2, 2],
-                color: '#9B59B6',
-              }, // J線 - 紫色
-            ],
-          },
-        },
-        false
-      ) // false = 創建新子圖
+      const paneId = this.chart.createIndicator(this.KDJ_CONFIG, false) // false = 創建新子圖
+
       this.activeIndicators.add('KDJ')
       if (paneId) {
         this.indicatorPanes.set('KDJ', paneId)
@@ -588,7 +419,7 @@ class ProfessionalChart {
           }
         }
 
-        // 使用完整緩存更新圖表
+        // 使用完整緩存更新圖表 - 檢查可用的 API 方法
         if (typeof this.chart.applyNewData === 'function') {
           this.chart.applyNewData(this.klineDataCache)
         } else if (typeof this.chart.loadData === 'function') {
@@ -728,15 +559,21 @@ class ProfessionalChart {
 
   // 🔧 設定語言
   setLocale(locale: string) {
-    if (this.chart && typeof this.chart.setLocale === 'function') {
-      try {
-        this.chart.setLocale(locale)
-        console.log(`✅ 語言切換成功: ${locale}`)
-      } catch (error) {
-        console.error('❌ 語言切換失敗:', error)
-      }
-    } else {
+    if (!this.chart) {
+      console.warn('⚠️ 圖表實例不存在')
+      return
+    }
+
+    if (typeof this.chart.setLocale !== 'function') {
       console.warn('⚠️ setLocale 方法不存在')
+      return
+    }
+
+    try {
+      this.chart.setLocale(locale)
+      console.log(`✅ 語言切換成功: ${locale}`)
+    } catch (error) {
+      console.error('❌ 語言切換失敗:', error)
     }
   }
 
@@ -767,170 +604,69 @@ class ProfessionalChart {
     try {
       if (isActive) {
         // 移除指標 - 使用徹底清理方法
-        if (typeof this.chart.removeIndicator === 'function') {
-          console.log(`📊 開始移除指標: ${indicatorName} (類型: ${type})`)
+        console.log(`📊 開始移除指標: ${indicatorName} (類型: ${type})`)
 
-          // 🔧 使用簡化版移除方法
-          const cleanupSuccess = this.removeIndicatorSimple(indicatorName)
-          if (cleanupSuccess) {
-            // 只有在成功移除後才更新內部狀態
-            this.activeIndicators.delete(indicatorName)
-            this.indicatorPanes.delete(indicatorName)
-            console.log(`✅ 指標移除成功: ${indicatorName}`)
-            this.toggleInProgress.delete(indicatorName)
-            return true
-          } else {
-            console.error(`❌ 指標移除失敗: ${indicatorName} - 清理方法失敗`)
-            this.toggleInProgress.delete(indicatorName)
-            return false
-          }
+        // 🔧 使用簡化版移除方法
+        const cleanupSuccess = this.removeIndicatorSimple(indicatorName)
+        if (cleanupSuccess) {
+          // 只有在成功移除後才更新內部狀態
+          this.activeIndicators.delete(indicatorName)
+          this.indicatorPanes.delete(indicatorName)
+          console.log(`✅ 指標移除成功: ${indicatorName}`)
+          this.toggleInProgress.delete(indicatorName)
+          return true
         } else {
-          console.warn('⚠️ removeIndicator 方法不存在')
+          console.error(`❌ 指標移除失敗: ${indicatorName} - 清理方法失敗`)
           this.toggleInProgress.delete(indicatorName)
           return false
         }
       } else {
         // 創建指標 - 先清理可能存在的同名指標
-        if (typeof this.chart.createIndicator === 'function') {
-          console.log(`📊 開始創建指標: ${indicatorName} (類型: ${type})`)
+        console.log(`📊 開始創建指標: ${indicatorName} (類型: ${type})`)
 
-          // 🔧 先清理可能已存在的同名指標，防止重複
-          console.log(`🧹 創建前先清理可能存在的 ${indicatorName} 指標`)
-          this.removeIndicatorSimple(indicatorName)
-          try {
-            let paneId: string | undefined
+        // 🔧 先清理可能已存在的同名指標，防止重複
+        console.log(`🧹 創建前先清理可能存在的 ${indicatorName} 指標`)
+        this.removeIndicatorSimple(indicatorName)
+        try {
+          let paneId: string | undefined
 
-            if (type === 'main') {
-              // 主圖指標
-              if (indicatorName === 'BOLL') {
-                paneId = this.chart.createIndicator('BOLL', true, {
-                  id: 'candle_pane',
-                })
-              } else {
-                paneId = this.chart.createIndicator(indicatorName, true, {
-                  id: 'candle_pane',
-                })
-              }
-              if (!paneId) paneId = 'candle_pane'
+          if (type === 'main') {
+            // 主圖指標
+            if (indicatorName === 'BOLL') {
+              paneId = this.chart.createIndicator('BOLL', true, {
+                id: 'candle_pane',
+              })
             } else {
-              // 副圖指標
-              // paneId = this.chart.createIndicator(indicatorName, false) // 返回 pane ID
-              paneId = this.chart.createIndicator(
-                {
-                  name: 'MACD',
-                  styles: {
-                    bars: [
-                      {
-                        style: 'stroke_fill', // 上漲時實心柱子
-                        upColor: '#FF6B6B', // 0軸上方 - 紅色
-                        downColor: '#00C851', // 0軸下方 - 綠色
-                        noChangeColor: '#888888', // 零軸 - 灰色
-
-                        upBorderColor: '#FF6B6B', // 上漲邊框顏色
-                        downBorderColor: '#00C851', // 下跌邊框顏色
-                      },
-                    ],
-                    lines: [
-                      {
-                        style: 'solid',
-                        smooth: false,
-                        size: 1,
-                        dashedValue: [2, 2], // index 0 的這個要加應該是Bug
-                        color: '#FF6B6B',
-                      }, // MACD線 - 紅色
-                      {
-                        style: 'solid',
-                        smooth: false,
-                        size: 1,
-                        dashedValue: [2, 2],
-                        color: '#4169E1',
-                      }, // Signal線 - 藍色
-                    ],
-                  },
-                },
-                false
-              ) // false = 創建新子圖
-
-              // 🔧 針對 MACD 指標設定特殊樣式
-              // if (indicatorName === 'MACD' && paneId) {
-              //   this.chart.overrideIndicator(
-              //     {
-              //       name: 'MACD',
-              //       styles: {
-              //         bars: [
-              //           {
-              //             upColor: '#FF6B6B', // 0軸上方 - 紅色
-              //             downColor: '#00C851', // 0軸下方 - 綠色
-              //             noChangeColor: '#888888', // 零軸 - 灰色
-              //             upStyle: 'stroke', // 上漲時空心柱子
-              //             downStyle: 'fill', // 下跌時實心柱子
-              //             upBorderColor: '#FF6B6B', // 上漲邊框顏色
-              //             downBorderColor: '#00C851', // 下跌邊框顏色
-              //           },
-              //         ],
-              //         lines: [
-              //           { color: '#FF6B6B', size: 1 }, // MACD線 - 紅色
-              //           { color: '#4169E1', size: 1 }, // Signal線 - 藍色
-              //         ],
-              //       },
-              //     },
-              //     paneId
-              //   )
-              //   console.log(`✅ MACD 顏色樣式設定完成`)
-              // }
-
-              // 🔧 針對 KDJ 指標設定特殊樣式
-              if (indicatorName === 'KDJ' && paneId) {
-                this.chart.overrideIndicator(
-                  {
-                    name: 'KDJ',
-                    styles: {
-                      lines: [
-                        {
-                          style: 'solid',
-                          smooth: false,
-                          size: 1,
-                          dashedValue: [2, 2],
-                          color: '#FF6B6B',
-                        }, // K線 - 紅色
-                        {
-                          style: 'solid',
-                          smooth: false,
-                          size: 1,
-                          dashedValue: [2, 2],
-                          color: '#4169E1',
-                        }, // D線 - 藍色
-                        {
-                          style: 'solid',
-                          smooth: false,
-                          size: 1,
-                          dashedValue: [2, 2],
-                          color: '#9B59B6',
-                        }, // J線 - 紫色
-                      ],
-                    },
-                  },
-                  paneId
-                )
-                console.log(`✅ KDJ 顏色樣式設定完成`)
-              }
+              // MA指標使用統一配置
+              paneId = this.chart.createIndicator(this.MA_CONFIG, true, {
+                id: 'candle_pane',
+              })
             }
-
-            // 只有在成功創建後才更新內部狀態
-            this.activeIndicators.add(indicatorName)
-            if (paneId) {
-              this.indicatorPanes.set(indicatorName, paneId)
+            if (!paneId) paneId = 'candle_pane'
+          } else {
+            // 副圖指標 - 根據指標名稱動態創建
+            if (indicatorName === 'MACD') {
+              paneId = this.chart.createIndicator(this.MACD_CONFIG, false) // false = 創建新子圖
+            } else if (indicatorName === 'KDJ') {
+              paneId = this.chart.createIndicator(this.KDJ_CONFIG, false) // false = 創建新子圖
+            } else if (indicatorName === 'VOL') {
+              paneId = this.chart.createIndicator(this.VOL_CONFIG, false) // false = 創建新子圖
+            } else {
+              // 其他副圖指標使用簡單創建方式
+              paneId = this.chart.createIndicator(indicatorName, false)
             }
-            console.log(`✅ 指標創建成功: ${indicatorName}, paneId: ${paneId}`)
-            this.toggleInProgress.delete(indicatorName)
-            return true
-          } catch (createError) {
-            console.error(`❌ 指標創建失敗 (${indicatorName}):`, createError)
-            this.toggleInProgress.delete(indicatorName)
-            return false
           }
-        } else {
-          console.warn('⚠️ createIndicator 方法不存在')
+
+          // 只有在成功創建後才更新內部狀態
+          this.activeIndicators.add(indicatorName)
+          if (paneId) {
+            this.indicatorPanes.set(indicatorName, paneId)
+          }
+          console.log(`✅ 指標創建成功: ${indicatorName}, paneId: ${paneId}`)
+          this.toggleInProgress.delete(indicatorName)
+          return true
+        } catch (createError) {
+          console.error(`❌ 指標創建失敗 (${indicatorName}):`, createError)
           this.toggleInProgress.delete(indicatorName)
           return false
         }
@@ -990,45 +726,20 @@ class ProfessionalChart {
     }
   }
 
-  // 🧹 清理所有可能重複的指標
-  cleanupDuplicateIndicators(): void {
-    if (!this.chart) return
-
-    console.log('🧹 開始清理重複指標...')
-
-    // 常見指標列表
-    const commonIndicators = [
-      'VOL',
-      'MACD',
-      'KDJ',
-      'KD',
-      'RSI',
-      'BOLL',
-      'EMA',
-      'SMA',
-    ]
-
-    commonIndicators.forEach((indicatorName) => {
-      // 只保留我們預期啟用的指標，清理其他重複的
-      if (!this.activeIndicators.has(indicatorName)) {
-        this.removeIndicatorSimple(indicatorName)
-      }
-    })
-
-    console.log('🧹 重複指標清理完成')
-  }
-
   // 銷毀圖表
   destroy() {
     if (this.chart) {
       try {
-        // 嘗試不同的銷毀方法
+        // 銷毀圖表實例 - 嘗試不同的銷毀方法
         if (typeof this.chart.dispose === 'function') {
           this.chart.dispose()
         } else if (typeof klinecharts.dispose === 'function') {
           klinecharts.dispose(this.container)
         } else {
-          console.warn('⚠️ 無可用的圖表銷毀方法')
+          console.warn('⚠️ 無可用的圖表銷毀方法，嘗試手動清理')
+          // 手動清理
+          this.chart = null
+          return
         }
         this.chart = null
         console.log('✅ 圖表銷毀成功')
@@ -1248,17 +959,14 @@ export default function KLineChartProComponent({
 
             {/* 指標切換按鈕 */}
             <div className="flex space-x-1 border-l pl-4">
-              {[
-                { name: 'MA', label: 'MA', type: 'main' as const },
-                { name: 'BOLL', label: 'BBands', type: 'main' as const },
-                { name: 'VOL', label: 'VOL', type: 'sub' as const },
-                { name: 'MACD', label: 'MACD', type: 'sub' as const },
-                { name: 'KDJ', label: 'KDJ', type: 'sub' as const },
-              ].map((item) => {
+              {indicatorOptions.map((item) => {
                 const isActive = activeIndicators.has(item.name)
                 return (
-                  <button
+                  <ChartButton
                     key={item.name}
+                    variant="toggle"
+                    isActive={isActive}
+                    title={`${isActive ? '關閉' : '開啟'} ${item.label} 指標`}
                     onClick={() => {
                       if (chartInstanceRef.current) {
                         // 🔧 呼叫 toggleIndicator 並根據返回值決定是否更新 UI 狀態
@@ -1282,39 +990,30 @@ export default function KLineChartProComponent({
                         }
                       }
                     }}
-                    className={`px-2 py-1 text-xs rounded transition-all ${
-                      isActive
-                        ? 'bg-blue-500 text-white hover:bg-blue-600' // 啟用狀態
-                        : 'bg-blue-100 text-blue-700 hover:bg-blue-200' // 停用狀態
-                    }`}
-                    title={`${isActive ? '關閉' : '開啟'} ${item.label} 指標`}
                   >
                     {isActive ? '●' : '○'} {item.label}
-                  </button>
+                  </ChartButton>
                 )
               })}
             </div>
 
             {/* 語言切換按鈕 */}
             <div className="flex space-x-1 border-l pl-4">
-              {[
-                { value: 'zh-TW', label: '繁中', flag: '🇹🇼' },
-                { value: 'zh-CN', label: '简中', flag: '🇨🇳' },
-                { value: 'en-US', label: 'EN', flag: '🇺🇸' },
-              ].map((item) => (
-                <button
+              {languageOptions.map((item) => (
+                <ChartButton
                   key={item.value}
+                  variant="action"
+                  title={`切換至${item.label}`}
                   onClick={() => {
                     if (chartInstanceRef.current) {
                       chartInstanceRef.current.setLocale(item.value)
                     }
                   }}
-                  className="px-2 py-1 text-xs rounded hover:bg-gray-200 transition-all bg-gray-100 flex items-center space-x-1"
-                  title={`切換至${item.label}`}
+                  className="flex items-center space-x-1"
                 >
                   <span>{item.flag}</span>
                   <span>{item.label}</span>
-                </button>
+                </ChartButton>
               ))}
             </div>
           </div>
