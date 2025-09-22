@@ -40,6 +40,51 @@ export const createChartStyles = (colors: ThemeColors) =>
         downWickColor: colors.down,
         noChangeWickColor: colors.flat,
       },
+      // 🎯 右邊價格標籤配置 (台股習慣: 紅漲綠跌)
+      priceMark: {
+        show: true,
+        high: {
+          show: true,
+          color: colors.up, // 最高價用上漲顏色 (紅色)
+          textMargin: 5,
+          textSize: 10,
+          textFamily: 'Helvetica Neue',
+          textWeight: 'normal',
+        },
+        low: {
+          show: true,
+          color: colors.down, // 最低價用下跌顏色 (綠色)
+          textMargin: 5,
+          textSize: 10,
+          textFamily: 'Helvetica Neue',
+          textWeight: 'normal',
+        },
+        last: {
+          show: true,
+          upColor: colors.up, // 上漲時價格標籤紅色
+          downColor: colors.down, // 下跌時價格標籤綠色
+          noChangeColor: colors.flat, // 平盤時價格標籤灰色
+          line: {
+            show: true,
+            style: 'dashed', // 🎯 改為虛線
+            dashedValue: [4, 4],
+            size: 1,
+          },
+          text: {
+            show: true,
+            size: 12,
+            paddingLeft: 4,
+            paddingTop: 4,
+            paddingRight: 4,
+            paddingBottom: 4,
+            borderRadius: 2,
+            borderSize: 1,
+            borderStyle: 'solid',
+            family: 'Helvetica Neue',
+            weight: 'normal',
+          },
+        },
+      },
       tooltip: {
         showRule: 'always',
         showType: 'standard',
