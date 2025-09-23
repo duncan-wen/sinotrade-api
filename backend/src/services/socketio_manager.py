@@ -42,6 +42,7 @@ class SocketIOTickBroadcaster:
 
     def broadcast_tick_data(self, tick_data: Any) -> None:
         """Socket.IO tick 數據廣播回調 (同步版本避免事件循環問題)"""
+        logger.info(f"🔥 [DEBUG] broadcast_tick_data 被調用: {type(tick_data)}")
         try:
             # tick_data 可能是 Quote 物件或字典,需要統一處理
             if hasattr(tick_data, "symbol"):
@@ -182,8 +183,8 @@ def setup_socketio_events(socket_manager: SocketManager):
                 "sid": sid,
                 "timestamp": str(__import__("datetime").datetime.now()),
                 "server_info": {
-                    "shioaji_logged_in": shioaji_service._is_logged_in,
-                    "shioaji_initialized": shioaji_service._is_initialized,
+                    "shioaji_logged_in": shioaji_service.is_logged_in(),
+                    "shioaji_initialized": shioaji_service.lifecycle._is_initialized,
                     # 註解: polygon WebSocket 狀態 - 免費計劃不支援
                     "polygon_connected": False,
                     "polygon_authenticated": False,

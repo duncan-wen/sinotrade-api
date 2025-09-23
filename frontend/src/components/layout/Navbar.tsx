@@ -1,12 +1,16 @@
 'use client'
 import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { TrendingUp, BarChart3, PieChart, FileText } from 'lucide-react'
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
+  const pathname = usePathname()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,6 +20,30 @@ export function Navbar() {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  // 導航項目配置
+  const navItems = [
+    {
+      href: '/',
+      label: '市場總覽',
+      icon: BarChart3,
+    },
+    {
+      href: '/ranking',
+      label: '排行榜',
+      icon: TrendingUp,
+    },
+    {
+      href: '/portfolio',
+      label: '投資組合',
+      icon: PieChart,
+    },
+    {
+      href: '/reports',
+      label: '研究報告',
+      icon: FileText,
+    },
+  ]
 
   return (
     <nav
@@ -38,25 +66,27 @@ export function Navbar() {
       </div>
 
       {/* 中間導航 */}
-      <div className="hidden md:flex items-center space-x-2">
-        <Button
-          variant="ghost"
-          className="text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors px-4 py-2"
-        >
-          市場總覽
-        </Button>
-        <Button
-          variant="ghost"
-          className="text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors px-4 py-2"
-        >
-          我的投資組合
-        </Button>
-        <Button
-          variant="ghost"
-          className="text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors px-4 py-2"
-        >
-          研究報告
-        </Button>
+      <div className="hidden md:flex items-center space-x-1">
+        {navItems.map((item) => {
+          const Icon = item.icon
+          const isActive = pathname === item.href
+
+          return (
+            <Link key={item.href} href={item.href}>
+              <Button
+                variant="ghost"
+                className={`flex items-center gap-2 px-4 py-2 transition-colors ${
+                  isActive
+                    ? 'text-primary bg-primary/10'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-primary/10'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </Button>
+            </Link>
+          )
+        })}
       </div>
 
       {/* 右側用戶區域 */}

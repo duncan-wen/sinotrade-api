@@ -2,8 +2,9 @@
 
 import asyncio
 import atexit
-import os
 import re
+import signal
+import sys
 from collections.abc import Callable
 from typing import Any, cast
 
@@ -13,8 +14,15 @@ from dotenv import load_dotenv
 from loguru import logger
 from shioaji import Exchange, TickFOPv1, TickSTKv1  # type: ignore
 
-from src.models.domain import Quote, SimulatedOrder
+from src.models.domain import (
+    Quote,
+    ScannerData,
+    ScannerType,
+    SimulatedOrder,
+    UsageStats,
+)
 from src.services.cache_service import set_cached_quote
+from src.services.lifecycle_management import LifecycleManager
 
 load_dotenv()
 
@@ -25,78 +33,146 @@ class ShioajiService:
         self.quote_callbacks: list[Callable] = []  # WebSocket 回調函數列表
         self.active_subscriptions: set[str] = set()  # 記錄實際訂閱的股票代號
         self._pending_tasks: set = set()  # 存儲待處理的任務引用
-        self._is_logged_in = False  # 登入狀態標記
-        self._is_initialized = False  # 初始化狀態標記
-        self._is_destroyed = False  # 銷毀狀態標記
+
+        # 初始化生命週期管理器
+        self.lifecycle = LifecycleManager(
+            api=self.api,
+            active_subscriptions=self.active_subscriptions,
+            pending_tasks=self._pending_tasks,
+        )
+
+        # 設置取消訂閱回調
+        self.lifecycle.set_unsubscribe_callback(self.unsubscribe_quote)
 
         # ✅ 延遲初始化: 避免在__init__中執行可能阻塞的操作
         # 改為按需登錄, 提高服務啟動速度
         logger.info("🚀 Shioaji 服務已創建, 等待首次使用時登錄")
 
     def __del__(self) -> None:
-        """當物件被垃圾回收時進行完整清理"""
-        # 標記物件已被銷毀,防止進一步操作
-        self._is_destroyed = True
-
+        """當物件被垃圾回收時進行最終清理"""
         try:
-            logger.info("[DESTROY] ShioajiService 物件被銷毀,執行最終清理...")
+            logger.debug("[DESTROY] ShioajiService 物件被銷毀...")
+            # 只調用 lifecycle.destroy(),避免重複清理
+            if hasattr(self, "lifecycle") and not self.lifecycle.is_destroyed():
+                self.lifecycle.destroy()
+        except Exception:
+            # __del__ 中不拋出異常,靜默處理
+            pass
 
-            # 如果還沒有被清理過,執行完整清理
+    def force_cleanup_for_restart(self) -> None:
+        """
+        專為開發環境重啟設計的強制清理方法
+        確保在 hot reload 或 Ctrl+C 時能快速且安全地清理資源
+        正確順序：取消訂閱 > 登出 > 等待釋放 > 清理任務
+        """
+        try:
+            logger.info("🔄 [DEV] 執行開發環境強制清理...")
+
+            # 1. 最優先：取消所有 API 訂閱（在登錄狀態下）
             if hasattr(self, "active_subscriptions") and self.active_subscriptions:
-                logger.warning(f"物件銷毀時仍有活躍訂閱: {self.active_subscriptions}")
+                if hasattr(self, "lifecycle") and self.lifecycle.is_logged_in():
+                    sub_count = len(self.active_subscriptions)
+                    logger.info(f"📡 [PRIORITY] 取消 {sub_count} 個 API 訂閱...")
 
-            # 調用完整的清理流程
-            if hasattr(self, "cleanup"):
-                try:
-                    self.cleanup()
-                    logger.info("[DESTROY] 物件銷毀時清理完成")
-                except Exception as cleanup_error:
-                    logger.error(f"物件銷毀時清理失敗: {cleanup_error}")
-                    # 如果清理失敗,至少嘗試登出
-                    try:
-                        if hasattr(self, "api") and self.api:
-                            self.api.logout()
-                    except Exception as logout_error:
-                        logger.error(f"最終登出失敗: {logout_error}")
+                    # 批量取消所有訂閱
+                    self._batch_unsubscribe_all()
+                    logger.info("✅ API 訂閱取消完成")
+                else:
+                    logger.warning("⚠️ 服務未登錄,無法正確取消 API 訂閱,僅清理本地記錄")
+                    self.active_subscriptions.clear()
+
+            # 2. 登出（釋放連線）
+            if hasattr(self, "lifecycle") and self.lifecycle.is_logged_in():
+                logger.info("🔐 強制登出以釋放連線...")
+                self.lifecycle.logout(force=True)
+                logger.info("✅ 登出完成")
+
+                # 3. 等待連線釋放（給伺服器一點時間處理）
+                logger.info("⏳ 等待連線釋放...")
+                import time
+
+                time.sleep(1.0)  # 等待 1 秒讓伺服器處理登出
+                logger.debug("✅ 連線釋放等待完成")
+
+            # 4. 清理任務
+            if hasattr(self, "_pending_tasks") and self._pending_tasks:
+                task_count = len(self._pending_tasks)
+                logger.info(f"🧹 取消 {task_count} 個待處理任務...")
+                for task in list(self._pending_tasks):
+                    if not task.done():
+                        task.cancel()
+                self._pending_tasks.clear()
+                logger.debug(f"✅ 已取消 {task_count} 個任務")
+
+            logger.info("✅ [DEV] 開發環境強制清理完成")
 
         except Exception as e:
-            # __del__ 中的異常不會被正確處理,只記錄錯誤
-            try:
-                logger.error(f"物件銷毀清理異常: {e}")
-            except Exception:
-                # 如果連logger都不可用,靜默失敗
-                pass
+            logger.error(f"❌ [DEV] 開發環境清理失敗: {e}")
+            # 即使清理失敗,也要確保登出
+            self._emergency_logout()
+
+    def _batch_unsubscribe_all(self) -> None:
+        """
+        批量取消所有訂閱
+        在登錄狀態下安全地取消所有 API 訂閱
+        """
+        try:
+            # 複製訂閱列表,避免在迭代過程中修改
+            subscriptions_to_cancel = list(self.active_subscriptions)
+            success_count = 0
+
+            for symbol in subscriptions_to_cancel:
+                try:
+                    # 直接調用 API 取消訂閱,跳過狀態檢查
+                    if hasattr(self, "api") and self.api:
+                        self.api.unsubscribe(
+                            self.api.Contracts.Stocks[symbol],
+                            quote_type="tick",
+                            intraday_odd=True,
+                        )
+                        success_count += 1
+                        logger.debug(f"✅ 已取消訂閱: {symbol}")
+
+                    # 從本地記錄中移除
+                    self.active_subscriptions.discard(symbol)
+
+                except Exception as e:
+                    logger.warning(f"⚠️ 取消訂閱 {symbol} 失敗: {e}")
+                    # 即使 API 取消失敗,也要清理本地記錄
+                    self.active_subscriptions.discard(symbol)
+
+            logger.debug(
+                f"📊 批量取消訂閱完成: {success_count}/{len(subscriptions_to_cancel)} 成功"
+            )
+
+        except Exception as e:
+            logger.error(f"❌ 批量取消訂閱異常: {e}")
+            # 發生異常時,清空所有本地記錄
+            self.active_subscriptions.clear()
+
+    def _emergency_logout(self) -> None:
+        """緊急登出 - 最後的保障機制"""
+        try:
+            logger.warning("🚨 執行緊急登出...")
+            if hasattr(self, "api") and self.api:
+                self.api.logout()
+                logger.info("✅ 緊急登出成功")
+        except Exception as e:
+            logger.error(f"💥 緊急登出失敗: {e}")
+            # 即使失敗也不拋出異常
 
     def add_quote_callback(self, callback: Callable) -> None:
         """添加報價回調函數"""
         self.quote_callbacks.append(callback)
         logger.info(f"Added quote callback: {callback.__name__}")
 
-    def ensure_logged_in(self) -> bool:
-        """確保已登錄 - 按需登錄機制"""
-        if self._is_destroyed:
-            logger.error("服務已被銷毀, 無法登錄")
-            return False
-
-        if self._is_logged_in:
-            return True
-
-        try:
-            logger.info("🔐 首次使用, 開始登錄...")
-            self._login()
-            self._setup_callbacks()
-            return self._is_logged_in
-        except Exception as e:
-            logger.error(f"❌ 按需登錄失敗: {e}")
-            return False
-
     def initialize(self) -> bool:
         """初始化 Shioaji 服務"""
-        if self._is_destroyed:
+        if self.lifecycle.is_destroyed():
             logger.error("服務已被銷毀,無法重新初始化")
             return False
 
-        if self._is_initialized:
+        if self.lifecycle._is_initialized:
             logger.info("服務已經初始化,跳過重複初始化")
             return True
 
@@ -113,126 +189,45 @@ class ShioajiService:
                 logger.error("登錄失敗, 無法初始化")
                 return False
 
-            self._is_initialized = True
+            # 🔥 修復：設置 Shioaji 事件回調處理器
+            logger.info("[INIT] 設置 Shioaji 事件回調處理器...")
+            self._setup_callbacks()
+            logger.info("[INIT] Shioaji 事件回調處理器設置完成")
+
+            self.lifecycle._is_initialized = True
             logger.info("[INIT] Shioaji 服務初始化成功")
             return True
 
         except Exception as e:
             logger.error(f"[ERROR] Shioaji 服務初始化失敗: {e}")
-            self._is_initialized = False
+            self.lifecycle._is_initialized = False
             return False
+
+    # ==================== 生命週期管理 ====================
+
+    def login(self) -> bool:
+        """登錄 Shioaji 服務"""
+        return self.lifecycle.login()
+
+    def logout(self, force: bool = False) -> bool:
+        """登出 Shioaji 服務"""
+        return self.lifecycle.logout(force=force)
 
     def cleanup(self) -> bool:
-        """清理 Shioaji 服務資源"""
-        try:
-            logger.info("清理 Shioaji 服務資源...")
-            logger.info(f"需要取消訂閱的股票數量: {len(self.active_subscriptions)}")
+        """清理資源但保持服務可用"""
+        return self.lifecycle.cleanup()
 
-            # 只取消實際訂閱過的股票
-            failed_unsubscribes = []
-            for symbol in list(self.active_subscriptions):
-                try:
-                    success = self.unsubscribe_quote(symbol)
-                    if not success:
-                        failed_unsubscribes.append(symbol)
-                        logger.warning(f"清理時取消訂閱失敗: {symbol}")
-                    else:
-                        logger.debug(f"清理時成功取消訂閱: {symbol}")
-                except Exception as e:
-                    failed_unsubscribes.append(symbol)
-                    logger.error(f"清理時取消訂閱異常: {symbol} - {e}")
+    def destroy(self) -> bool:
+        """完全銷毀服務"""
+        return self.lifecycle.destroy()
 
-            if failed_unsubscribes:
-                logger.warning(f"以下股票取消訂閱失敗: {failed_unsubscribes}")
-            else:
-                logger.info("✅ 所有活躍訂閱已成功取消")
+    def is_logged_in(self) -> bool:
+        """檢查是否已登錄"""
+        return self.lifecycle.is_logged_in()
 
-            # 強制清理記錄,即使有些取消失敗
-            remaining_subs = len(self.active_subscriptions)
-            if remaining_subs > 0:
-                logger.warning(f"清理後仍有 {remaining_subs} 個訂閱記錄,強制清理")
-                self.active_subscriptions.clear()
-
-            # 取消所有待處理的任務
-            remaining_tasks = len(self._pending_tasks)
-            if remaining_tasks > 0:
-                logger.warning(f"清理時取消 {remaining_tasks} 個待處理任務")
-                for task in list(self._pending_tasks):
-                    if not task.done():
-                        task.cancel()
-                self._pending_tasks.clear()
-
-            # 登出
-            self.logout()
-            logger.info("✅ Shioaji 服務清理完成")
-            return True
-
-        except Exception as e:
-            logger.error(f"Shioaji 服務清理失敗: {e}")
-            return False
-
-    def logout(self) -> None:
-        """手動登出方法,帶有完整的防護機制"""
-        if self._is_destroyed:
-            logger.warning("服務已被銷毀,無法再次登出")
-            return
-
-        if not self._is_logged_in:
-            logger.info("服務未登入,無需登出")
-            return
-
-        if not self.api:
-            logger.warning("API 物件為空,無法登出")
-            self._is_logged_in = False
-            return
-
-        try:
-            logger.info("🔐 正在登出 Shioaji...")
-
-            # 檢查是否有活躍訂閱,在登出前取消
-            if self.active_subscriptions:
-                logger.warning(
-                    f"登出時仍有 {len(self.active_subscriptions)} 個活躍訂閱,強制取消"
-                )
-                for symbol in list(self.active_subscriptions):
-                    try:
-                        self.unsubscribe_quote(symbol)
-                    except Exception as unsub_error:
-                        logger.error(f"登出前取消訂閱失敗 {symbol}: {unsub_error}")
-
-                # 執行登出
-                self.api.logout()
-            self._is_logged_in = False
-            self._is_initialized = False
-            logger.info("✅ Shioaji 登出成功")
-
-        except AttributeError as e:
-            # API 物件可能已經被破壞
-            logger.error(f"API 物件狀態異常,強制清理狀態: {e}")
-            self._force_cleanup_state()
-
-        except ConnectionError as e:
-            # 網路連接問題
-            logger.error(f"登出時網路連接錯誤: {e}")
-            self._force_cleanup_state()
-
-        except Exception as e:
-            logger.error(f"❌ 登出失敗: {e}")
-            # 即使登出失敗,也清理狀態標記
-            self._force_cleanup_state()
-            raise
-
-    def _force_cleanup_state(self) -> None:
-        """強制清理內部狀態,當API操作失敗時使用"""
-        logger.warning("🔧 強制清理 Shioaji 服務狀態")
-        self._is_logged_in = False
-        self._is_initialized = False
-        self.active_subscriptions.clear()
-        self._pending_tasks.clear()
-        try:
-            self.api = None
-        except Exception:
-            pass  # 忽略清理API物件時的錯誤
+    def ensure_logged_in(self) -> bool:
+        """確保已登錄,如果未登錄則嘗試登錄"""
+        return self.lifecycle.ensure_logged_in()
 
     def get_historical_klines(
         self,
@@ -791,28 +786,6 @@ class ShioajiService:
 
             return []
 
-    def _login(self) -> None:
-        """登入 Shioaji 並設置狀態標記"""
-        if self._is_logged_in:
-            logger.warning("已經登入,跳過重複登入")
-            return
-
-        try:
-            api_key = os.getenv("SHIOAJI_API_KEY")
-            secret_key = os.getenv("SHIOAJI_SECRET_KEY")
-            if not api_key or not secret_key:
-                raise ValueError("API_KEY and SECRET_KEY must be set in .env file")
-
-            logger.info("正在登入 Shioaji...")
-            self.api.login(api_key=api_key, secret_key=secret_key)
-            self._is_logged_in = True
-            logger.info("✅ Shioaji 登入成功")
-
-        except Exception as e:
-            logger.error(f"❌ Shioaji 登入失敗: {e}")
-            self._is_logged_in = False
-            raise
-
     def _setup_callbacks(self) -> None:
         """設置各種商品類型的 callback"""
         self.api.quote.set_on_tick_stk_v1_callback(self._on_stock_tick)
@@ -925,7 +898,7 @@ class ShioajiService:
 
     def subscribe_quote(self, symbol: str, callback: Any = None) -> bool:
         """訂閱股票報價,帶有完整的防護機制"""
-        if self._is_destroyed:
+        if self.lifecycle.is_destroyed():
             logger.error(f"服務已被銷毀,無法訂閱 {symbol}")
             return False
 
@@ -999,7 +972,7 @@ class ShioajiService:
 
     def unsubscribe_quote(self, symbol: str) -> bool:
         """取消訂閱股票報價,帶有完整的防護機制"""
-        if self._is_destroyed:
+        if self.lifecycle.is_destroyed():
             logger.warning(f"服務已被銷毀,無法取消訂閱 {symbol}")
             return False
 
@@ -1013,7 +986,7 @@ class ShioajiService:
             return True
 
         # 檢查服務狀態
-        if not self._is_initialized or not self._is_logged_in:
+        if not self.lifecycle._is_initialized or not self.lifecycle.is_logged_in():
             logger.warning(f"服務未初始化或未登入,無法取消訂閱 {symbol}")
             # 即使無法取消,也從記錄中移除
             self.active_subscriptions.discard(symbol)
@@ -1107,6 +1080,9 @@ class ShioajiService:
         set_cached_quote(quote.symbol, quote)
 
         # 調用所有註冊的 WebSocket 回調函數
+        logger.info(
+            f"🔥 [DEBUG] 準備調用 {len(self.quote_callbacks)} 個回調,符號: {quote.symbol}"
+        )
         for callback in self.quote_callbacks:
             try:
                 # 在主事件循環中執行 async callback
@@ -1131,6 +1107,7 @@ class ShioajiService:
                         except Exception as e2:
                             logger.error(f"無法執行 async 回調: {e2}")
                 else:
+                    logger.info(f"🔥 [DEBUG] 調用同步回調: {callback.__name__}")
                     callback(quote)
             except Exception as e:
                 logger.error(f"執行報價回調失敗: {e}")
@@ -1140,6 +1117,7 @@ class ShioajiService:
         logger.info(
             f"📊 [期貨TICK] {tick.code} - 價格: {tick.close}, 交易所: {exchange}, 時間: {tick.datetime}"
         )
+        logger.info("🔥 [DEBUG] _on_futures_options_tick 被調用,準備處理回調...")
 
         # 驗證tick數據的有效性
         if not tick.datetime or not hasattr(tick.datetime, "isoformat"):
@@ -1174,6 +1152,9 @@ class ShioajiService:
         set_cached_quote(quote.symbol, quote)
 
         # 調用所有註冊的 WebSocket 回調函數
+        logger.info(
+            f"🔥 [DEBUG] 準備調用 {len(self.quote_callbacks)} 個回調,符號: {quote.symbol}"
+        )
         for callback in self.quote_callbacks:
             try:
                 # 在主事件循環中執行 async callback
@@ -1198,9 +1179,162 @@ class ShioajiService:
                         except Exception as e2:
                             logger.error(f"無法執行 async 回調: {e2}")
                 else:
+                    logger.info(f"🔥 [DEBUG] 調用同步回調: {callback.__name__}")
                     callback(quote)
             except Exception as e:
                 logger.error(f"執行報價回調失敗: {e}")
+
+    def get_scanners(
+        self,
+        scanner_type: ScannerType,
+        ascending: bool = True,
+        count: int = 100,
+        date: str | None = None,
+        timeout: int = 30000,
+    ) -> list[ScannerData]:
+        """
+        獲取股票排行資料
+        Args:
+            scanner_type: 排行類型 (漲跌幅, 漲跌, 高低價差, 成交量, 成交金額)
+            ascending: 排序方式, True 為由大到小, False 為由小到大
+            count: 排行數量 (0-200)
+            date: 指定日期, 預設為當日
+            timeout: 超時時間 (毫秒)
+
+        Returns:
+            排行資料列表
+
+        Raises:
+            Exception: 當 API 調用失敗時
+        """
+        if not self.ensure_logged_in():
+            raise RuntimeError("Shioaji 服務未登錄")
+
+        if count < 0 or count > 200:
+            raise ValueError("count 必須在 0-200 之間")
+
+        try:
+            # 將我們的 ScannerType 枚舉轉換為 Shioaji 的常數
+            sj_scanner_type = getattr(sj.constant.ScannerType, scanner_type.value)
+
+            logger.info(f"🔍 獲取排行資料: {scanner_type.value}, 數量: {count}")
+
+            # 調用 Shioaji API
+            scanners = self.api.scanners(
+                scanner_type=sj_scanner_type,
+                ascending=ascending,
+                date=date,
+                count=count,
+                timeout=timeout,
+            )
+
+            if not scanners:
+                logger.warning("未獲取到任何排行資料")
+                return []
+
+            # 轉換為我們的數據模型
+            scanner_data_list = []
+            for scanner in scanners:
+                try:
+                    scanner_data = ScannerData(
+                        date=scanner.date,
+                        code=scanner.code,
+                        name=scanner.name,
+                        ts=scanner.ts,
+                        open=scanner.open,
+                        high=scanner.high,
+                        low=scanner.low,
+                        close=scanner.close,
+                        price_range=scanner.price_range,
+                        tick_type=scanner.tick_type,
+                        change_price=scanner.change_price,
+                        change_type=scanner.change_type,
+                        average_price=scanner.average_price,
+                        volume=scanner.volume,
+                        total_volume=scanner.total_volume,
+                        amount=scanner.amount,
+                        total_amount=scanner.total_amount,
+                        yesterday_volume=scanner.yesterday_volume,
+                        volume_ratio=scanner.volume_ratio,
+                        buy_price=scanner.buy_price,
+                        buy_volume=scanner.buy_volume,
+                        sell_price=scanner.sell_price,
+                        sell_volume=scanner.sell_volume,
+                        bid_orders=scanner.bid_orders,
+                        bid_volumes=scanner.bid_volumes,
+                        ask_orders=scanner.ask_orders,
+                        ask_volumes=scanner.ask_volumes,
+                    )
+                    scanner_data_list.append(scanner_data)
+                except Exception as e:
+                    logger.error(f"轉換排行資料失敗: {scanner}, 錯誤: {e}")
+                    continue
+
+            logger.info(f"✅ 成功獲取 {len(scanner_data_list)} 筆排行資料")
+            return scanner_data_list
+        except Exception as e:
+            logger.error(f"❌ 獲取排行資料失敗: {e}")
+            raise
+
+    def get_usage_stats(self) -> UsageStats:
+        """
+        獲取 Shioaji API 使用量統計
+
+        Returns:
+            UsageStats: API 使用量統計資料
+
+        Raises:
+            RuntimeError: 當 API 未登錄時
+            Exception: 當獲取使用量失敗時
+        """
+        if not self.ensure_logged_in():
+            raise RuntimeError("Shioaji 服務未登錄")
+
+        try:
+            logger.info("🔍 獲取 API 使用量統計")
+
+            # 獲取原始使用量數據
+            usage_data = list(self.api.usage())
+            usage_dict = dict(usage_data)
+
+            # 初始化統計資料
+            stats = UsageStats(status="success", raw_data=usage_dict)
+
+            # 處理連接次數
+            if "connections" in usage_dict:
+                stats.connections = usage_dict["connections"]
+
+            # 處理流量統計
+            if "bytes" in usage_dict:
+                stats.bytes_used = usage_dict["bytes"] / (1024 * 1024)  # 轉換為 MB
+
+            if "limit_bytes" in usage_dict:
+                stats.bytes_limit = usage_dict["limit_bytes"] / (
+                    1024 * 1024
+                )  # 轉換為 MB
+
+            if "remaining_bytes" in usage_dict:
+                remaining = usage_dict["remaining_bytes"] / (1024 * 1024)  # 轉換為 MB
+                stats.bytes_remaining = remaining
+
+            # 計算使用率
+            if stats.bytes_used is not None and stats.bytes_limit is not None:
+                stats.usage_rate = (stats.bytes_used / stats.bytes_limit) * 100
+
+                # 設置警告訊息
+                if stats.usage_rate > 100:
+                    stats.warning_message = "🚨 警告: 已超過流量限制!"
+                elif stats.usage_rate > 90:
+                    stats.warning_message = "⚠️ 警告: 接近流量限制!"
+
+            logger.info("✅ 成功獲取 API 使用量統計")
+            return stats
+
+        except Exception as e:
+            logger.error(f"❌ 獲取 API 使用量統計失敗: {e}")
+            return UsageStats(
+                status="error", warning_message=f"獲取使用量失敗: {e!s}", raw_data={}
+            )
 
     def place_order(self, order: SimulatedOrder) -> SimulatedOrder:
         """Places a simulated order."""
@@ -1245,15 +1379,73 @@ class ShioajiService:
 shioaji_service = ShioajiService()
 
 
-# 確保程式結束時自動登出
-def cleanup_shioaji() -> None:
-    """程式結束時的清理函數"""
+# ==================== 全域清理管理 ====================
+
+
+def cleanup_shioaji_service() -> None:
+    """
+    統一的 Shioaji 服務清理函數
+    適用於所有退出場景：正常退出、Ctrl+C、SIGTERM、hot reload
+    """
     try:
-        shioaji_service.logout()
-        logger.info("Shioaji service cleaned up successfully")
+        logger.info("🔧 [CLEANUP] 開始全域清理 Shioaji 服務...")
+
+        # 檢查服務是否存在且可用
+        if "shioaji_service" in globals() and shioaji_service:
+            # 使用專門的開發環境清理方法
+            shioaji_service.force_cleanup_for_restart()
+        else:
+            logger.warning("⚠️ Shioaji 服務實例不存在或已被清理")
+
+        logger.info("✅ [CLEANUP] 全域清理完成")
+
     except Exception as e:
-        logger.error(f"Error during cleanup: {e}")
+        logger.error(f"❌ [CLEANUP] 全域清理失敗: {e}")
+        # 不拋出異常,確保程序能正常退出
 
 
-# 註冊程式結束時的清理函數
-atexit.register(cleanup_shioaji)
+def signal_handler(signum: int, frame) -> None:
+    """
+    信號處理器 - 處理 Ctrl+C (SIGINT) 和 SIGTERM
+    確保在任何情況下都能正確清理資源
+    """
+    try:
+        signal_name = signal.Signals(signum).name
+    except (AttributeError, ValueError):
+        signal_name = f"SIGNAL_{signum}"
+    logger.info(f"🚨 [SIGNAL] 收到信號 {signal_name} ({signum}),開始清理...")
+
+    try:
+        # 執行清理
+        cleanup_shioaji_service()
+
+        # 給一點時間完成清理
+        import time
+
+        time.sleep(0.5)
+
+        logger.info(f"✅ [SIGNAL] 信號 {signal_name} 處理完成,退出程序")
+
+    except Exception as e:
+        logger.error(f"❌ [SIGNAL] 信號處理失敗: {e}")
+    finally:
+        # 確保程序退出
+        sys.exit(0)
+
+
+# 註冊信號處理器
+try:
+    # 處理 Ctrl+C (SIGINT)
+    signal.signal(signal.SIGINT, signal_handler)
+
+    # 處理 SIGTERM (Docker 容器停止等)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    logger.debug("📡 信號處理器註冊成功 (SIGINT, SIGTERM)")
+
+except Exception as e:
+    logger.warning(f"⚠️ 信號處理器註冊失敗: {e}")
+
+# 註冊程式正常結束時的清理函數
+atexit.register(cleanup_shioaji_service)
+logger.debug("📝 atexit 清理函數已註冊")

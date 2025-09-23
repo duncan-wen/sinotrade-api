@@ -4,10 +4,11 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi_socketio import SocketManager
 from loguru import logger
 
-from src.api import orders, polygon_quotes, quotes
+from src.api import orders, polygon_quotes, quotes, scanners, usage
 from src.services.shioaji_service import shioaji_service
 from src.services.socketio_manager import SocketIOTickBroadcaster, setup_socketio_events
 from src.services.subscription_manager import subscription_manager
@@ -42,32 +43,45 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("[SHUTDOWN] 應用關閉中,清理資源...")
     try:
-        # 🚨 緊急清理所有訂閱管理器記錄
+        # 🚨 統一使用新的強制清理邏輯,確保一致性
         try:
+            logger.info("[CLEANUP] 使用統一清理邏輯...")
+
+            # 1. 先同步檢查兩個訂閱系統的狀態
+            manager_symbols = set(subscription_manager.shioaji_subscriptions)
+            service_symbols = set(shioaji_service.active_subscriptions)
+
+            logger.info(f"[SYNC] 管理器記錄的訂閱: {sorted(manager_symbols)}")
+            logger.info(f"[SYNC] 服務實際的訂閱: {sorted(service_symbols)}")
+
+            if manager_symbols != service_symbols:
+                logger.warning("[SYNC] 檢測到訂閱不同步！")
+                logger.warning(
+                    f"[SYNC] 僅在管理器中: {sorted(manager_symbols - service_symbols)}"
+                )
+                logger.warning(
+                    f"[SYNC] 僅在服務中: {sorted(service_symbols - manager_symbols)}"
+                )
+
+            # 2. 使用統一的強制清理方法（以實際 API 訂閱為準）
+            shioaji_service.force_cleanup_for_restart()
+            logger.info("[SUCCESS] Shioaji 服務統一清理完成")
+
+            # 3. 清理訂閱管理器記錄（在 Shioaji 清理後）
             symbols_to_cleanup = subscription_manager.cleanup_all_subscriptions()
             logger.info(
-                f"[CLEANUP] 訂閱管理器清理完成,共清理 {len(symbols_to_cleanup)} 個商品"
+                f"[CLEANUP] 訂閱管理器清理完成,共清理 {len(symbols_to_cleanup)} 個商品記錄"
             )
 
-            # 向 Shioaji 取消所有剩餘訂閱
-            for symbol in symbols_to_cleanup:
-                try:
-                    shioaji_service.unsubscribe_quote(symbol)
-                except Exception as unsub_error:
-                    logger.error(f"[ERROR] 無法取消訂閱 {symbol}: {unsub_error}")
-
         except Exception as cleanup_error:
-            logger.error(f"[ERROR] 訂閱管理器清理失敗: {cleanup_error}")
+            logger.error(f"[ERROR] 統一清理流程失敗: {cleanup_error}")
 
-        # 清理 Shioaji 訂閱和資源
-        try:
-            success = shioaji_service.cleanup()
-            if success:
-                logger.info("[SUCCESS] Shioaji 服務清理完成")
-            else:
-                logger.warning("[WARNING] Shioaji 服務清理可能有問題")
-        except Exception as shioaji_error:
-            logger.error(f"[ERROR] Shioaji 服務清理失敗: {shioaji_error}")
+            # 降級使用緊急登出
+            try:
+                shioaji_service._emergency_logout()
+                logger.info("[FALLBACK] 緊急登出完成")
+            except Exception as emergency_error:
+                logger.error(f"[CRITICAL] 緊急登出也失敗: {emergency_error}")
 
         # 清理 Socket.IO 相關資源
         try:
@@ -100,10 +114,27 @@ app = FastAPI(
             "description": "模擬下單相關 API",
         },
         {
+            "name": "Scanners",
+            "description": "台股排行榜數據 API (漲跌幅、成交量等排行)",
+        },
+        {
+            "name": "Usage",
+            "description": "Shioaji API 使用量統計",
+        },
+        {
             "name": "WebSocket",
             "description": "即時數據推送 WebSocket 連接",
         },
     ],
+)
+
+# 添加 CORS 中間件
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # 前端開發服務器
+    allow_credentials=True,
+    allow_methods=["*"],  # 允許所有 HTTP 方法,包括 OPTIONS
+    allow_headers=["*"],  # 允許所有請求頭
 )
 
 # 整合 Socket.IO
@@ -122,6 +153,8 @@ shioaji_service.add_quote_callback(tick_broadcaster.broadcast_tick_data)
 app.include_router(quotes.router, prefix="/api", tags=["Quotes"])
 app.include_router(orders.router, prefix="/api", tags=["Orders"])
 app.include_router(polygon_quotes.router, prefix="/api", tags=["Polygon.io"])
+app.include_router(scanners.router, prefix="/api", tags=["Scanners"])
+app.include_router(usage.router, prefix="/api", tags=["Usage"])
 
 
 @app.get("/")
@@ -151,8 +184,8 @@ def get_subscription_status() -> dict[str, Any]:
             "shioaji_service": {
                 "active_subscriptions": shioaji_active_subs,
                 "total_active": len(shioaji_active_subs),
-                "is_logged_in": shioaji_service._is_logged_in,
-                "is_initialized": shioaji_service._is_initialized,
+                "is_logged_in": shioaji_service.is_logged_in(),
+                "is_initialized": shioaji_service.lifecycle._is_initialized,
             },
             "consistency_check": {
                 "manager_symbols": set(status["active_symbols"]),
@@ -219,6 +252,49 @@ def force_cleanup_subscriptions() -> dict[str, Any]:
             "error": str(e),
             "timestamp": str(__import__("datetime").datetime.now()),
         }
+
+
+@app.get("/api/logout")
+def logout() -> dict[str, Any]:
+    """登出 Shioaji"""
+    shioaji_service.logout(force=True)
+    return {"status": "success"}
+
+
+@app.get("/api/debug/fix-callbacks")
+def fix_websocket_callbacks() -> dict[str, Any]:
+    """修復 WebSocket 回調註冊 - 調試用"""
+    try:
+        from src.services.socketio_manager import SocketIOTickBroadcaster
+
+        # 檢查當前回調數量
+        current_callbacks = len(shioaji_service.quote_callbacks)
+
+        # 創建新的廣播器
+        tick_broadcaster = SocketIOTickBroadcaster(socket_manager)
+
+        # 檢查是否已註冊
+        broadcast_method = tick_broadcaster.broadcast_tick_data
+        is_registered = broadcast_method in shioaji_service.quote_callbacks
+
+        if not is_registered:
+            # 重新註冊
+            shioaji_service.add_quote_callback(broadcast_method)
+
+        new_callbacks = len(shioaji_service.quote_callbacks)
+
+        return {
+            "status": "success",
+            "message": "WebSocket 回調檢查完成",
+            "before_callbacks": current_callbacks,
+            "after_callbacks": new_callbacks,
+            "was_registered": is_registered,
+            "action": "重新註冊" if not is_registered else "已存在",
+            "callback_list": [cb.__name__ for cb in shioaji_service.quote_callbacks],
+        }
+
+    except Exception as e:
+        return {"status": "error", "message": f"修復失敗: {e}"}
 
 
 # Socket.IO 相關功能已移至獨立模組

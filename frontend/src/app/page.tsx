@@ -4,14 +4,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { TradingChart } from '@/components/chart'
+import { RankingList } from '@/components/ranking'
+import { useMultipleRankingData } from '@/hooks/useRankingData'
 import {
   generateMockKLineData,
   tsmcMockData,
 } from '@/components/chart/mockData'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { TrendingUp, Eye } from 'lucide-react'
 
 export default function Home() {
   const [isMobile, setIsMobile] = useState(false)
+
+  // 獲取多個排行榜數據用於預覽
+  const { dataMap, loadingMap, errorMap } = useMultipleRankingData([
+    'ChangePercentRank',
+    'VolumeRank',
+    'AmountRank',
+  ])
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -86,8 +97,8 @@ export default function Home() {
                   <p
                     className={`text-sm font-medium ${
                       stat.up
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-red-600 dark:text-red-400'
+                        ? 'text-red-600 dark:text-red-400' // 漲：紅色
+                        : 'text-green-600 dark:text-green-400' // 跌：綠色
                     }`}
                   >
                     {stat.change}
@@ -177,6 +188,79 @@ export default function Home() {
                   進入美股
                 </Button>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 排行榜預覽區域 */}
+        <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200/50 dark:border-orange-800/30">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-500/10 rounded-lg">
+                  <TrendingUp className="h-6 w-6 text-orange-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl text-orange-800 dark:text-orange-300">
+                    🏆 即時排行榜
+                  </CardTitle>
+                  <p className="text-sm text-orange-700 dark:text-orange-400">
+                    台股市場熱門排行,即時更新
+                  </p>
+                </div>
+              </div>
+              <Link href="/ranking">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-orange-600 text-orange-600 hover:bg-orange-600 hover:text-white"
+                >
+                  <Eye className="h-4 w-4" />
+                  查看完整排行
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* 漲跌幅排行 */}
+              <RankingList
+                data={dataMap.ChangePercentRank || []}
+                scannerType="ChangePercentRank"
+                title="漲跌幅排行"
+                showRank={true}
+                displayCount={5}
+                isLoading={loadingMap.ChangePercentRank}
+                error={errorMap.ChangePercentRank}
+                clickable={false}
+                className="shadow-sm"
+              />
+
+              {/* 成交量排行 */}
+              <RankingList
+                data={dataMap.VolumeRank || []}
+                scannerType="VolumeRank"
+                title="成交量排行"
+                showRank={true}
+                displayCount={5}
+                isLoading={loadingMap.VolumeRank}
+                error={errorMap.VolumeRank}
+                clickable={false}
+                className="shadow-sm"
+              />
+
+              {/* 成交金額排行 */}
+              <RankingList
+                data={dataMap.AmountRank || []}
+                scannerType="AmountRank"
+                title="成交金額排行"
+                showRank={true}
+                displayCount={5}
+                isLoading={loadingMap.AmountRank}
+                error={errorMap.AmountRank}
+                clickable={false}
+                className="shadow-sm"
+              />
             </div>
           </CardContent>
         </Card>

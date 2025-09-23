@@ -71,6 +71,61 @@ export interface TechnicalIndicator {
   timestamp: string
 }
 
+// ==================== 排行榜相關類型 ====================
+
+export interface ScannerData {
+  date: string // 交易日
+  code: string // 股票代號
+  name: string // 股票名稱
+  ts: number // 時間戳記 (nanoseconds)
+  open: number // 開盤價
+  high: number // 最高價
+  low: number // 最低價
+  close: number // 收盤價
+  price_range: number // 價格區間(最高價-最低價)
+  tick_type: number // 內外盤別 {1: 內盤, 2: 外盤, 0: 無法判定}
+  change_price: number // 價格漲跌
+  change_type: number // 漲跌類型
+  average_price: number // 均價
+  volume: number // 成交量
+  total_volume: number // 總成交量
+  amount: number // 成交金額
+  total_amount: number // 總成交金額
+  yesterday_volume: number // 昨日總成交量
+  volume_ratio: number // 總成交量/昨日總成交量
+  buy_price: number // 委買價
+  buy_volume: number // 委買量
+  sell_price: number // 委賣價
+  sell_volume: number // 委賣量
+  bid_orders: number // 內盤總成交單量
+  bid_volumes: number // 內盤總成交量
+  ask_orders: number // 外盤總成交單量
+  ask_volumes: number // 外盤總成交量
+  change_percent?: number // 漲跌百分比 (計算得出)
+  timestamp_datetime?: string // datetime 格式的時間戳
+}
+
+export type ScannerType =
+  | 'ChangePercentRank' // 依價格漲跌幅排序
+  | 'ChangePriceRank' // 依價格漲跌排序
+  | 'DayRangeRank' // 依高低價差排序
+  | 'VolumeRank' // 依成交量排序
+  | 'AmountRank' // 依成交金額排序
+
+export interface ScannerTypeOption {
+  value: ScannerType
+  label: string
+  description: string
+}
+
+export interface ScannerParams {
+  scanner_type: ScannerType
+  ascending?: boolean // 排序方式,true 為由大到小,false 為由小到大
+  count?: number // 排行數量 (1-200)
+  date?: string // 指定日期 (YYYY-MM-DD),預設為當日
+  timeout?: number // 超時時間 (毫秒)
+}
+
 // ==================== 交易相關類型 ====================
 
 export interface OrderRequest {

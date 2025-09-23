@@ -34,7 +34,7 @@ def get_symbol_mapping(original_symbol: str) -> str:
         # 所有期貨合約默認映射到近月 (*R1)
         mapped_symbol = f"{group_name}R1"
 
-        logger.debug(f"期貨映射: {original_symbol} -> {mapped_symbol}")
+        logger.info(f"🔄 [DEBUG] 期貨映射: {original_symbol} -> {mapped_symbol}")
         return mapped_symbol
 
     # 非期貨或無法識別的符號保持原樣

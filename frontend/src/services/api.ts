@@ -10,6 +10,10 @@ import type {
   Position,
   Trade,
   MarketDataRequest,
+  ScannerData,
+  ScannerParams,
+  ScannerType,
+  ScannerTypeOption,
 } from '@/types/api'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -84,9 +88,26 @@ class HttpClient {
   }
 
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
-    const searchParams = params
-      ? '?' + new URLSearchParams(params).toString()
-      : ''
+    let searchParams = ''
+
+    if (params) {
+      // 過濾掉 undefined, null 和空字符串的參數
+      const filteredParams = Object.entries(params)
+        .filter(
+          ([_, value]) => value !== undefined && value !== null && value !== ''
+        )
+        .reduce(
+          (acc, [key, value]) => {
+            acc[key] = value
+            return acc
+          },
+          {} as Record<string, any>
+        )
+
+      if (Object.keys(filteredParams).length > 0) {
+        searchParams = '?' + new URLSearchParams(filteredParams).toString()
+      }
+    }
 
     return this.request<T>(`${endpoint}${searchParams}`, {
       method: 'GET',
@@ -164,6 +185,32 @@ class ApiService {
     }>
   > {
     return this.client.get('/api/stocks/search', { q: query })
+  }
+
+  // ==================== 排行榜相關 API ====================
+
+  /**
+   * 獲取排行榜數據
+   */
+  async getScanners(params: {
+    scanner_type: ScannerType
+    ascending?: boolean
+    count?: number
+    date?: string
+    timeout?: number
+  }): Promise<ScannerData[]> {
+    const { scanner_type, ...queryParams } = params
+    return this.client.get<ScannerData[]>(
+      `/api/scanners/${scanner_type}`,
+      queryParams
+    )
+  }
+
+  /**
+   * 獲取支援的排行類型列表
+   */
+  async getScannerTypes(): Promise<ScannerTypeOption[]> {
+    return this.client.get<ScannerTypeOption[]>('/api/scanners/types')
   }
 
   // ==================== 交易相關 API ====================

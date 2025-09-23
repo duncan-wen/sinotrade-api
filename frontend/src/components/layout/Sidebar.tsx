@@ -135,7 +135,7 @@ export function Sidebar({ isOpen = true }: SidebarProps) {
                     </div>
                     <span
                       className={`text-sm font-medium ${
-                        stock.up ? 'text-green-600' : 'text-red-600'
+                        stock.up ? 'text-red-600' : 'text-green-600' // 台股慣例：紅漲綠跌
                       }`}
                     >
                       {stock.change}

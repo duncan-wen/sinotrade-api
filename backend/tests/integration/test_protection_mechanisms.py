@@ -2,11 +2,13 @@
 """
 測試 logout 和 unsubscribe 的防護機制
 """
-import sys
+
 import os
+import sys
 
 # 添加src目錄到路徑
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+
 
 def test_protection_mechanisms():
     print("🛡️ 測試 logout 和 unsubscribe 防護機制...")
@@ -44,13 +46,15 @@ def test_protection_mechanisms():
         result = shioaji_service.unsubscribe_quote("NONEXISTENT")
         print(f"未訂閱股票結果: {result}")
 
-        print("
-🛡️ 防護機制測試完成"        print("✅ 所有異常情況都被正確處理")
+        print("🛡️ 防護機制測試完成")
+        print("✅ 所有異常情況都被正確處理")
 
     except Exception as e:
         print(f"❌ 測試失敗: {e}")
         import traceback
+
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     test_protection_mechanisms()
