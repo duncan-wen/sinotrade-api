@@ -775,6 +775,15 @@ export default function KLineChartProComponent({
   const [activeIndicators, setActiveIndicators] = useState<Set<string>>(
     new Set() // 🔧 初始化為空,將從圖表實例同步狀態
   )
+  const [connectionStatus, setConnectionStatus] = useState<{
+    connected: boolean
+    reconnectAttempts: number
+    lastError: string | null
+  }>({
+    connected: false,
+    reconnectAttempts: 0,
+    lastError: null,
+  })
 
   // 載入 KLineChart 基礎版
   useEffect(() => {
@@ -893,6 +902,38 @@ export default function KLineChartProComponent({
     }
   }, [interval, currentInterval, handleIntervalChange])
 
+  // 🔧 監聽 Socket.IO 連接狀態
+  useEffect(() => {
+    if (!klineSocketIOService || !enableRealtime) return
+
+    const checkConnection = () => {
+      const status = klineSocketIOService.stats
+      setConnectionStatus({
+        connected: klineSocketIOService.isConnected,
+        reconnectAttempts: status.reconnectAttempts,
+        lastError: status.lastError,
+      })
+    }
+
+    // 初始檢查
+    checkConnection()
+
+    // 定期檢查連接狀態
+    const statusTimer = setInterval(checkConnection, 3000)
+
+    return () => {
+      clearInterval(statusTimer)
+    }
+  }, [enableRealtime])
+
+  // 🔧 手動重連處理函數
+  const handleManualReconnect = useCallback(() => {
+    if (klineSocketIOService) {
+      console.log('🔄 用戶手動觸發重連')
+      klineSocketIOService.forceReconnect()
+    }
+  }, [])
+
   // 如果套件未安裝,顯示安裝提示
   if (error) {
     return (
@@ -923,11 +964,42 @@ export default function KLineChartProComponent({
             <h3 className="text-lg font-semibold text-gray-900">
               {symbol} 專業K線圖
             </h3>
-            <p className="text-sm text-gray-500">
-              {currentInterval} K線 • 專業版 (基於 KLineChart) • 台股顏色 •
-              繁體中文
-              {enableRealtime && ' • 即時更新'}
-            </p>
+            <div className="flex items-center space-x-4">
+              <p className="text-sm text-gray-500">
+                {currentInterval} K線 • 專業版 (基於 KLineChart) • 台股顏色 •
+                繁體中文
+                {enableRealtime && ' • 即時更新'}
+              </p>
+
+              {/* 🔧 連接狀態指示器 */}
+              {enableRealtime && (
+                <div className="flex items-center space-x-2">
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      connectionStatus.connected
+                        ? 'bg-green-500'
+                        : 'bg-red-500 animate-pulse'
+                    }`}
+                  />
+                  <span
+                    className={`text-xs ${
+                      connectionStatus.connected
+                        ? 'text-green-600'
+                        : 'text-red-600'
+                    }`}
+                  >
+                    {connectionStatus.connected ? '已連接' : '連接中斷'}
+                  </span>
+
+                  {/* 重連次數顯示 */}
+                  {connectionStatus.reconnectAttempts > 0 && (
+                    <span className="text-xs text-orange-600">
+                      (重連: {connectionStatus.reconnectAttempts})
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 控制按鈕群 */}
@@ -1016,6 +1088,38 @@ export default function KLineChartProComponent({
                 </ChartButton>
               ))}
             </div>
+
+            {/* 🔧 連接控制按鈕 */}
+            {enableRealtime && (
+              <div className="flex space-x-1 border-l pl-4">
+                <ChartButton
+                  variant="action"
+                  title="手動重新連接 Socket.IO"
+                  onClick={handleManualReconnect}
+                  className={`flex items-center space-x-1 ${
+                    !connectionStatus.connected
+                      ? 'bg-red-100 hover:bg-red-200 text-red-700'
+                      : 'bg-gray-100 hover:bg-gray-200'
+                  }`}
+                >
+                  <span>🔄</span>
+                  <span>重連</span>
+                </ChartButton>
+
+                {connectionStatus.lastError && (
+                  <ChartButton
+                    variant="action"
+                    title={`錯誤信息: ${connectionStatus.lastError}`}
+                    onClick={() => {
+                      console.log('連接錯誤:', connectionStatus.lastError)
+                    }}
+                    className="bg-yellow-100 hover:bg-yellow-200 text-yellow-700"
+                  >
+                    ⚠️
+                  </ChartButton>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

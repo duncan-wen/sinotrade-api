@@ -1,97 +1,89 @@
 'use client'
-import React, { useState } from 'react'
+
+import React from 'react'
 import { Navbar } from './Navbar'
-import { Sidebar } from './Sidebar'
+import { AppSidebar } from './AppSidebar'
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+// import {
+//   Breadcrumb,
+//   BreadcrumbItem,
+//   BreadcrumbLink,
+//   BreadcrumbList,
+//   BreadcrumbPage,
+//   BreadcrumbSeparator,
+// } from '@/components/ui/breadcrumb'
+import { ShoppingCart, TrendingUp, TrendingDown, Menu } from 'lucide-react'
 
 interface MainLayoutProps {
   children: React.ReactNode
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-muted/20">
-      {/* 頂部導航欄 - 固定在頂部 */}
-      <Navbar />
-
-      {/* 主要內容區域 - 留出頂部空間 */}
-      <div className="flex-1 flex flex-row relative pt-16">
-        {/* 側邊欄 */}
-        <Sidebar isOpen={sidebarOpen} />
-
-        {/* 手機版覆蓋層 */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        {/* 主要內容 */}
-        <div className="flex-1 flex flex-col lg:relative">
-          {/* 內容工具欄 */}
-          <div className="bg-background/80 backdrop-blur-md border-b border-border/50 px-3 lg:px-6 py-3 flex items-center justify-between shadow-sm">
-            {/* 側邊欄切換按鈕 */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="mr-2 lg:mr-4 hover:bg-primary/10"
-            >
-              {sidebarOpen ? '👈' : '👉'}
-            </Button>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-muted/20">
+        <AppSidebar />
+        <SidebarInset>
+          {/* 頂部導航欄 */}
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
 
             {/* 麵包屑導航 */}
-            <div className="flex items-center flex-1">
-              <span className="text-xs lg:text-sm text-muted-foreground hidden sm:block">
-                首頁
-              </span>
-              <span className="text-xs lg:text-sm text-muted-foreground mx-1 lg:mx-2 hidden sm:block">
-                /
-              </span>
-              <span className="text-xs lg:text-sm text-foreground font-medium">
-                交易大廳
-              </span>
+            <div className="flex items-center text-sm text-muted-foreground">
+              <span className="hidden md:block">首頁</span>
+              <span className="hidden md:block mx-2">/</span>
+              <span className="font-medium text-foreground">交易大廳</span>
             </div>
 
-            {/* 右側快速操作 */}
-            <div className="flex items-center space-x-2">
+            {/* 右側功能區 */}
+            <div className="ml-auto flex items-center space-x-2">
+              {/* 桌面版快速交易按鈕 */}
               <Button
                 size="sm"
-                className="hidden sm:flex bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md"
+                className="hidden sm:flex bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-sm"
               >
-                🟢 買入
+                <TrendingUp className="h-4 w-4 mr-2" />
+                買入
               </Button>
               <Button
                 size="sm"
-                className="hidden sm:flex bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-md"
+                className="hidden sm:flex bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-sm"
               >
-                🔴 賣出
+                <TrendingDown className="h-4 w-4 mr-2" />
+                賣出
               </Button>
+
               {/* 手機版簡化按鈕 */}
               <Button
                 size="sm"
-                className="sm:hidden bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                className="sm:hidden bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
               >
-                🟢
+                <TrendingUp className="h-4 w-4" />
               </Button>
               <Button
                 size="sm"
                 className="sm:hidden bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white"
               >
-                🔴
+                <TrendingDown className="h-4 w-4" />
               </Button>
             </div>
-          </div>
+          </header>
 
-          {/* 滾動內容區域 */}
-          <div className="flex-1 overflow-auto">
-            <div className="w-full min-h-full">{children}</div>
-          </div>
-        </div>
+          {/* 主要內容區域 */}
+          <main className="flex flex-1 flex-col gap-4 p-4 pt-0">
+            <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min">
+              {children}
+            </div>
+          </main>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   )
 }

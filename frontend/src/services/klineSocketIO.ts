@@ -39,9 +39,11 @@ class KlineSocketIOService {
   private currentInterval: string | null = null
   private messageCallback: ((message: KlineMessage) => void) | null = null
   private reconnectAttempts = 0
-  private readonly maxReconnectAttempts = 5
-  private readonly reconnectDelay = 1000
+  private readonly maxReconnectAttempts = 10 // 增加重連次數
+  private readonly reconnectDelay = 2000 // 增加重連延遲
   private isConnecting = false
+  private reconnectTimer: NodeJS.Timeout | null = null // 手動重連定時器
+  private serverCheckTimer: NodeJS.Timeout | null = null // 服務器可用性檢查定時器
   private connectionStats = {
     connected: false,
     connectionId: '',
@@ -98,9 +100,11 @@ class KlineSocketIOService {
     this.socket = io(socketUrl, {
       path: '/socket.io',
       transports: ['websocket', 'polling'], // 自動降級
-      timeout: 5000,
+      timeout: 10000, // 增加超時時間
       reconnectionAttempts: this.maxReconnectAttempts,
       reconnectionDelay: this.reconnectDelay,
+      reconnectionDelayMax: 10000, // 最大重連延遲
+      randomizationFactor: 0.5, // 隨機化重連延遲
       autoConnect: true,
       forceNew: false,
     })
@@ -126,8 +130,16 @@ class KlineSocketIOService {
         subscriptions: this.connectionStats.subscriptions,
       }
 
+      // 🔧 清理重連定時器
+      this.clearReconnectTimers()
+
       // 如果有之前的訂閱,重新訂閱
       if (this.currentSymbol && this.currentInterval) {
+        console.log(
+          '🔄 重連成功，恢復訂閱:',
+          this.currentSymbol,
+          this.currentInterval
+        )
         this.subscribeToSymbol(this.currentSymbol, this.currentInterval)
       }
     })
@@ -137,6 +149,12 @@ class KlineSocketIOService {
       this.connectionStats.connected = false
       this.connectionStats.connectionId = ''
       this.isConnecting = false
+
+      // 🔧 如果是服務器主動斷開或意外斷開，啟動服務器檢查
+      if (reason === 'io server disconnect' || reason === 'transport close') {
+        console.log('🔄 服務器斷開，啟動定期檢查...')
+        this.startServerHealthCheck()
+      }
     })
 
     this.socket.on('connect_error', (error: any) => {
@@ -145,11 +163,18 @@ class KlineSocketIOService {
         type: error.type || 'unknown',
         description: error.description || 'no description',
         timestamp: new Date().toISOString(),
+        reconnectAttempts: this.connectionStats.reconnectAttempts,
       })
 
       this.connectionStats.lastError = error.message
       this.connectionStats.reconnectAttempts++
       this.isConnecting = false
+
+      // 🔧 如果達到最大重連次數，啟動服務器健康檢查
+      if (this.connectionStats.reconnectAttempts >= this.maxReconnectAttempts) {
+        console.log('❌ 達到最大重連次數，啟動服務器健康檢查...')
+        this.startServerHealthCheck()
+      }
     })
 
     this.socket.on('reconnect_attempt', (attemptNumber) => {
@@ -303,6 +328,9 @@ class KlineSocketIOService {
   disconnect(): void {
     console.log('🔌 手動斷開K線 Socket.IO 連接')
 
+    // 🔧 清理所有定時器
+    this.clearReconnectTimers()
+
     if (this.socket) {
       this.socket.disconnect()
       this.socket = null
@@ -319,6 +347,83 @@ class KlineSocketIOService {
       lastError: null,
       subscriptions: 0,
     }
+  }
+
+  /**
+   * 🔧 清理所有重連定時器
+   */
+  private clearReconnectTimers(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+    if (this.serverCheckTimer) {
+      clearInterval(this.serverCheckTimer)
+      this.serverCheckTimer = null
+    }
+  }
+
+  /**
+   * 🔧 啟動服務器健康檢查
+   */
+  private startServerHealthCheck(): void {
+    // 清理現有的檢查定時器
+    this.clearReconnectTimers()
+
+    console.log('🔄 啟動服務器健康檢查 (每30秒檢查一次)')
+
+    this.serverCheckTimer = setInterval(async () => {
+      try {
+        console.log('🔍 檢查服務器可用性...')
+
+        // 嘗試 HTTP 健康檢查
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+        const healthCheck = await fetch('/api/status', {
+          method: 'GET',
+          signal: controller.signal,
+        })
+
+        clearTimeout(timeoutId)
+
+        if (healthCheck.ok) {
+          console.log('✅ 服務器已恢復，嘗試重新連接...')
+          this.clearReconnectTimers()
+          this.forceReconnect()
+        } else {
+          console.log('⚠️ 服務器尚未完全恢復')
+        }
+      } catch (error) {
+        console.log('🔍 服務器仍不可用，繼續檢查...')
+      }
+    }, 30000) // 每30秒檢查一次
+  }
+
+  /**
+   * 🔧 強制重新連接 (重置重連計數)
+   */
+  forceReconnect(): void {
+    console.log('🚀 強制重新連接 (重置計數器)')
+
+    // 重置重連計數器
+    this.reconnectAttempts = 0
+    this.connectionStats.reconnectAttempts = 0
+    this.connectionStats.lastError = null
+
+    // 清理定時器
+    this.clearReconnectTimers()
+
+    // 斷開現有連接
+    if (this.socket) {
+      this.socket.disconnect()
+      this.socket = null
+    }
+
+    // 短暫延遲後重新連接
+    setTimeout(() => {
+      this.connect()
+    }, 1000)
   }
 
   /**
