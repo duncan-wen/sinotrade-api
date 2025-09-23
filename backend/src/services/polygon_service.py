@@ -317,6 +317,7 @@ class PolygonService:
                 ask_volume=int(last_quote.ask_size),
                 volume=int(last_trade.size),
                 avg_price=float(last_trade.price),
+                underlying_price=None,
             )
 
             logger.info(f"✅ 成功獲取即時報價: {symbol} ${last_trade.price}")
