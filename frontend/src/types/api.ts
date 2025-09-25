@@ -334,6 +334,59 @@ export type ServiceStatus =
   | 'disconnected'
   | 'error'
 
+// ==================== 選擇權相關類型 ====================
+
+export interface OptionContract {
+  code: string
+  symbol: string
+  name: string
+  option_type: string
+  strike_price: number
+  delivery_date: string
+  delivery_month: string
+  option_right: string
+  distance_from_futures: number
+  moneyness: string
+  underlying_kind?: string
+  unit?: number
+  reference?: number
+}
+
+export interface OptionQuote {
+  symbol: string
+  bid_price: number
+  ask_price: number
+  last_price: number
+  volume: number
+  open_interest: number
+  impl_volatility?: number
+  delta?: number
+  gamma?: number
+  theta?: number
+  vega?: number
+  timestamp: string
+}
+
+export interface OptionQuoteUpdate {
+  symbol: string
+  bid_price: number
+  ask_price: number
+  last_price: number
+  volume: number
+  change: number
+  change_percent: number
+  timestamp: string
+}
+
+export interface OptionChainData {
+  option_type: string
+  contracts: OptionContract[]
+  quotes: Record<string, OptionQuote>
+  futures_price: number
+  futures_symbol: string
+  timestamp: string
+}
+
 // ==================== 工具類型 ====================
 
 export type ApiResponse<T> = BaseResponse & {

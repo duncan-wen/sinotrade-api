@@ -304,6 +304,52 @@ class ApiService {
     return this.client.get('/api/account/history', params)
   }
 
+  // ==================== 選擇權相關 API ====================
+
+  /**
+   * 獲取篩選後的選擇權合約
+   */
+  async getFilteredOptionContracts(params: {
+    option_types: string // 逗號分隔，如 "TX1,TX2,TXO"
+    target_months: string // 逗號分隔，如 "202509,202510"
+    price_range?: number // 價格範圍 (上下多少點)
+    futures_symbol?: string // 期貨合約代號
+    call_put_filter?: 'call' | 'put' | 'both' // 篩選類型
+  }): Promise<{
+    success: boolean
+    message: string
+    filters_applied: {
+      option_types: string[]
+      target_months: string[]
+      call_put_filter: string
+      price_range: string
+    }
+    futures_info: {
+      symbol: string
+      current_price: number
+      method: string
+    }
+    price_filter: {
+      range: number
+      lower_bound: number
+      upper_bound: number
+    }
+    option_contracts: {
+      all_call_options: any[]
+      all_put_options: any[]
+      by_type: Record<string, any>
+    }
+    summary: {
+      total_call_contracts: number
+      total_put_contracts: number
+      total_contracts: number
+      by_option_type: Record<string, any>
+    }
+    timestamp: string
+  }> {
+    return this.client.get('/api/options/contracts/filtered', params)
+  }
+
   // ==================== 系統狀態 API ====================
 
   /**
