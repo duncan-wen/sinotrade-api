@@ -2,7 +2,7 @@
 
 ## 🚀 升级亮点
 
-根据 [shadcn/ui sidebar 文档](https://ui.shadcn.com/docs/components/sidebar)，我们成功地将传统的侧边栏升级为现代化的 shadcn/ui 组件系统。
+根据 [shadcn/ui sidebar 文档](https://ui.shadcn.com/docs/components/sidebar),我们成功地将传统的侧边栏升级为现代化的 shadcn/ui 组件系统。
 
 ## ✅ 完成的功能
 

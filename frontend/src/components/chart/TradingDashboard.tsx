@@ -217,7 +217,7 @@ export function TradingDashboard() {
       <div>
         <h2 className="text-xl font-semibold mb-4">快速交易</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          一鍵進入各種模式，開始你的投資之路
+          一鍵進入各種模式,開始你的投資之路
         </p>
         <QuickActions />
       </div>

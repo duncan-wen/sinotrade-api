@@ -10,153 +10,286 @@ from src.services.shioaji_service import shioaji_service
 router = APIRouter(prefix="/options", tags=["台指選擇權報價"])
 
 
-@router.get("/contracts")
-async def get_available_option_contracts():
+@router.get("/contracts/filtered")
+async def get_filtered_option_contracts(
+    option_types: str = Query(
+        default="TXO", description="選擇權類型,逗號分隔 (如: TX1,TX2,TXO 或 TXO)"
+    ),
+    target_months: str = Query(
+        default="202509,202510", description="目標月份,逗號分隔 (如: 202509,202510)"
+    ),
+    price_range: int = Query(
+        default=600, ge=100, le=2000, description="價格範圍 (上下多少點)"
+    ),
+    futures_symbol: str = Query(
+        default="TXFR1", description="期貨合約代號 (如: TXFR1)"
+    ),
+    call_put_filter: str = Query(
+        default="both",
+        regex="^(call|put|both)$",
+        description="篩選類型: call, put, 或 both",
+    ),
+):
     """
-    獲取可用的台指選擇權合約列表
+    🎯 獲取指定類型和月份的選擇權合約
 
-    Returns:
-        dict: 包含各類選擇權合約的資訊
+    根據指定的選擇權類型、目標月份和期貨價格範圍,返回符合條件的合約
+
+    Args:
+        option_types: 選擇權類型,逗號分隔 (TX1,TX2,TXO,TX4,TXY,TXU)
+        target_months: 目標月份,逗號分隔 (202509,202510)
+        price_range: 上下價格範圍 (點數)
+        futures_symbol: 期貨合約代號
+        call_put_filter: 篩選類型 (call/put/both)
     """
     try:
         if not shioaji_service.ensure_logged_in():
             raise HTTPException(status_code=503, detail="Shioaji 服務未登錄")
 
-        # 獲取選擇權合約資訊
-        contracts_info = {}
+        # 解析選擇權類型
+        option_type_list = [t.strip().upper() for t in option_types.split(",")]
+        valid_types = ["TX1", "TX2", "TXO", "TX4", "TXY", "TXU"]
 
-        # TX1 - 第一週選擇權
-        try:
-            tx1_contracts = shioaji_service.api.Contracts.Options.TX1
-            contract_list = [
-                attr for attr in dir(tx1_contracts) if not attr.startswith("_")
+        for opt_type in option_type_list:
+            if opt_type not in valid_types:
+                raise HTTPException(
+                    status_code=400, detail=f"不支援的選擇權類型: {opt_type}"
+                )
+
+        # 解析目標月份
+        target_month_list = [m.strip() for m in target_months.split(",")]
+
+        # 1. 獲取期貨當前價格 (使用高效 snapshot API)
+        current_futures_price = shioaji_service.get_current_price(futures_symbol)
+        if current_futures_price is None:
+            raise HTTPException(
+                status_code=404, detail=f"無法獲取期貨 {futures_symbol} 的價格數據"
+            )
+
+        # 2. 計算價格範圍
+        price_lower = current_futures_price - price_range
+        price_upper = current_futures_price + price_range
+
+        logger.info(
+            f"💰 價格範圍: {price_lower:.0f} ~ {price_upper:.0f} (範圍: ±{price_range})"
+        )
+
+        # 3. 遍歷每個選擇權類型並搜尋合約
+        all_call_contracts = []
+        all_put_contracts = []
+
+        for option_type in option_type_list:
+            logger.info(f"🔍 搜尋 {option_type} 選擇權合約...")
+
+            try:
+                option_group = getattr(
+                    shioaji_service.api.Contracts.Options, option_type
+                )
+
+                # 遍歷該類型的所有選擇權合約
+                for contract_name in dir(option_group):
+                    if contract_name.startswith("_"):
+                        continue
+
+                    try:
+                        contract = getattr(option_group, contract_name)
+
+                        # 檢查是否有履約價
+                        if (
+                            not hasattr(contract, "strike_price")
+                            or not contract.strike_price
+                        ):
+                            continue
+
+                        strike_price = float(contract.strike_price)
+
+                        # 檢查價格範圍
+                        if not (price_lower <= strike_price <= price_upper):
+                            continue
+
+                        # 檢查月份
+                        delivery_month = getattr(contract, "delivery_month", "")
+                        if delivery_month not in target_month_list:
+                            continue
+
+                        # 判斷Call/Put
+                        contract_code = getattr(contract, "code", contract_name)
+                        contract_symbol = getattr(contract, "symbol", contract_name)
+
+                        is_call = (
+                            "C" in contract_code[-2:]
+                            or "C" in contract_symbol[-2:]
+                            or "Call" in str(getattr(contract, "option_right", ""))
+                        )
+                        is_put = (
+                            "P" in contract_code[-2:]
+                            or "P" in contract_symbol[-2:]
+                            or "Put" in str(getattr(contract, "option_right", ""))
+                        )
+
+                        # 應用Call/Put篩選
+                        if call_put_filter == "call" and not is_call:
+                            continue
+                        if call_put_filter == "put" and not is_put:
+                            continue
+
+                        if not is_call and not is_put:
+                            continue
+
+                        contract_info = {
+                            "code": contract_code,
+                            "symbol": contract_symbol,
+                            "name": getattr(contract, "name", ""),
+                            "option_type": option_type,
+                            "strike_price": strike_price,
+                            "delivery_date": str(
+                                getattr(contract, "delivery_date", "")
+                            ),
+                            "delivery_month": delivery_month,
+                            "option_right": str(getattr(contract, "option_right", ""))
+                            .split(".")[-1]
+                            .replace("'", "")
+                            .replace(">", "")
+                            if hasattr(contract, "option_right")
+                            else ("Call" if is_call else "Put"),
+                            "underlying_kind": getattr(contract, "underlying_kind", ""),
+                            "unit": getattr(contract, "unit", 1),
+                            "reference": getattr(contract, "reference", None),
+                            "contract_name": contract_name,
+                            "distance_from_futures": abs(
+                                strike_price - current_futures_price
+                            ),
+                            "moneyness": _calculate_moneyness(
+                                strike_price, current_futures_price, is_call
+                            ),
+                        }
+
+                        if is_call:
+                            all_call_contracts.append(contract_info)
+                        elif is_put:
+                            all_put_contracts.append(contract_info)
+
+                    except Exception as contract_error:
+                        logger.debug(f"跳過無效合約 {contract_name}: {contract_error}")
+                        continue
+
+            except AttributeError:
+                logger.warning(f"找不到選擇權類型: {option_type}")
+                continue
+
+        # 按照選擇權類型、履約價、到期月份排序
+        def _safe_sort_key(contract):
+            strike = contract.get("strike_price", 0)
+            if strike is None:
+                strike = 0
+            return (
+                contract.get("option_type", ""),
+                float(strike),
+                contract.get("delivery_month", ""),
+            )
+
+        all_call_contracts.sort(key=_safe_sort_key)
+        all_put_contracts.sort(key=_safe_sort_key)
+
+        # 按選擇權類型分組
+        contracts_by_type = {}
+        for option_type in option_type_list:
+            call_contracts_for_type = [
+                c for c in all_call_contracts if c["option_type"] == option_type
             ]
-            contracts_info["TX1"] = {
-                "name": "第一週選擇權",
-                "description": "台指選擇權第一週到期合約",
-                "available": bool(tx1_contracts and contract_list),
-                "contract_count": len(contract_list),
-                "sample_contracts": contract_list[:3] if contract_list else [],
-            }
-        except Exception as e:
-            contracts_info["TX1"] = {
-                "name": "第一週選擇權",
-                "available": False,
-                "error": str(e),
+            put_contracts_for_type = [
+                c for c in all_put_contracts if c["option_type"] == option_type
+            ]
+
+            contracts_by_type[option_type] = {
+                "call_options": call_contracts_for_type,
+                "put_options": put_contracts_for_type,
+                "call_count": len(call_contracts_for_type),
+                "put_count": len(put_contracts_for_type),
+                "total_count": len(call_contracts_for_type)
+                + len(put_contracts_for_type),
             }
 
-        # TX2 - 第二週選擇權
-        try:
-            tx2_contracts = shioaji_service.api.Contracts.Options.TX2
-            contract_list = [
-                attr for attr in dir(tx2_contracts) if not attr.startswith("_")
-            ]
-            contracts_info["TX2"] = {
-                "name": "第二週選擇權",
-                "description": "台指選擇權第二週到期合約",
-                "available": bool(tx2_contracts and contract_list),
-                "contract_count": len(contract_list),
-                "sample_contracts": contract_list[:3] if contract_list else [],
-            }
-        except Exception as e:
-            contracts_info["TX2"] = {
-                "name": "第二週選擇權",
-                "available": False,
-                "error": str(e),
-            }
-
-        # TXO - 當月月選擇權
-        try:
-            txo_contracts = shioaji_service.api.Contracts.Options.TXO
-            contract_list = [
-                attr for attr in dir(txo_contracts) if not attr.startswith("_")
-            ]
-            contracts_info["TXO"] = {
-                "name": "當月月選擇權",
-                "description": "台指選擇權當月第三週到期合約",
-                "available": bool(txo_contracts and contract_list),
-                "contract_count": len(contract_list),
-                "sample_contracts": contract_list[:3] if contract_list else [],
-            }
-        except Exception as e:
-            contracts_info["TXO"] = {
-                "name": "當月月選擇權",
-                "available": False,
-                "error": str(e),
-            }
-
-        # TX4 - 第四週選擇權
-        try:
-            tx4_contracts = shioaji_service.api.Contracts.Options.TX4
-            contract_list = [
-                attr for attr in dir(tx4_contracts) if not attr.startswith("_")
-            ]
-            contracts_info["TX4"] = {
-                "name": "第四週選擇權",
-                "description": "台指選擇權第四週到期合約",
-                "available": bool(tx4_contracts and contract_list),
-                "contract_count": len(contract_list),
-                "sample_contracts": contract_list[:3] if contract_list else [],
-            }
-        except Exception as e:
-            contracts_info["TX4"] = {
-                "name": "第四週選擇權",
-                "available": False,
-                "error": str(e),
-            }
-
-        # TXY - 近期週五選擇權
-        try:
-            txy_contracts = shioaji_service.api.Contracts.Options.TXY
-            contract_list = [
-                attr for attr in dir(txy_contracts) if not attr.startswith("_")
-            ]
-            contracts_info["TXY"] = {
-                "name": "近期週五選擇權",
-                "description": "台指選擇權近期週五到期合約",
-                "available": bool(txy_contracts and contract_list),
-                "contract_count": len(contract_list),
-                "sample_contracts": contract_list[:3] if contract_list else [],
-            }
-        except Exception as e:
-            contracts_info["TXY"] = {
-                "name": "近期週五選擇權",
-                "available": False,
-                "error": str(e),
-            }
-
-        # TXU - 遠期週五選擇權
-        try:
-            txu_contracts = shioaji_service.api.Contracts.Options.TXU
-            contract_list = [
-                attr for attr in dir(txu_contracts) if not attr.startswith("_")
-            ]
-            contracts_info["TXU"] = {
-                "name": "遠期週五選擇權",
-                "description": "台指選擇權遠期週五到期合約",
-                "available": bool(txu_contracts and contract_list),
-                "contract_count": len(contract_list),
-                "sample_contracts": contract_list[:3] if contract_list else [],
-            }
-        except Exception as e:
-            contracts_info["TXU"] = {
-                "name": "遠期週五選擇權",
-                "available": False,
-                "error": str(e),
+        # 統計資訊
+        contract_stats = {}
+        for option_type in option_type_list:
+            call_count = len(
+                [c for c in all_call_contracts if c["option_type"] == option_type]
+            )
+            put_count = len(
+                [c for c in all_put_contracts if c["option_type"] == option_type]
+            )
+            contract_stats[option_type] = {
+                "call_contracts": call_count,
+                "put_contracts": put_count,
+                "total": call_count + put_count,
             }
 
         return {
             "success": True,
-            "message": "成功獲取選擇權合約列表",
-            "contracts": contracts_info,
+            "message": "成功獲取篩選後的選擇權合約",
+            "filters_applied": {
+                "option_types": option_type_list,
+                "target_months": target_month_list,
+                "call_put_filter": call_put_filter,
+                "price_range": f"±{price_range}點",
+            },
+            "futures_info": {
+                "symbol": futures_symbol,
+                "current_price": current_futures_price,
+                "method": "snapshot_api",
+            },
+            "price_filter": {
+                "range": price_range,
+                "lower_bound": price_lower,
+                "upper_bound": price_upper,
+            },
+            "option_contracts": {
+                "all_call_options": all_call_contracts,
+                "all_put_options": all_put_contracts,
+                "by_type": contracts_by_type,
+            },
+            "summary": {
+                "total_call_contracts": len(all_call_contracts),
+                "total_put_contracts": len(all_put_contracts),
+                "total_contracts": len(all_call_contracts) + len(all_put_contracts),
+                "by_option_type": contract_stats,
+            },
             "timestamp": datetime.now().isoformat(),
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"❌ 獲取選擇權合約列表失敗: {e}")
+        logger.error(f"❌ 獲取篩選選擇權合約失敗: {e}")
         raise HTTPException(
-            status_code=500, detail=f"獲取合約列表失敗: {e!s}"
+            status_code=500, detail=f"獲取篩選選擇權合約失敗: {e!s}"
         ) from None
+
+
+def _calculate_moneyness(
+    strike_price: float, underlying_price: float, is_call: bool
+) -> str:
+    """
+    計算價內外狀態
+
+    Args:
+        strike_price: 履約價
+        underlying_price: 標的價格
+        is_call: 是否為買權
+
+    Returns:
+        ITM (價內), ATM (價平), OTM (價外)
+    """
+    tolerance = 25  # 價平容忍度 (點數)
+
+    if abs(strike_price - underlying_price) <= tolerance:
+        return "ATM"  # 價平
+
+    if is_call:
+        return "ITM" if underlying_price > strike_price else "OTM"
+    else:  # Put
+        return "ITM" if underlying_price < strike_price else "OTM"
 
 
 @router.get("/strikes/{option_type}")

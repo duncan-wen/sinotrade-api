@@ -229,6 +229,45 @@ class ShioajiService:
         """確保已登錄,如果未登錄則嘗試登錄"""
         return self.lifecycle.ensure_logged_in()
 
+    def get_current_price(self, symbol: str) -> float | None:
+        """
+        獲取商品當前價格 (使用 snapshot API, 快速高效)
+
+        Args:
+            symbol: 商品代號 (如: TXFR1, 2330)
+
+        Returns:
+            當前價格，失敗時返回 None
+        """
+        if not self.ensure_logged_in():
+            logger.error("登錄失敗, 無法獲取當前價格")
+            return None
+
+        contract = self._get_contract(symbol)
+        if not contract:
+            logger.error(f"找不到合約: {symbol}")
+            return None
+
+        try:
+            logger.info(f"🔍 使用 snapshot 獲取 {symbol} 當前價格...")
+
+            # 使用 Shioaji snapshot API 獲取即時價格
+            snapshots = self.api.snapshots([contract])
+
+            if not snapshots:
+                logger.warning(f"未獲取到 {symbol} 的 snapshot 數據")
+                return None
+
+            snapshot = snapshots[0]
+            current_price = float(snapshot.close)
+
+            logger.info(f"✅ {symbol} 當前價格: {current_price}")
+            return current_price
+
+        except Exception as e:
+            logger.error(f"❌ 獲取 {symbol} snapshot 失敗: {e}")
+            return None
+
     def get_historical_klines(
         self,
         symbol: str,

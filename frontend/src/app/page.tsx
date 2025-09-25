@@ -190,7 +190,7 @@ export default function Home() {
                 <div>
                   <CardTitle className="text-xl font-bold">快速交易</CardTitle>
                   <CardDescription className="text-sm">
-                    一鍵進入各個交易市場，開始您的投資之旅
+                    一鍵進入各個交易市場,開始您的投資之旅
                   </CardDescription>
                 </div>
               </div>
@@ -253,7 +253,7 @@ export default function Home() {
                       快速下單
                     </CardTitle>
                     <CardDescription className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                      一鍵買賣，即時成交執行
+                      一鍵買賣,即時成交執行
                     </CardDescription>
                   </div>
                 </CardHeader>

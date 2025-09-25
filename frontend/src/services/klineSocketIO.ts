@@ -136,7 +136,7 @@ class KlineSocketIOService {
       // 如果有之前的訂閱,重新訂閱
       if (this.currentSymbol && this.currentInterval) {
         console.log(
-          '🔄 重連成功，恢復訂閱:',
+          '🔄 重連成功,恢復訂閱:',
           this.currentSymbol,
           this.currentInterval
         )
@@ -150,9 +150,9 @@ class KlineSocketIOService {
       this.connectionStats.connectionId = ''
       this.isConnecting = false
 
-      // 🔧 如果是服務器主動斷開或意外斷開，啟動服務器檢查
+      // 🔧 如果是服務器主動斷開或意外斷開,啟動服務器檢查
       if (reason === 'io server disconnect' || reason === 'transport close') {
-        console.log('🔄 服務器斷開，啟動定期檢查...')
+        console.log('🔄 服務器斷開,啟動定期檢查...')
         this.startServerHealthCheck()
       }
     })
@@ -170,9 +170,9 @@ class KlineSocketIOService {
       this.connectionStats.reconnectAttempts++
       this.isConnecting = false
 
-      // 🔧 如果達到最大重連次數，啟動服務器健康檢查
+      // 🔧 如果達到最大重連次數,啟動服務器健康檢查
       if (this.connectionStats.reconnectAttempts >= this.maxReconnectAttempts) {
-        console.log('❌ 達到最大重連次數，啟動服務器健康檢查...')
+        console.log('❌ 達到最大重連次數,啟動服務器健康檢查...')
         this.startServerHealthCheck()
       }
     })
@@ -388,14 +388,14 @@ class KlineSocketIOService {
         clearTimeout(timeoutId)
 
         if (healthCheck.ok) {
-          console.log('✅ 服務器已恢復，嘗試重新連接...')
+          console.log('✅ 服務器已恢復,嘗試重新連接...')
           this.clearReconnectTimers()
           this.forceReconnect()
         } else {
           console.log('⚠️ 服務器尚未完全恢復')
         }
       } catch (error) {
-        console.log('🔍 服務器仍不可用，繼續檢查...')
+        console.log('🔍 服務器仍不可用,繼續檢查...')
       }
     }, 30000) // 每30秒檢查一次
   }
