@@ -63,7 +63,7 @@ class ShioajiService:
         """
         專為開發環境重啟設計的強制清理方法
         確保在 hot reload 或 Ctrl+C 時能快速且安全地清理資源
-        正確順序：取消訂閱 > 登出 > 等待釋放 > 清理任務
+        正確順序: 取消訂閱 > 登出 > 等待釋放 > 清理任務
         """
         try:
             logger.info("🔄 [DEV] 執行開發環境強制清理...")
@@ -883,11 +883,30 @@ class ShioajiService:
             pass
 
         try:
-            # 4. 嘗試選擇權合約
-            if "TXO" in symbol or "O" in symbol:
+            # 4. 嘗試選擇權合約 - 支援各種台指選擇權類型
+            option_types = ["TX1", "TX2", "TXO", "TX4", "TXY", "TXU"]
+
+            for opt_type in option_types:
+                if opt_type in symbol:
+                    try:
+                        # 先嘗試直接通過選擇權類型獲取
+                        option_group = getattr(self.api.Contracts.Options, opt_type)
+                        contract = getattr(option_group, symbol)
+
+                        if contract:
+                            logger.info(
+                                f"✅ 獲取選擇權合約: {symbol} -> {contract.code} ({opt_type})"
+                            )
+                            return contract
+
+                    except (KeyError, AttributeError):
+                        continue
+
+            # 如果上面方法失敗, 嘗試傳統方式
+            if any(opt in symbol for opt in ["TXO", "TX1", "TX2", "TX4", "TXY", "TXU"]):
                 contract = self.api.Contracts.Options[symbol]
                 if contract:
-                    logger.info(f"Found options contract: {contract.symbol}")
+                    logger.info(f"✅ 獲取選擇權合約 (傳統方式): {contract.symbol}")
                     return contract
 
         except (KeyError, AttributeError):
@@ -1298,7 +1317,16 @@ class ShioajiService:
             usage_dict = dict(usage_data)
 
             # 初始化統計資料
-            stats = UsageStats(status="success", raw_data=usage_dict)
+            stats = UsageStats(
+                status="success",
+                raw_data=usage_dict,
+                connections=0,
+                bytes_used=0,
+                bytes_limit=0,
+                bytes_remaining=0,
+                usage_rate=0,
+                warning_message=None,
+            )
 
             # 處理連接次數
             if "connections" in usage_dict:
@@ -1333,7 +1361,14 @@ class ShioajiService:
         except Exception as e:
             logger.error(f"❌ 獲取 API 使用量統計失敗: {e}")
             return UsageStats(
-                status="error", warning_message=f"獲取使用量失敗: {e!s}", raw_data={}
+                status="error",
+                warning_message=f"獲取使用量失敗: {e!s}",
+                raw_data={},
+                connections=0,
+                bytes_used=0,
+                bytes_limit=0,
+                bytes_remaining=0,
+                usage_rate=0,
             )
 
     def place_order(self, order: SimulatedOrder) -> SimulatedOrder:

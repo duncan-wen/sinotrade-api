@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_socketio import SocketManager
 from loguru import logger
 
-from src.api import orders, polygon_quotes, quotes, scanners, usage
+from src.api import options_quotes, orders, polygon_quotes, quotes, scanners, usage
 from src.services.shioaji_service import shioaji_service
 from src.services.socketio_manager import SocketIOTickBroadcaster, setup_socketio_events
 from src.services.subscription_manager import subscription_manager
@@ -122,6 +122,10 @@ app = FastAPI(
             "description": "Shioaji API 使用量統計",
         },
         {
+            "name": "台指選擇權報價",
+            "description": "台指選擇權即時報價、歷史數據和合約資訊 API",
+        },
+        {
             "name": "WebSocket",
             "description": "即時數據推送 WebSocket 連接",
         },
@@ -155,6 +159,7 @@ app.include_router(orders.router, prefix="/api", tags=["Orders"])
 app.include_router(polygon_quotes.router, prefix="/api", tags=["Polygon.io"])
 app.include_router(scanners.router, prefix="/api", tags=["Scanners"])
 app.include_router(usage.router, prefix="/api", tags=["Usage"])
+app.include_router(options_quotes.router, prefix="/api", tags=["台指選擇權報價"])
 
 
 @app.get("/")
