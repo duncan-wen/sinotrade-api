@@ -19,12 +19,12 @@ import type { OptionQuote } from '@/types/api'
 
 // 選擇權類型選項
 const OPTION_TYPES = [
-  { value: 'TX1', label: 'TX1 - 臺指選擇權 (週一到期)' },
-  { value: 'TX2', label: 'TX2 - 臺指選擇權 (週二到期)' },
-  { value: 'TXO', label: 'TXO - 臺指選擇權 (週三到期)' },
-  { value: 'TX4', label: 'TX4 - 臺指選擇權 (週四到期)' },
-  { value: 'TXY', label: 'TXY - 臺指選擇權 (週五到期)' },
-  { value: 'TXU', label: 'TXU - 臺指選擇權 (月選)' },
+  { value: 'TX1', label: 'TX1 - 臺指選擇權 (第一個週三到期)' },
+  { value: 'TX2', label: 'TX2 - 臺指選擇權 (第二個週三到期)' },
+  { value: 'TXO', label: 'TXO - 臺指選擇權 (第三個週三到期)' },
+  { value: 'TX4', label: 'TX4 - 臺指選擇權 (第四週周三到期)' },
+  { value: 'TXY', label: 'TXY - 臺指選擇權 (最近期週五到期)' },
+  { value: 'TXU', label: 'TXU - 臺指選擇權 (下一期周五到期)' },
 ]
 
 // 合約資訊界面
