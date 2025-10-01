@@ -19,6 +19,7 @@ from src.models.domain import (
     ScannerData,
     ScannerType,
     SimulatedOrder,
+    SortingMode,
     UsageStats,
 )
 from src.services.cache_service import set_cached_quote
@@ -1246,6 +1247,7 @@ class ShioajiService:
         self,
         scanner_type: ScannerType,
         ascending: bool = True,
+        sorting_mode: SortingMode = SortingMode.DESC,
         count: int = 100,
         date: str | None = None,
         timeout: int = 30000,
@@ -1275,14 +1277,27 @@ class ShioajiService:
             # 將我們的 ScannerType 枚舉轉換為 Shioaji 的常數
             sj_scanner_type = getattr(sj.constant.ScannerType, scanner_type.value)
 
-            logger.info(f"🔍 獲取排行資料: {scanner_type.value}, 數量: {count}")
+            # 判斷是否需要更多數據來進行詳細排序
+            needs_more_data = sorting_mode in [
+                SortingMode.GAIN_ASC,
+                SortingMode.LOSS_ASC,
+                SortingMode.VALUE_LOW_HIGH,
+                SortingMode.PRICE_LOW_HIGH,
+            ]
+
+            # 如果需要詳細排序，請求更多數據
+            api_count = 200 if needs_more_data and count <= 100 else count
+
+            logger.info(
+                f"🔍 獲取排行資料: {scanner_type.value}, API數量: {api_count}, 最終數量: {count}"
+            )
 
             # 調用 Shioaji API
             scanners = self.api.scanners(
                 scanner_type=sj_scanner_type,
                 ascending=ascending,
                 date=date,
-                count=count,
+                count=api_count,
                 timeout=timeout,
             )
 
@@ -1328,11 +1343,185 @@ class ShioajiService:
                     logger.error(f"轉換排行資料失敗: {scanner}, 錯誤: {e}")
                     continue
 
+            # 根據排序模式進行自定義排序
+            scanner_data_list = self._apply_custom_sorting(
+                scanner_data_list, scanner_type, sorting_mode, count
+            )
+
             logger.info(f"✅ 成功獲取 {len(scanner_data_list)} 筆排行資料")
             return scanner_data_list
         except Exception as e:
             logger.error(f"❌ 獲取排行資料失敗: {e}")
             raise
+
+    def _apply_custom_sorting(
+        self,
+        scanner_data_list: list[ScannerData],
+        scanner_type: ScannerType,
+        sorting_mode: SortingMode,
+        requested_count: int,
+    ) -> list[ScannerData]:
+        """
+        根據排序模式對掃描器數據進行自定義排序
+
+        Args:
+            scanner_data_list: 掃描器數據列表
+            scanner_type: 掃描器類型
+            sorting_mode: 排序模式
+            requested_count: 用戶請求的數量
+
+        Returns:
+            排序後的數據列表
+        """
+        if not scanner_data_list:
+            return scanner_data_list
+
+        # 如果使用基本排序模式，直接返回原數據
+        if sorting_mode in [SortingMode.ASC, SortingMode.DESC]:
+            # Shioaji API 已經處理了基本排序
+            return scanner_data_list
+
+        # 針對不同掃描器類型和排序模式進行自定義排序
+        if scanner_type == ScannerType.ChangePercentRank:
+            return self._sort_by_change_percent(
+                scanner_data_list, sorting_mode, requested_count
+            )
+        elif scanner_type == ScannerType.ChangePriceRank:
+            return self._sort_by_change_price(
+                scanner_data_list, sorting_mode, requested_count
+            )
+        elif scanner_type == ScannerType.DayRangeRank:
+            return self._sort_by_price_range(
+                scanner_data_list, sorting_mode, requested_count
+            )
+        elif scanner_type in [ScannerType.VolumeRank, ScannerType.AmountRank]:
+            return self._sort_by_value(
+                scanner_data_list, scanner_type, sorting_mode, requested_count
+            )
+
+        # 預設返回原數據
+        return scanner_data_list
+
+    def _sort_by_change_percent(
+        self,
+        scanner_data_list: list[ScannerData],
+        sorting_mode: SortingMode,
+        requested_count: int,
+    ) -> list[ScannerData]:
+        """按漲跌幅進行詳細排序"""
+
+        def get_change_percent(item: ScannerData) -> float:
+            return item.change_percent
+
+        if sorting_mode == SortingMode.GAIN_ASC:
+            # 漲幅由小到大 (只包含正值) - 取最小的漲幅
+            gains = [item for item in scanner_data_list if get_change_percent(item) > 0]
+            sorted_gains = sorted(gains, key=get_change_percent)
+            return sorted_gains[:requested_count]  # 取前N個最小漲幅
+        elif sorting_mode == SortingMode.GAIN_DESC:
+            # 漲幅由大到小 (只包含正值) - 取最大的漲幅
+            gains = [item for item in scanner_data_list if get_change_percent(item) > 0]
+            sorted_gains = sorted(gains, key=get_change_percent, reverse=True)
+            return sorted_gains[:requested_count]  # 取前N個最大漲幅
+        elif sorting_mode == SortingMode.LOSS_ASC:
+            # 跌幅由小到大 (只包含負值，絕對值小的在前) - 取最小的跌幅
+            losses = [
+                item for item in scanner_data_list if get_change_percent(item) < 0
+            ]
+            sorted_losses = sorted(
+                losses, key=get_change_percent, reverse=True
+            )  # -1% 在 -5% 前面
+            return sorted_losses[:requested_count]  # 取前N個最小跌幅
+        elif sorting_mode == SortingMode.LOSS_DESC:
+            # 跌幅由大到小 (只包含負值，絕對值大的在前) - 取最大的跌幅
+            losses = [
+                item for item in scanner_data_list if get_change_percent(item) < 0
+            ]
+            sorted_losses = sorted(losses, key=get_change_percent)  # -10% 在 -1% 前面
+            return sorted_losses[:requested_count]  # 取前N個最大跌幅
+
+        return scanner_data_list
+
+    def _sort_by_change_price(
+        self,
+        scanner_data_list: list[ScannerData],
+        sorting_mode: SortingMode,
+        requested_count: int,
+    ) -> list[ScannerData]:
+        """按價格漲跌進行詳細排序"""
+
+        def get_change_price(item: ScannerData) -> float:
+            return item.change_price
+
+        if sorting_mode == SortingMode.PRICE_HIGH_LOW:
+            sorted_data = sorted(scanner_data_list, key=get_change_price, reverse=True)
+            return sorted_data[:requested_count]
+        elif sorting_mode == SortingMode.PRICE_LOW_HIGH:
+            sorted_data = sorted(scanner_data_list, key=get_change_price)
+            return sorted_data[:requested_count]
+        elif sorting_mode == SortingMode.GAIN_ASC:
+            gains = [item for item in scanner_data_list if get_change_price(item) > 0]
+            sorted_gains = sorted(gains, key=get_change_price)
+            return sorted_gains[:requested_count]
+        elif sorting_mode == SortingMode.GAIN_DESC:
+            gains = [item for item in scanner_data_list if get_change_price(item) > 0]
+            sorted_gains = sorted(gains, key=get_change_price, reverse=True)
+            return sorted_gains[:requested_count]
+        elif sorting_mode == SortingMode.LOSS_ASC:
+            losses = [item for item in scanner_data_list if get_change_price(item) < 0]
+            sorted_losses = sorted(losses, key=get_change_price, reverse=True)
+            return sorted_losses[:requested_count]
+        elif sorting_mode == SortingMode.LOSS_DESC:
+            losses = [item for item in scanner_data_list if get_change_price(item) < 0]
+            sorted_losses = sorted(losses, key=get_change_price)
+            return sorted_losses[:requested_count]
+
+        return scanner_data_list
+
+    def _sort_by_price_range(
+        self,
+        scanner_data_list: list[ScannerData],
+        sorting_mode: SortingMode,
+        requested_count: int,
+    ) -> list[ScannerData]:
+        """按高低價差進行詳細排序"""
+
+        def get_price_range(item: ScannerData) -> float:
+            return item.price_range
+
+        if sorting_mode == SortingMode.VALUE_HIGH_LOW:
+            sorted_data = sorted(scanner_data_list, key=get_price_range, reverse=True)
+            return sorted_data[:requested_count]
+        elif sorting_mode == SortingMode.VALUE_LOW_HIGH:
+            sorted_data = sorted(scanner_data_list, key=get_price_range)
+            return sorted_data[:requested_count]
+
+        return scanner_data_list
+
+    def _sort_by_value(
+        self,
+        scanner_data_list: list[ScannerData],
+        scanner_type: ScannerType,
+        sorting_mode: SortingMode,
+        requested_count: int,
+    ) -> list[ScannerData]:
+        """按數值進行詳細排序 (成交量、成交金額等)"""
+
+        def get_value(item: ScannerData) -> float:
+            if scanner_type == ScannerType.VolumeRank:
+                return item.total_volume
+            elif scanner_type == ScannerType.AmountRank:
+                return item.total_amount
+            return 0.0
+
+        if sorting_mode == SortingMode.VALUE_HIGH_LOW:
+            sorted_data = sorted(scanner_data_list, key=get_value, reverse=True)
+            return sorted_data[:requested_count]
+        elif sorting_mode == SortingMode.VALUE_LOW_HIGH:
+            sorted_data = sorted(scanner_data_list, key=get_value)
+            return sorted_data[:requested_count]
+
+        return scanner_data_list
 
     def get_usage_stats(self) -> UsageStats:
         """

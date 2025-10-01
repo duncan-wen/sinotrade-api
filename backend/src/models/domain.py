@@ -54,6 +54,28 @@ class ScannerType(str, Enum):
     AmountRank = "AmountRank"  # 依成交金額排序
 
 
+class SortingMode(str, Enum):
+    """詳細排序模式"""
+
+    # 基本排序
+    ASC = "asc"  # 由小到大
+    DESC = "desc"  # 由大到小
+
+    # 針對漲跌幅的詳細排序
+    GAIN_ASC = "gain_asc"  # 漲幅由小到大 (1% -> 5% -> 10%)
+    GAIN_DESC = "gain_desc"  # 漲幅由大到小 (10% -> 5% -> 1%)
+    LOSS_ASC = "loss_asc"  # 跌幅由小到大 (-1% -> -5% -> -10%)
+    LOSS_DESC = "loss_desc"  # 跌幅由大到小 (-10% -> -5% -> -1%)
+
+    # 針對價格的詳細排序
+    PRICE_HIGH_LOW = "price_high_low"  # 價格由高到低
+    PRICE_LOW_HIGH = "price_low_high"  # 價格由低到高
+
+    # 針對其他指標的詳細排序
+    VALUE_HIGH_LOW = "value_high_low"  # 數值由大到小
+    VALUE_LOW_HIGH = "value_low_high"  # 數值由小到大
+
+
 class ScannerData(BaseModel):
     """股票排行資料模型"""
 

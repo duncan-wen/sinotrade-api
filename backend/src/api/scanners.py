@@ -4,7 +4,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
-from src.models.domain import ScannerData, ScannerType
+from src.models.domain import ScannerData, ScannerType, SortingMode
 from src.services.shioaji_service import shioaji_service
 
 router = APIRouter()
@@ -44,8 +44,9 @@ def get_scanner_types() -> list[dict]:
 def get_scanners(
     scanner_type: ScannerType,
     ascending: bool = Query(
-        True, description="排序方式,True 為由大到小,False 為由小到大"
+        True, description="排序方式,True 為由大到小,False 為由小到大 (向後兼容參數)"
     ),
+    sorting_mode: SortingMode = Query(SortingMode.DESC, description="詳細排序模式"),
     count: int = Query(100, ge=1, le=200, description="排行數量 (1-200)"),
     date: str | None = Query(None, description="指定日期 (YYYY-MM-DD),預設為當日"),
     timeout: int = Query(30000, description="超時時間 (毫秒)"),
@@ -66,6 +67,7 @@ def get_scanners(
         scanners_data = shioaji_service.get_scanners(
             scanner_type=scanner_type,
             ascending=ascending,
+            sorting_mode=sorting_mode,
             count=count,
             date=date,
             timeout=timeout,

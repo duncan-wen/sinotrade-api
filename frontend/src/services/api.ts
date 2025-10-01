@@ -14,6 +14,7 @@ import type {
   ScannerParams,
   ScannerType,
   ScannerTypeOption,
+  SortingMode,
 } from '@/types/api'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -195,6 +196,7 @@ class ApiService {
   async getScanners(params: {
     scanner_type: ScannerType
     ascending?: boolean
+    sorting_mode?: SortingMode
     count?: number
     date?: string
     timeout?: number

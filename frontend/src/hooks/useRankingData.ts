@@ -2,13 +2,20 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { apiService } from '@/services/api'
-import { ScannerData, ScannerType, ScannerTypeOption } from '@/types/api'
+import {
+  ScannerData,
+  ScannerType,
+  ScannerTypeOption,
+  SortingMode,
+} from '@/types/api'
 
 interface UseRankingDataProps {
   /** 排行類型 */
   scannerType: ScannerType
-  /** 排序方式,true 為由大到小 */
+  /** 排序方式,true 為由大到小 (向後兼容參數) */
   ascending?: boolean
+  /** 詳細排序模式 */
+  sortingMode?: SortingMode
   /** 數據數量 */
   count?: number
   /** 指定日期 */
@@ -40,6 +47,7 @@ interface UseRankingDataReturn {
 export const useRankingData = ({
   scannerType,
   ascending = true,
+  sortingMode = 'desc',
   count = 50,
   date,
   refreshInterval = 0,
@@ -67,6 +75,7 @@ export const useRankingData = ({
         const result = await apiService.getScanners({
           scanner_type: scannerType,
           ascending,
+          sorting_mode: sortingMode,
           count,
           date,
         })
@@ -83,7 +92,7 @@ export const useRankingData = ({
         setIsRefreshing(false)
       }
     },
-    [scannerType, ascending, count, date]
+    [scannerType, ascending, sortingMode, count, date]
   )
 
   /**

@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { RankingList } from '@/components/ranking'
 import { useRankingData, useScannerTypes } from '@/hooks/useRankingData'
-import { ScannerType, ScannerData } from '@/types/api'
+import { ScannerType, ScannerData, SortingMode } from '@/types/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -38,13 +38,68 @@ const getScannerIcon = (scannerType: ScannerType) => {
 }
 
 /**
+ * 排序模式選項映射
+ */
+const getSortingOptions = (scannerType: ScannerType) => {
+  const baseOptions = [
+    { value: 'desc' as SortingMode, label: '由大到小' },
+    { value: 'asc' as SortingMode, label: '由小到大' },
+  ]
+
+  switch (scannerType) {
+    case 'ChangePercentRank':
+      return [
+        { value: 'gain_desc' as SortingMode, label: '漲幅：大→小 (10%→1%)' },
+        { value: 'gain_asc' as SortingMode, label: '漲幅：小→大 (1%→10%)' },
+        { value: 'loss_desc' as SortingMode, label: '跌幅：大→小 (-10%→-1%)' },
+        { value: 'loss_asc' as SortingMode, label: '跌幅：小→大 (-1%→-10%)' },
+        ...baseOptions,
+      ]
+
+    case 'ChangePriceRank':
+      return [
+        { value: 'gain_desc' as SortingMode, label: '漲幅：大→小' },
+        { value: 'gain_asc' as SortingMode, label: '漲幅：小→大' },
+        { value: 'loss_desc' as SortingMode, label: '跌幅：大→小' },
+        { value: 'loss_asc' as SortingMode, label: '跌幅：小→大' },
+        { value: 'price_high_low' as SortingMode, label: '價格：高→低' },
+        { value: 'price_low_high' as SortingMode, label: '價格：低→高' },
+      ]
+
+    case 'DayRangeRank':
+      return [
+        { value: 'value_high_low' as SortingMode, label: '高低價差：大→小' },
+        { value: 'value_low_high' as SortingMode, label: '高低價差：小→大' },
+        ...baseOptions,
+      ]
+
+    case 'VolumeRank':
+      return [
+        { value: 'value_high_low' as SortingMode, label: '成交量：大→小' },
+        { value: 'value_low_high' as SortingMode, label: '成交量：小→大' },
+        ...baseOptions,
+      ]
+
+    case 'AmountRank':
+      return [
+        { value: 'value_high_low' as SortingMode, label: '成交金額：大→小' },
+        { value: 'value_low_high' as SortingMode, label: '成交金額：小→大' },
+        ...baseOptions,
+      ]
+
+    default:
+      return baseOptions
+  }
+}
+
+/**
  * 排行榜頁面
  */
 export default function RankingPage() {
   const [selectedScannerType, setSelectedScannerType] =
     useState<ScannerType>('ChangePercentRank')
   const [displayCount, setDisplayCount] = useState(50)
-  const [ascending, setAscending] = useState(true)
+  const [sortingMode, setSortingMode] = useState<SortingMode>('gain_desc')
 
   // 獲取排行類型選項
   const { types: scannerTypes, isLoading: typesLoading } = useScannerTypes()
@@ -53,10 +108,19 @@ export default function RankingPage() {
   const { data, isLoading, error, lastUpdated, refresh, isRefreshing } =
     useRankingData({
       scannerType: selectedScannerType,
-      ascending,
+      sortingMode,
       count: displayCount,
       refreshInterval: 30000, // 30秒自動刷新
     })
+
+  // 當掃描器類型改變時，自動設置為該類型的預設排序模式
+  const handleScannerTypeChange = (newScannerType: ScannerType) => {
+    setSelectedScannerType(newScannerType)
+    const options = getSortingOptions(newScannerType)
+    if (options.length > 0) {
+      setSortingMode(options[0].value)
+    }
+  }
 
   /**
    * 處理股票項目點擊
@@ -121,7 +185,7 @@ export default function RankingPage() {
               <Select
                 value={selectedScannerType}
                 onValueChange={(value) =>
-                  setSelectedScannerType(value as ScannerType)
+                  handleScannerTypeChange(value as ScannerType)
                 }
               >
                 <SelectTrigger>
@@ -142,19 +206,22 @@ export default function RankingPage() {
               </Select>
             </div>
 
-            {/* 排序方式 */}
+            {/* 詳細排序方式 */}
             <div className="space-y-2">
               <label className="text-sm font-medium">排序方式</label>
               <Select
-                value={ascending ? 'desc' : 'asc'}
-                onValueChange={(value) => setAscending(value === 'desc')}
+                value={sortingMode}
+                onValueChange={(value) => setSortingMode(value as SortingMode)}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="desc">由大到小</SelectItem>
-                  <SelectItem value="asc">由小到大</SelectItem>
+                  {getSortingOptions(selectedScannerType).map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

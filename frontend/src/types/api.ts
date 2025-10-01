@@ -112,6 +112,22 @@ export type ScannerType =
   | 'VolumeRank' // 依成交量排序
   | 'AmountRank' // 依成交金額排序
 
+export type SortingMode =
+  // 基本排序
+  | 'asc' // 由小到大
+  | 'desc' // 由大到小
+  // 針對漲跌幅的詳細排序
+  | 'gain_asc' // 漲幅由小到大 (1% -> 5% -> 10%)
+  | 'gain_desc' // 漲幅由大到小 (10% -> 5% -> 1%)
+  | 'loss_asc' // 跌幅由小到大 (-1% -> -5% -> -10%)
+  | 'loss_desc' // 跌幅由大到小 (-10% -> -5% -> -1%)
+  // 針對價格的詳細排序
+  | 'price_high_low' // 價格由高到低
+  | 'price_low_high' // 價格由低到高
+  // 針對其他指標的詳細排序
+  | 'value_high_low' // 數值由大到小
+  | 'value_low_high' // 數值由小到大
+
 export interface ScannerTypeOption {
   value: ScannerType
   label: string
@@ -120,7 +136,8 @@ export interface ScannerTypeOption {
 
 export interface ScannerParams {
   scanner_type: ScannerType
-  ascending?: boolean // 排序方式,true 為由大到小,false 為由小到大
+  ascending?: boolean // 排序方式,true 為由大到小,false 為由小到大 (向後兼容參數)
+  sorting_mode?: SortingMode // 詳細排序模式
   count?: number // 排行數量 (1-200)
   date?: string // 指定日期 (YYYY-MM-DD),預設為當日
   timeout?: number // 超時時間 (毫秒)
