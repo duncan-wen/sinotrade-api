@@ -47,7 +47,7 @@ interface UseRankingDataReturn {
 export const useRankingData = ({
   scannerType,
   ascending = true,
-  sortingMode = 'desc',
+  sortingMode = 'gain_desc',
   count = 50,
   date,
   refreshInterval = 0,

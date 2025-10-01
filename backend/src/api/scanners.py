@@ -46,7 +46,9 @@ def get_scanners(
     ascending: bool = Query(
         True, description="排序方式,True 為由大到小,False 為由小到大 (向後兼容參數)"
     ),
-    sorting_mode: SortingMode = Query(SortingMode.DESC, description="詳細排序模式"),
+    sorting_mode: SortingMode = Query(
+        SortingMode.GAIN_DESC, description="詳細排序模式"
+    ),
     count: int = Query(100, ge=1, le=200, description="排行數量 (1-200)"),
     date: str | None = Query(None, description="指定日期 (YYYY-MM-DD),預設為當日"),
     timeout: int = Query(30000, description="超時時間 (毫秒)"),

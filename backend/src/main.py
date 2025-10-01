@@ -135,7 +135,12 @@ app = FastAPI(
 # 添加 CORS 中間件
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # 前端開發服務器
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ],  # 前端開發服務器（支援多個端口）
     allow_credentials=True,
     allow_methods=["*"],  # 允許所有 HTTP 方法,包括 OPTIONS
     allow_headers=["*"],  # 允許所有請求頭

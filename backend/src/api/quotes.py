@@ -70,6 +70,7 @@ def get_quote(
         ask_volume=0,
         volume=0,
         avg_price=0,
+        underlying_price=None,
     )
     return dummy_quote
 
@@ -676,6 +677,53 @@ def _get_performance_recommendation(speedup: float, memory_efficiency: float) ->
         return "⚖️  兩者性能相近, 可根據其他因素決定"
     else:
         return "⚠️  Pandas 在此場景下表現更好, 建議保持現狀"
+
+
+@router.get("/contract-info/{symbol}")
+def get_contract_info(symbol: str) -> dict[str, Any]:
+    """
+    獲取合約基本資訊 (包含股票名稱)
+
+    Args:
+        symbol: 商品代號 (如: 2330, TXFR1, 2408)
+
+    Returns:
+        包含 code, symbol, name 等合約資訊
+    """
+    try:
+        if not shioaji_service.ensure_logged_in():
+            return {"error": "Shioaji 服務未登錄", "symbol": symbol}
+
+        contract = shioaji_service._get_contract(symbol)
+        if not contract:
+            return {"error": f"找不到合約: {symbol}", "symbol": symbol}
+
+        # 提取合約資訊
+        contract_info = {
+            "code": getattr(contract, "code", symbol),
+            "symbol": getattr(contract, "symbol", symbol),
+            "name": getattr(contract, "name", symbol),
+            "exchange": str(getattr(contract, "exchange", ""))
+            .split(".")[-1]
+            .replace("'", "")
+            .replace(">", ""),
+            "category": getattr(contract, "category", ""),
+            "unit": getattr(contract, "unit", 0),
+            "limit_up": getattr(contract, "limit_up", None),
+            "limit_down": getattr(contract, "limit_down", None),
+            "reference": getattr(contract, "reference", None),
+        }
+
+        logger.info(f"✅ 獲取合約資訊: {symbol} -> {contract_info['name']}")
+        return {
+            "success": True,
+            "symbol": symbol,
+            "contract": contract_info,
+        }
+
+    except Exception as e:
+        logger.error(f"❌ 獲取合約資訊失敗: {symbol}, 錯誤: {e}")
+        return {"error": str(e), "symbol": symbol}
 
 
 def _get_data_source(interval: str) -> str:

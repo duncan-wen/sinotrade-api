@@ -73,6 +73,7 @@ export interface KLineData {
 
 interface KLineChartProProps {
   symbol: string
+  symbolName?: string // 股票名稱（如：台積電、南亞科）
   className?: string
   height?: number
   width?: number
@@ -230,8 +231,21 @@ class ProfessionalChart {
   // 載入歷史數據
   async loadData() {
     try {
-      const apiUrl = `/api/klines/${this.symbol}?interval=${this.interval}&limit=200&ma_periods=5,10,20&include_indicators=true`
-      console.log('🔗 載入數據:', apiUrl)
+      // 根據時間週期調整數據量：短週期需要更多數據
+      const limitMap: Record<string, number> = {
+        '1m': 500, // 1分鐘：500根 ≈ 8小時
+        '5m': 500, // 5分鐘：500根 ≈ 2天
+        '15m': 500, // 15分鐘：500根 ≈ 5天
+        '30m': 300, // 30分鐘：300根 ≈ 6天
+        '60m': 300, // 1小時：300根 ≈ 12天
+        '1h': 300,
+        '1d': 200, // 日線：200根 ≈ 8個月
+        '1w': 200, // 週線：200根 ≈ 4年
+      }
+      const limit = limitMap[this.interval] || 300
+
+      const apiUrl = `/api/klines/${this.symbol}?interval=${this.interval}&limit=${limit}&ma_periods=5,10,20&include_indicators=true`
+      console.log(`🔗 載入數據 [${this.interval}]: ${limit}根`, apiUrl)
 
       const response = await fetch(apiUrl)
       const result = await response.json()
@@ -756,6 +770,7 @@ class ProfessionalChart {
 
 export default function KLineChartProComponent({
   symbol,
+  symbolName,
   className = '',
   height = 500,
   width,
@@ -962,7 +977,7 @@ export default function KLineChartProComponent({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">
-              {symbol} 專業K線圖
+              {symbol} {symbolName && `(${symbolName})`} 專業K線圖
             </h3>
             <div className="flex items-center space-x-4">
               <p className="text-sm text-gray-500">
@@ -1012,8 +1027,8 @@ export default function KLineChartProComponent({
                 { value: '15m', label: '15分' },
                 { value: '60m', label: '1小時' },
                 { value: '1d', label: '日線' },
-                { value: '1w', label: '週線' },
-                { value: '1M', label: '月線' },
+                // { value: '1w', label: '週線' },
+                // { value: '1M', label: '月線' },
               ].map((item) => (
                 <button
                   key={item.value}

@@ -113,9 +113,6 @@ export type ScannerType =
   | 'AmountRank' // 依成交金額排序
 
 export type SortingMode =
-  // 基本排序
-  | 'asc' // 由小到大
-  | 'desc' // 由大到小
   // 針對漲跌幅的詳細排序
   | 'gain_asc' // 漲幅由小到大 (1% -> 5% -> 10%)
   | 'gain_desc' // 漲幅由大到小 (10% -> 5% -> 1%)

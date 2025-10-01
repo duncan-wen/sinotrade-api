@@ -32,8 +32,8 @@ export default function TestMultiTimeframePage() {
     { value: '15m', label: '15分鐘' },
     { value: '60m', label: '1小時' },
     { value: '1d', label: '日線' },
-    { value: '1w', label: '週線' },
-    { value: '1M', label: '月線' },
+    // { value: '1w', label: '週線' },
+    // { value: '1M', label: '月線' },
   ]
 
   return (

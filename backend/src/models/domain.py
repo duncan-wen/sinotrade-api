@@ -57,10 +57,6 @@ class ScannerType(str, Enum):
 class SortingMode(str, Enum):
     """詳細排序模式"""
 
-    # 基本排序
-    ASC = "asc"  # 由小到大
-    DESC = "desc"  # 由大到小
-
     # 針對漲跌幅的詳細排序
     GAIN_ASC = "gain_asc"  # 漲幅由小到大 (1% -> 5% -> 10%)
     GAIN_DESC = "gain_desc"  # 漲幅由大到小 (10% -> 5% -> 1%)

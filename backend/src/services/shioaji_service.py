@@ -1247,7 +1247,7 @@ class ShioajiService:
         self,
         scanner_type: ScannerType,
         ascending: bool = True,
-        sorting_mode: SortingMode = SortingMode.DESC,
+        sorting_mode: SortingMode = SortingMode.GAIN_DESC,
         count: int = 100,
         date: str | None = None,
         timeout: int = 30000,
@@ -1277,40 +1277,36 @@ class ShioajiService:
             # 將我們的 ScannerType 枚舉轉換為 Shioaji 的常數
             sj_scanner_type = getattr(sj.constant.ScannerType, scanner_type.value)
 
-            # 判斷是否需要更多數據來進行詳細排序
-            # GAIN_ASC: 漲幅小到大 (需要200筆找最小漲幅)
-            # LOSS_ASC: 跌幅小到大 (需要200筆找最小跌幅)
-            # VALUE_LOW_HIGH: 數值小到大 (需要200筆找最小值)
-            # PRICE_LOW_HIGH: 價格小到大 (需要200筆找最小值)
-            needs_more_data = sorting_mode in [
-                SortingMode.GAIN_ASC,
-                SortingMode.LOSS_ASC,
-                SortingMode.VALUE_LOW_HIGH,
-                SortingMode.PRICE_LOW_HIGH,
-            ]
-
-            # 如果需要詳細排序，請求更多數據
-            api_count = 200 if needs_more_data and count <= 100 else count
+            # 總是請求 200 筆數據 (最大值)
+            # 原因1: 需要先過濾成交量 > 500, 再取前 N 筆, 確保過濾後仍有足夠數據
+            # 原因2: 某些排序模式需要更多數據才能找到正確的極值
+            api_count = 200
 
             # 根據排序模式智能調整 ascending 參數
-            # Shioaji API: ascending=True 是由大到小, ascending=False 是由小到大
+            # Shioaji API 邏輯:
+            # - ascending=True: 漲幅榜 (正值, 由大到小)
+            # - ascending=False: 跌幅榜 (負值, 由大到小的絕對值)
             api_ascending = ascending  # 預設使用原始參數
-            if sorting_mode in [
-                SortingMode.GAIN_DESC,
-                SortingMode.VALUE_HIGH_LOW,
-                SortingMode.PRICE_HIGH_LOW,
-                SortingMode.DESC,
-            ]:
-                api_ascending = True  # 由大到小排序
-            elif sorting_mode in [
-                SortingMode.LOSS_DESC,  # 跌幅大到小：-10%→-1% 用 ascending=False
-                SortingMode.LOSS_ASC,
-                SortingMode.GAIN_ASC,
-                SortingMode.VALUE_LOW_HIGH,
-                SortingMode.PRICE_LOW_HIGH,
-                SortingMode.ASC,
-            ]:
-                api_ascending = False  # 由小到大排序（負數時得到跌幅大到小）
+            if (
+                sorting_mode
+                in [
+                    SortingMode.GAIN_DESC,  # 漲幅大→小: 用 ascending=True
+                    SortingMode.GAIN_ASC,  # 漲幅小→大: 用 ascending=True 取得漲幅榜, 後端再處理
+                    SortingMode.VALUE_HIGH_LOW,
+                    SortingMode.PRICE_HIGH_LOW,
+                ]
+            ):
+                api_ascending = True  # 取得漲幅榜
+            elif (
+                sorting_mode
+                in [
+                    SortingMode.LOSS_DESC,  # 跌幅大→小: 用 ascending=False
+                    SortingMode.LOSS_ASC,  # 跌幅小→大: 用 ascending=False 取得跌幅榜, 後端再處理
+                    SortingMode.VALUE_LOW_HIGH,
+                    SortingMode.PRICE_LOW_HIGH,
+                ]
+            ):
+                api_ascending = False  # 取得跌幅榜
 
             logger.info(
                 f"🔍 獲取排行資料: {scanner_type.value}, 排序模式: {sorting_mode.value}, API數量: {api_count}, 最終數量: {count}, API ascending: {api_ascending}"
@@ -1367,6 +1363,17 @@ class ShioajiService:
                     logger.error(f"轉換排行資料失敗: {scanner}, 錯誤: {e}")
                     continue
 
+            # 過濾成交量太小的股票（總成交量 > 500）
+            original_count = len(scanner_data_list)
+            scanner_data_list = [
+                data for data in scanner_data_list if data.total_volume > 500
+            ]
+            filtered_count = original_count - len(scanner_data_list)
+            if filtered_count > 0:
+                logger.info(f"🔍 過濾掉 {filtered_count} 筆成交量 ≤ 500 的資料")
+
+            logger.info(f"📊 過濾完成，剩餘 {len(scanner_data_list)} 筆數據")
+
             # 根據排序模式進行自定義排序
             scanner_data_list = self._apply_custom_sorting(
                 scanner_data_list, scanner_type, sorting_mode, count
@@ -1398,15 +1405,16 @@ class ShioajiService:
             排序後的數據列表
         """
         if not scanner_data_list:
+            logger.warning("⚠️ 排序數據列表為空")
             return scanner_data_list
 
-        # 如果使用基本排序模式，直接返回原數據
-        if sorting_mode in [SortingMode.ASC, SortingMode.DESC]:
-            # Shioaji API 已經處理了基本排序
-            return scanner_data_list
+        logger.info(
+            f"📊 開始自定義排序: 類型={scanner_type.value}, 模式={sorting_mode.value}, 數量={requested_count}, 輸入數據={len(scanner_data_list)}筆"
+        )
 
         # 針對不同掃描器類型和排序模式進行自定義排序
         if scanner_type == ScannerType.ChangePercentRank:
+            logger.info("🎯 使用漲跌幅排序邏輯")
             return self._sort_by_change_percent(
                 scanner_data_list, sorting_mode, requested_count
             )
@@ -1432,37 +1440,45 @@ class ShioajiService:
         sorting_mode: SortingMode,
         requested_count: int,
     ) -> list[ScannerData]:
-        """按漲跌幅進行詳細排序"""
+        """
+        按漲跌幅進行詳細排序
+
+        注意: scanner_data_list 已經是 API 排序好的數據
+        - ascending=True: 漲幅由大到小 (10% → 0.1%)
+        - ascending=False: 跌幅由大到小 (-10% → -0.1%)
+        """
 
         def get_change_percent(item: ScannerData) -> float:
             return item.change_percent
 
-        if sorting_mode == SortingMode.GAIN_ASC:
-            # 漲幅由小到大 (只包含正值) - 取最小的漲幅
-            gains = [item for item in scanner_data_list if get_change_percent(item) > 0]
-            sorted_gains = sorted(gains, key=get_change_percent)
-            return sorted_gains[:requested_count]  # 取前N個最小漲幅
-        elif sorting_mode == SortingMode.GAIN_DESC:
-            # 漲幅由大到小 (只包含正值) - 取最大的漲幅
-            gains = [item for item in scanner_data_list if get_change_percent(item) > 0]
-            sorted_gains = sorted(gains, key=get_change_percent, reverse=True)
-            return sorted_gains[:requested_count]  # 取前N個最大漲幅
-        elif sorting_mode == SortingMode.LOSS_ASC:
-            # 跌幅由小到大 (只包含負值，絕對值小的在前) - 取最小的跌幅
-            # 從200筆中取最小跌幅，如 -0.5%, -1%, -1.5%...
-            losses = [
-                item for item in scanner_data_list if get_change_percent(item) < 0
-            ]
-            if losses:
-                sorted_losses = sorted(
-                    losses, key=get_change_percent, reverse=True
-                )  # -0.5% 在 -1% 前面
-                return sorted_losses[:requested_count]  # 取前N個最小跌幅
-            return []
-        elif sorting_mode == SortingMode.LOSS_DESC:
-            # 跌幅由大到小 (-10%→-1%) - 直接使用 API 的 ascending=False 結果
-            # API 已經給出正確排序，直接取前N個即可
+        if sorting_mode == SortingMode.GAIN_DESC:
+            # 漲幅由大到小: API 已用 ascending=True 排序, 直接取前 N 筆
+            logger.info(
+                f"✅ GAIN_DESC: 總數據 {len(scanner_data_list)} 筆, 取前 {requested_count} 筆"
+            )
             return scanner_data_list[:requested_count]
+
+        elif sorting_mode == SortingMode.GAIN_ASC:
+            # 漲幅由小到大: API 用 ascending=True 排序(大→小), 取後 N 筆再反轉
+            logger.info(f"🔍 GAIN_ASC: 總數據 {len(scanner_data_list)} 筆")
+            result = scanner_data_list[-requested_count:]  # 取最後 N 筆(最小的漲幅)
+            result.reverse()  # 反轉成小→大
+            logger.info(f"✅ GAIN_ASC: 取後 {len(result)} 筆並反轉")
+            return result
+        elif sorting_mode == SortingMode.LOSS_DESC:
+            # 跌幅由大到小: API 已用 ascending=False 排序, 直接取前 N 筆
+            logger.info(
+                f"✅ LOSS_DESC: 總數據 {len(scanner_data_list)} 筆, 取前 {requested_count} 筆"
+            )
+            return scanner_data_list[:requested_count]
+
+        elif sorting_mode == SortingMode.LOSS_ASC:
+            # 跌幅由小到大: API 用 ascending=False 排序(大→小), 取後 N 筆再反轉
+            logger.info(f"🔍 LOSS_ASC: 總數據 {len(scanner_data_list)} 筆")
+            result = scanner_data_list[-requested_count:]  # 取最後 N 筆(最小的跌幅)
+            result.reverse()  # 反轉成小→大
+            logger.info(f"✅ LOSS_ASC: 取後 {len(result)} 筆並反轉")
+            return result
 
         return scanner_data_list
 
