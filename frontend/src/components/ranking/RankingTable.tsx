@@ -244,9 +244,9 @@ export const RankingTable: React.FC<RankingTableProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="relative max-h-[600px] overflow-y-auto overflow-x-auto">
-          <Table className="relative">
-            <TableHeader className="sticky top-0 z-10 bg-background shadow-sm border-b-2">
+        <div className="max-h-[600px] overflow-y-auto overflow-x-auto">
+          <Table>
+            <TableHeader className="sticky top-0 z-10 bg-background shadow-md border-b-2">
               <TableRow className="hover:bg-transparent">
                 <TableHead className="w-[60px] bg-background border-b-2">
                   #
