@@ -57,10 +57,10 @@ const getSortingOptions = (scannerType: ScannerType) => {
   switch (scannerType) {
     case 'ChangePercentRank':
       return [
-        { value: 'gain_desc' as SortingMode, label: '漲幅：大→小 (10%→1%)' },
         { value: 'gain_asc' as SortingMode, label: '漲幅：小→大 (1%→10%)' },
-        { value: 'loss_desc' as SortingMode, label: '跌幅：大→小 (-10%→-1%)' },
+        { value: 'gain_desc' as SortingMode, label: '漲幅：大→小 (10%→1%)' },
         { value: 'loss_asc' as SortingMode, label: '跌幅：小→大 (-1%→-10%)' },
+        { value: 'loss_desc' as SortingMode, label: '跌幅：大→小 (-10%→-1%)' },
       ]
 
     case 'ChangePriceRank':
@@ -111,13 +111,13 @@ const getSortingOptions = (scannerType: ScannerType) => {
 export default function RankingPage() {
   const [selectedScannerType, setSelectedScannerType] =
     useState<ScannerType>('ChangePercentRank')
-  const [sortingMode, setSortingMode] = useState<SortingMode>('gain_desc')
+  const [sortingMode, setSortingMode] = useState<SortingMode>('gain_asc')
 
   // 自動更新控制
-  const [autoRefresh, setAutoRefresh] = useState(true)
+  const [autoRefresh, setAutoRefresh] = useState(false)
 
   // 量比篩選控制
-  const [filterVolumeRatio, setFilterVolumeRatio] = useState(false)
+  const [filterVolumeRatio, setFilterVolumeRatio] = useState(true)
 
   // 分頁控制
   const [currentPage, setCurrentPage] = useState(1)
