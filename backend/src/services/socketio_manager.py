@@ -103,16 +103,29 @@ class SocketIOTickBroadcaster:
         """嘗試多種方法進行 Socket.IO 廣播"""
         success = False
 
+        # 🆕 只廣播給訂閱該商品的客戶端
+        from src.services.subscription_manager import subscription_manager
+
+        subscribers = subscription_manager.get_subscribers(mapped_symbol)
+        if not subscribers:
+            logger.debug(f"⚠️ {mapped_symbol} 沒有訂閱者，跳過廣播")
+            return True  # 沒有訂閱者不算錯誤
+
+        subscriber_list = list(subscribers)
+
         # 方法1: 嘗試使用現有事件循環
         try:
             loop = asyncio.get_running_loop()
             if not loop.is_closed():
                 _ = asyncio.run_coroutine_threadsafe(
-                    self.socket_manager.emit("kline_tick", broadcast_data), loop
+                    self.socket_manager.emit(
+                        "kline_tick", broadcast_data, room=subscriber_list
+                    ),
+                    loop,
                 )
                 success = True
                 logger.debug(
-                    f"✅ 使用現有事件循環廣播: {original_symbol} -> {mapped_symbol}"
+                    f"✅ 使用現有事件循環廣播: {original_symbol} -> {mapped_symbol} (訂閱者: {len(subscriber_list)})"
                 )
         except RuntimeError:
             pass  # 沒有運行中的事件循環
@@ -123,11 +136,14 @@ class SocketIOTickBroadcaster:
                 loop = asyncio.get_event_loop()
                 if not loop.is_closed():
                     _ = asyncio.run_coroutine_threadsafe(
-                        self.socket_manager.emit("kline_tick", broadcast_data), loop
+                        self.socket_manager.emit(
+                            "kline_tick", broadcast_data, room=subscriber_list
+                        ),
+                        loop,
                     )
                     success = True
                     logger.debug(
-                        f"✅ 使用獲取的事件循環廣播: {original_symbol} -> {mapped_symbol}"
+                        f"✅ 使用獲取的事件循環廣播: {original_symbol} -> {mapped_symbol} (訂閱者: {len(subscriber_list)})"
                     )
             except RuntimeError:
                 pass
@@ -138,7 +154,9 @@ class SocketIOTickBroadcaster:
 
                 def run_async_emit():
                     async def async_emit():
-                        await self.socket_manager.emit("kline_tick", broadcast_data)
+                        await self.socket_manager.emit(
+                            "kline_tick", broadcast_data, room=subscriber_list
+                        )
 
                     asyncio.run(async_emit())
 
@@ -147,7 +165,7 @@ class SocketIOTickBroadcaster:
                     executor.submit(run_async_emit)
                     success = True
                     logger.debug(
-                        f"✅ 使用線程池廣播: {original_symbol} -> {mapped_symbol}"
+                        f"✅ 使用線程池廣播: {original_symbol} -> {mapped_symbol} (訂閱者: {len(subscriber_list)})"
                     )
             except Exception as e:
                 logger.error(f"線程池廣播失敗: {e}")

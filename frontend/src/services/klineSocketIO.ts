@@ -35,9 +35,14 @@ export interface KlineMessage {
 
 class KlineSocketIOService {
   private socket: Socket | null = null
-  private currentSymbol: string | null = null
-  private currentInterval: string | null = null
-  private messageCallback: ((message: KlineMessage) => void) | null = null
+  // 🆕 支持多商品同時訂閱
+  private subscriptions: Map<
+    string,
+    {
+      callback: (message: KlineMessage) => void
+      interval: string
+    }
+  > = new Map()
   private reconnectAttempts = 0
   private readonly maxReconnectAttempts = 10 // 增加重連次數
   private readonly reconnectDelay = 2000 // 增加重連延遲
@@ -65,9 +70,9 @@ class KlineSocketIOService {
   get stats() {
     return {
       ...this.connectionStats,
-      currentSymbol: this.currentSymbol,
-      currentInterval: this.currentInterval,
-      hasCallback: !!this.messageCallback,
+      // 🆕 更新為多商品支持
+      activeSubscriptions: Array.from(this.subscriptions.keys()),
+      subscriptionsCount: this.subscriptions.size,
     }
   }
 
@@ -133,14 +138,15 @@ class KlineSocketIOService {
       // 🔧 清理重連定時器
       this.clearReconnectTimers()
 
-      // 如果有之前的訂閱,重新訂閱
-      if (this.currentSymbol && this.currentInterval) {
+      // 🆕 恢復所有現有訂閱
+      if (this.subscriptions.size > 0) {
         console.log(
-          '🔄 重連成功,恢復訂閱:',
-          this.currentSymbol,
-          this.currentInterval
+          '🔄 重連成功,恢復所有訂閱:',
+          Array.from(this.subscriptions.keys())
         )
-        this.subscribeToSymbol(this.currentSymbol, this.currentInterval)
+        this.subscriptions.forEach((subscription, symbol) => {
+          this.subscribeToSymbol(symbol, subscription.interval)
+        })
       }
     })
 
@@ -205,13 +211,19 @@ class KlineSocketIOService {
     this.socket.on('kline_tick', (data) => {
       console.log('📊 收到K線tick數據:', data.symbol, '價格:', data.close)
 
-      this.handleMessage({
-        type: 'tick',
-        symbol: data.symbol,
-        interval: this.currentInterval || '5m', // 使用當前間隔
-        tick: data,
-        timestamp: data.timestamp,
-      })
+      // 🆕 獲取該商品的訂閱信息
+      const subscription = this.subscriptions.get(data.symbol)
+      if (subscription) {
+        this.handleMessage({
+          type: 'tick',
+          symbol: data.symbol,
+          interval: subscription.interval,
+          tick: data,
+          timestamp: data.timestamp,
+        })
+      } else {
+        console.warn('⚠️ 收到未訂閱商品的數據:', data.symbol)
+      }
     })
 
     this.socket.on('kline_update', (data) => {
@@ -232,20 +244,24 @@ class KlineSocketIOService {
   }
 
   /**
-   * 處理接收到的消息
+   * 🆕 處理接收到的消息 - 按 symbol 路由到正確的回調函數
    */
   private handleMessage(message: KlineMessage): void {
-    if (this.messageCallback) {
+    const subscription = this.subscriptions.get(message.symbol)
+    if (subscription && subscription.callback) {
       try {
-        this.messageCallback(message)
+        subscription.callback(message)
+        console.log(`📡 路由數據到 ${message.symbol} 的圖表:`, message.type)
       } catch (error) {
-        console.error('❌ 處理K線消息失敗:', error)
+        console.error(`❌ 處理 ${message.symbol} K線消息失敗:`, error)
       }
+    } else {
+      console.warn(`⚠️ 未找到 ${message.symbol} 的訂閱者`)
     }
   }
 
   /**
-   * 訂閱指定股票的K線數據
+   * 🆕 訂閱指定商品的K線數據 - 支持多商品同時訂閱
    */
   subscribe(
     symbol: string,
@@ -254,25 +270,21 @@ class KlineSocketIOService {
   ): void {
     console.log('📊 訂閱K線數據:', symbol, '間隔:', interval)
 
-    // 保存回調函數
-    this.messageCallback = callback
+    // 🆕 保存多商品訂閱信息
+    this.subscriptions.set(symbol, {
+      callback,
+      interval,
+    })
 
-    // 保存當前訂閱的symbol和interval到localStorage,用於頁面刷新恢復
+    // 保存最新訂閱的symbol和interval到localStorage,用於頁面刷新恢復
     if (typeof window !== 'undefined') {
-      localStorage.setItem('lastSubscribedSymbol', symbol)
-      localStorage.setItem('lastSubscribedInterval', interval)
+      const existingSymbols = JSON.parse(
+        localStorage.getItem('subscribedSymbols') || '[]'
+      )
+      const updatedSymbols = Array.from(new Set([...existingSymbols, symbol]))
+      localStorage.setItem('subscribedSymbols', JSON.stringify(updatedSymbols))
+      localStorage.setItem(`symbol_${symbol}_interval`, interval)
     }
-
-    // 如果已經訂閱了其他股票或間隔,先取消
-    if (
-      (this.currentSymbol && this.currentSymbol !== symbol) ||
-      (this.currentInterval && this.currentInterval !== interval)
-    ) {
-      this.unsubscribe()
-    }
-
-    this.currentSymbol = symbol
-    this.currentInterval = interval
 
     // 確保連接後再訂閱
     if (this.isConnected) {
@@ -281,6 +293,8 @@ class KlineSocketIOService {
       console.log('⏳ 等待 Socket.IO 連接建立...')
       this.connect()
     }
+
+    console.log(`✅ ${symbol} 訂閱完成，當前訂閱數:`, this.subscriptions.size)
   }
 
   /**
@@ -300,25 +314,62 @@ class KlineSocketIOService {
   }
 
   /**
-   * 取消訂閱
+   * 🆕 取消特定商品的訂閱
    */
-  unsubscribe(): void {
-    if (this.currentSymbol && this.socket?.connected) {
-      console.log('📊 取消訂閱K線數據:', this.currentSymbol)
-      this.socket.emit('unsubscribe_klines', {
-        symbol: this.currentSymbol,
-      })
-    }
+  unsubscribe(symbol?: string): void {
+    if (symbol) {
+      // 取消特定商品的訂閱
+      if (this.subscriptions.has(symbol)) {
+        console.log('📊 取消訂閱K線數據:', symbol)
 
-    this.currentSymbol = null
-    this.currentInterval = null
-    this.messageCallback = null
-    this.connectionStats.subscriptions = 0
+        if (this.socket?.connected) {
+          this.socket.emit('unsubscribe_klines', { symbol })
+        }
 
-    // 清除localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('lastSubscribedSymbol')
-      localStorage.removeItem('lastSubscribedInterval')
+        this.subscriptions.delete(symbol)
+
+        // 更新 localStorage
+        if (typeof window !== 'undefined') {
+          const existingSymbols = JSON.parse(
+            localStorage.getItem('subscribedSymbols') || '[]'
+          )
+          const updatedSymbols = existingSymbols.filter(
+            (s: string) => s !== symbol
+          )
+          localStorage.setItem(
+            'subscribedSymbols',
+            JSON.stringify(updatedSymbols)
+          )
+          localStorage.removeItem(`symbol_${symbol}_interval`)
+        }
+
+        console.log(
+          `✅ ${symbol} 訂閱取消，剩餘訂閱數:`,
+          this.subscriptions.size
+        )
+      }
+    } else {
+      // 取消所有訂閱
+      console.log('📊 取消所有K線訂閱')
+
+      if (this.socket?.connected) {
+        this.subscriptions.forEach((_, symbol) => {
+          this.socket!.emit('unsubscribe_klines', { symbol })
+        })
+      }
+
+      this.subscriptions.clear()
+      this.connectionStats.subscriptions = 0
+
+      // 清除localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('subscribedSymbols')
+        // 清除所有商品的 interval 設定
+        const keys = Object.keys(localStorage).filter(
+          (key) => key.startsWith('symbol_') && key.endsWith('_interval')
+        )
+        keys.forEach((key) => localStorage.removeItem(key))
+      }
     }
   }
 
@@ -336,9 +387,8 @@ class KlineSocketIOService {
       this.socket = null
     }
 
-    this.currentSymbol = null
-    this.currentInterval = null
-    this.messageCallback = null
+    // 🆕 清理所有訂閱
+    this.subscriptions.clear()
     this.isConnecting = false
     this.connectionStats = {
       connected: false,

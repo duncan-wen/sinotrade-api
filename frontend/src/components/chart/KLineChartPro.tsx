@@ -100,6 +100,10 @@ class ProfessionalChart {
   private theme: keyof typeof themes = DEFAULT_THEME // 🎨 當前主題
   private colors: ThemeColors = themes[DEFAULT_THEME] // 🎨 當前色彩配置
   private indicatorStyles: ReturnType<typeof createIndicatorStyles> // 🎨 指標樣式配置
+  // 🆕 拖曳和實時模式管理
+  private isUserViewingHistory: boolean = false // 用戶是否正在查看歷史數據
+  private isRealTimeMode: boolean = true // 是否為實時模式
+  private dragTimeout: NodeJS.Timeout | null = null // 拖曳停止檢測計時器
 
   constructor(container: HTMLElement, symbol: string, interval: string) {
     this.updateTheme(DEFAULT_THEME)
@@ -110,6 +114,10 @@ class ProfessionalChart {
     this.currentKline = null
     this.lastKlineStartTime = 0
     this.klineDataCache = []
+    // 🆕 初始化拖曳狀態
+    this.isUserViewingHistory = false
+    this.isRealTimeMode = true
+    this.dragTimeout = null
   }
 
   // 🎨 更新主題配置
@@ -137,6 +145,81 @@ class ProfessionalChart {
   // 🔧 獲取當前主題的VOL配置
   private get VOL_CONFIG() {
     return this.indicatorStyles.vol
+  }
+
+  // 🆕 設置拖曳和滾動監聽器
+  private setupDragListeners() {
+    if (!this.chart) return
+
+    try {
+      // 監聽拖曳事件
+      this.chart.subscribeAction('onPaneDrag', (params: any) => {
+        console.log('🖱️ 用戶拖曳圖表:', params)
+        this.handleUserDrag()
+      })
+
+      // 監聽滾動事件
+      this.chart.subscribeAction('onScroll', (params: any) => {
+        console.log('🖱️ 用戶滾動圖表:', params)
+        this.handleUserDrag()
+      })
+
+      // 監聽可見範圍變化
+      this.chart.subscribeAction('onVisibleRangeChange', (params: any) => {
+        if (!this.isRealTimeMode) {
+          this.handleUserDrag()
+        }
+      })
+
+      console.log('✅ 拖曳監聽設置完成')
+    } catch (error) {
+      console.error('❌ 拖曳監聽設置失敗:', error)
+    }
+  }
+
+  // 🆕 處理用戶拖曳行為
+  private handleUserDrag() {
+    console.log('📊 用戶開始查看歷史數據')
+    this.isUserViewingHistory = true
+    this.isRealTimeMode = false
+
+    // 清除之前的計時器
+    if (this.dragTimeout) {
+      clearTimeout(this.dragTimeout)
+    }
+
+    // 6秒後如果沒有新的拖曳動作，認為用戶停止查看歷史
+    this.dragTimeout = setTimeout(() => {
+      console.log('📊 用戶停止查看歷史數據')
+      this.isUserViewingHistory = false
+      // 注意：不自動回到實時模式，讓用戶手動決定
+    }, 6000)
+  }
+
+  // 🆕 手動回到實時模式
+  backToRealTime() {
+    console.log('📊 用戶手動回到實時模式')
+    this.isUserViewingHistory = false
+    this.isRealTimeMode = true
+
+    // 清除計時器
+    if (this.dragTimeout) {
+      clearTimeout(this.dragTimeout)
+      this.dragTimeout = null
+    }
+
+    // 滾動到最新位置
+    if (typeof this.chart.scrollToRealTime === 'function') {
+      this.chart.scrollToRealTime()
+    }
+  }
+
+  // 🆕 獲取當前圖表狀態
+  getChartStatus() {
+    return {
+      isUserViewingHistory: this.isUserViewingHistory,
+      isRealTimeMode: this.isRealTimeMode,
+    }
   }
 
   // 計算 K 線邊界時間
@@ -216,6 +299,9 @@ class ProfessionalChart {
 
       // 載入數據
       await this.loadData()
+
+      // 🆕 設置拖曳監聽
+      this.setupDragListeners()
 
       // 設置技術指標
       this.setupIndicators()
@@ -393,58 +479,72 @@ class ProfessionalChart {
     }
   }
 
-  // 更新數據
+  // 🔧 改善的更新數據方法 - 支持智能滾動控制
   updateData(data: any, isNewKline: boolean = false) {
-    if (this.chart && data) {
-      try {
-        // 轉換數據格式為 klinecharts 格式
-        const klineData = {
-          timestamp: data.timestamp,
-          open: data.open,
-          high: data.high,
-          low: data.low,
-          close: data.close,
-          volume: data.volume,
-        }
+    if (!this.chart || !data) return
 
-        console.log('📊 [KLineChart Pro] 更新數據:', {
-          ...klineData,
-          是否新K線: isNewKline,
-          當前緩存長度: this.klineDataCache.length,
-        })
-
-        // 更新本地緩存
-        if (isNewKline) {
-          // 新 K 線:追加到緩存末尾
-          this.klineDataCache.push(klineData)
-          console.log(
-            '📊 追加新 K 線到緩存,新長度:',
-            this.klineDataCache.length
-          )
-        } else {
-          // 更新現有 K 線:替換最後一個元素
-          if (this.klineDataCache.length > 0) {
-            this.klineDataCache[this.klineDataCache.length - 1] = klineData
-            console.log('📊 更新緩存中的最後一根 K 線')
-          } else {
-            // 如果緩存為空,當作新 K 線處理
-            this.klineDataCache.push(klineData)
-            console.log('📊 緩存為空,追加為新 K 線')
-          }
-        }
-
-        // 使用完整緩存更新圖表 - 檢查可用的 API 方法
-        if (typeof this.chart.applyNewData === 'function') {
-          this.chart.applyNewData(this.klineDataCache)
-        } else if (typeof this.chart.loadData === 'function') {
-          this.chart.loadData(this.klineDataCache)
-        } else {
-          console.warn('⚠️ 無可用的數據更新方法')
-        }
-      } catch (error) {
-        console.error('❌ 數據更新失敗:', error)
-        console.error('❌ 錯誤詳情:', error.message)
+    try {
+      // 轉換數據格式為 klinecharts 格式
+      const klineData = {
+        timestamp: data.timestamp,
+        open: data.open,
+        high: data.high,
+        low: data.low,
+        close: data.close,
+        volume: data.volume,
       }
+
+      console.log('📊 [KLineChart Pro] 更新數據:', {
+        ...klineData,
+        是否新K線: isNewKline,
+        用戶查看歷史: this.isUserViewingHistory,
+        實時模式: this.isRealTimeMode,
+        當前緩存長度: this.klineDataCache.length,
+      })
+
+      // 更新本地緩存
+      if (isNewKline) {
+        this.klineDataCache.push(klineData)
+        console.log('📊 追加新 K 線到緩存,新長度:', this.klineDataCache.length)
+      } else {
+        if (this.klineDataCache.length > 0) {
+          this.klineDataCache[this.klineDataCache.length - 1] = klineData
+          console.log('📊 更新緩存中的最後一根 K 線')
+        } else {
+          this.klineDataCache.push(klineData)
+          console.log('📊 緩存為空,追加為新 K 線')
+        }
+      }
+
+      // 🔑 關鍵改進：優先使用 updateData 而不是 applyNewData
+      if (typeof this.chart.updateData === 'function') {
+        // 使用 updateData 只更新最後一根K線，不會重置位置
+        this.chart.updateData(klineData)
+        console.log('✅ 使用 updateData 更新最後一根K線')
+      } else if (typeof this.chart.applyNewData === 'function') {
+        // 如果沒有 updateData，則使用 applyNewData
+        this.chart.applyNewData(this.klineDataCache)
+        console.log('⚠️ 使用 applyNewData 更新完整數據')
+      } else if (typeof this.chart.loadData === 'function') {
+        this.chart.loadData(this.klineDataCache)
+        console.log('⚠️ 使用 loadData 更新完整數據')
+      } else {
+        console.warn('⚠️ 無可用的數據更新方法')
+      }
+
+      // 🔑 只有在實時模式且用戶未查看歷史時才自動滾動到最新
+      if (this.isRealTimeMode && !this.isUserViewingHistory) {
+        // 確保滾動到最新位置
+        if (typeof this.chart.scrollToRealTime === 'function') {
+          this.chart.scrollToRealTime()
+          console.log('📊 自動滾動到最新位置')
+        }
+      } else {
+        console.log('📊 用戶正在查看歷史，不自動滾動')
+      }
+    } catch (error) {
+      console.error('❌ 數據更新失敗:', error)
+      console.error('❌ 錯誤詳情:', error.message)
     }
   }
 
@@ -742,6 +842,26 @@ class ProfessionalChart {
 
   // 銷毀圖表
   destroy() {
+    // 🆕 清理拖曳計時器
+    if (this.dragTimeout) {
+      clearTimeout(this.dragTimeout)
+      this.dragTimeout = null
+    }
+
+    // 🆕 移除事件監聽器
+    if (this.chart) {
+      try {
+        if (typeof this.chart.unsubscribeAction === 'function') {
+          this.chart.unsubscribeAction('onPaneDrag')
+          this.chart.unsubscribeAction('onScroll')
+          this.chart.unsubscribeAction('onVisibleRangeChange')
+          console.log('✅ 事件監聽器清理完成')
+        }
+      } catch (error) {
+        console.log('⚠️ 清理事件監聽器時出錯:', error)
+      }
+    }
+
     if (this.chart) {
       try {
         // 銷毀圖表實例 - 嘗試不同的銷毀方法
@@ -763,7 +883,8 @@ class ProfessionalChart {
     }
 
     if (klineSocketIOService) {
-      klineSocketIOService.unsubscribe()
+      // 🆕 取消特定商品的訂閱
+      klineSocketIOService.unsubscribe(this.symbol)
     }
   }
 }
@@ -1019,6 +1140,21 @@ export default function KLineChartProComponent({
 
           {/* 控制按鈕群 */}
           <div className="flex space-x-4">
+            {/* 🆕 回到實時按鈕 */}
+            <ChartButton
+              variant="action"
+              title="回到實時K線"
+              onClick={() => {
+                if (chartInstanceRef.current) {
+                  chartInstanceRef.current.backToRealTime()
+                }
+              }}
+              className="bg-blue-100 hover:bg-blue-200 text-blue-700 flex items-center space-x-1"
+            >
+              <span>📈</span>
+              <span>回到實時</span>
+            </ChartButton>
+
             {/* 時間間隔按鈕 */}
             <div className="flex space-x-2">
               {[
