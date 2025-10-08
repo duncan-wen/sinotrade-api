@@ -119,6 +119,9 @@ export default function RankingPage() {
   // 量比篩選控制
   const [filterVolumeRatio, setFilterVolumeRatio] = useState(true)
 
+  // 🆕 漲跌幅篩選控制 (±3.5%)
+  const [filterChangePercent, setFilterChangePercent] = useState(false)
+
   // 分頁控制
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 35 // 每頁顯示 35 筆
@@ -139,10 +142,21 @@ export default function RankingPage() {
       refreshInterval: autoRefresh ? 30000 : 0, // 根據 toggle 決定是否自動刷新
     })
 
-  // 根據量比篩選條件過濾數據
-  const filteredData = filterVolumeRatio
-    ? data.filter((item) => item.volume_ratio > 1.5)
-    : data
+  // 根據篩選條件過濾數據
+  let filteredData = data
+
+  // 量比篩選
+  if (filterVolumeRatio) {
+    filteredData = filteredData.filter((item) => item.volume_ratio > 1.5)
+  }
+
+  // 🆕 漲跌幅篩選 (±3.5%)
+  if (filterChangePercent) {
+    filteredData = filteredData.filter((item) => {
+      const changePercent = Math.abs(item.change_percent)
+      return changePercent >= 1.0 && changePercent <= 3.5
+    })
+  }
 
   // 計算分頁數據
   const totalPages = Math.ceil(filteredData.length / itemsPerPage)
@@ -400,21 +414,44 @@ export default function RankingPage() {
               </div>
             </div>
 
-            {/* 量比篩選 */}
+            {/* 特別篩選 */}
             <div className="space-y-2">
               <label className="text-sm font-medium">特別篩選</label>
-              <div className="flex items-center space-x-2 pt-1">
-                <Switch
-                  id="volume-ratio-filter"
-                  checked={filterVolumeRatio}
-                  onCheckedChange={(checked) => {
-                    setFilterVolumeRatio(checked)
-                    setCurrentPage(1) // 重置到第一頁
-                  }}
-                />
-                <Label htmlFor="volume-ratio-filter" className="cursor-pointer">
-                  量比 &gt; 1.5
-                </Label>
+              <div className="space-y-2 pt-1">
+                {/* 量比篩選 */}
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="volume-ratio-filter"
+                    checked={filterVolumeRatio}
+                    onCheckedChange={(checked) => {
+                      setFilterVolumeRatio(checked)
+                      setCurrentPage(1) // 重置到第一頁
+                    }}
+                  />
+                  <Label
+                    htmlFor="volume-ratio-filter"
+                    className="cursor-pointer"
+                  >
+                    量比 &gt; 1.5
+                  </Label>
+                </div>
+                {/* 🆕 漲跌幅篩選 */}
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="change-percent-filter"
+                    checked={filterChangePercent}
+                    onCheckedChange={(checked) => {
+                      setFilterChangePercent(checked)
+                      setCurrentPage(1) // 重置到第一頁
+                    }}
+                  />
+                  <Label
+                    htmlFor="change-percent-filter"
+                    className="cursor-pointer"
+                  >
+                    ±1%~3.5%
+                  </Label>
+                </div>
               </div>
             </div>
 
@@ -430,7 +467,10 @@ export default function RankingPage() {
                       {filteredData.length} / {data.length} 檔
                     </Badge>
                     {filterVolumeRatio && (
-                      <Badge variant="outline">篩選中</Badge>
+                      <Badge variant="outline">量比篩選</Badge>
+                    )}
+                    {filterChangePercent && (
+                      <Badge variant="outline">漲跌幅篩選</Badge>
                     )}
                   </>
                 )}
@@ -477,6 +517,7 @@ export default function RankingPage() {
               <li>表格可垂直滾動，表頭固定方便查看</li>
               <li>可開啟/關閉自動更新（預設每30秒刷新一次）</li>
               <li>可開啟量比篩選，只顯示量比 &gt; 1.5 的股票</li>
+              <li>🆕 可開啟漲跌幅篩選，只顯示 ±1%~3.5% 範圍內的股票</li>
               <li>點擊股票項目可查看 K線圖</li>
               <li>漲跌幅以前一交易日收盤價為基準計算</li>
               <li>成交量和成交金額為當日累計數據</li>
