@@ -104,7 +104,6 @@ class ScannerData(BaseModel):
     ask_volumes: int = Field(..., description="外盤總成交量")
 
     @computed_field
-    @property
     def change_percent(self) -> float:
         """計算漲跌百分比"""
         if self.close == 0:
@@ -115,7 +114,6 @@ class ScannerData(BaseModel):
         return (self.change_price / previous_close) * 100
 
     @computed_field
-    @property
     def timestamp_datetime(self) -> str:
         """將時間戳轉換為可讀格式"""
         try:
@@ -140,13 +138,11 @@ class UsageStats(BaseModel):
     raw_data: dict[str, Any] = Field(default_factory=dict, description="原始使用量數據")
 
     @computed_field
-    @property
     def is_over_limit(self) -> bool:
         """是否超過流量限制"""
         return self.usage_rate is not None and self.usage_rate > 100
 
     @computed_field
-    @property
     def is_near_limit(self) -> bool:
         """是否接近流量限制"""
         return self.usage_rate is not None and self.usage_rate > 90

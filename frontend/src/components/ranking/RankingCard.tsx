@@ -66,12 +66,12 @@ const calculateChangePercent = (close: number, changePrice: number): number => {
 }
 
 /**
- * 獲取漲跌顏色樣式 (台股慣例：紅漲綠跌)
+ * 獲取漲跌顏色樣式 (台股慣例:紅漲綠跌)
  */
 const getChangeColorClass = (change: number): string => {
-  if (change > 0) return 'text-red-600 dark:text-red-400' // 漲：紅色
-  if (change < 0) return 'text-green-600 dark:text-green-400' // 跌：綠色
-  return 'text-muted-foreground' // 平盤：中性色
+  if (change > 0) return 'text-red-600 dark:text-red-400' // 漲:紅色
+  if (change < 0) return 'text-green-600 dark:text-green-400' // 跌:綠色
+  return 'text-muted-foreground' // 平盤:中性色
 }
 
 /**

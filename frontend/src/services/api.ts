@@ -312,8 +312,8 @@ class ApiService {
    * 獲取篩選後的選擇權合約
    */
   async getFilteredOptionContracts(params: {
-    option_types: string // 逗號分隔，如 "TX1,TX2,TXO"
-    target_months: string // 逗號分隔，如 "202509,202510"
+    option_types: string // 逗號分隔,如 "TXO,TX1,TX2,TX4,TX5,TXU,TXV,TXX,TXY,TXZ"
+    target_months: string // 逗號分隔,如 "202509,202510"
     price_range?: number // 價格範圍 (上下多少點)
     futures_symbol?: string // 期貨合約代號
     call_put_filter?: 'call' | 'put' | 'both' // 篩選類型

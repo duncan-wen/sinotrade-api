@@ -1,13 +1,13 @@
 /**
  * Yahoo Finance 圖表外部連結組件
- * 當需要查看日線圖時，智能跳轉到 Yahoo Finance
+ * 當需要查看日線圖時,智能跳轉到 Yahoo Finance
  */
 
 import React from 'react'
 import { ExternalLink, TrendingUp, BarChart3 } from 'lucide-react'
 
 interface YahooFinanceChartLinkProps {
-  symbol: string // 台股代碼，如 "6901"
+  symbol: string // 台股代碼,如 "6901"
   className?: string
 }
 
@@ -53,7 +53,7 @@ export default function YahooFinanceChartLink({
         </a>
 
         <div className="text-xs text-gray-500">
-          ⚡ 節省數據傳輸，獲得專業分析
+          ⚡ 節省數據傳輸,獲得專業分析
         </div>
       </div>
     </div>

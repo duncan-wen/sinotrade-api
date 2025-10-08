@@ -58,7 +58,7 @@ def test_subscription_cleanup_order():
         print()
 
         # 4. 測試批量取消訂閱方法
-        print("4. 測試批量取消訂閱（在登錄狀態下）")
+        print("4. 測試批量取消訂閱(在登錄狀態下)")
         print(f"   登錄狀態: {shioaji_service.is_logged_in()}")
         print(f"   取消前訂閱數: {len(shioaji_service.active_subscriptions)}")
 
@@ -84,7 +84,7 @@ def test_subscription_cleanup_order():
 
         # 6. 測試完整的強制清理流程
         print("6. 測試完整的強制清理流程")
-        print("   這會按順序執行：取消訂閱 → 登出 → 等待 → 清理任務")
+        print("   這會按順序執行:取消訂閱 → 登出 → 等待 → 清理任務")
         print("   執行清理...")
 
         start_time = time.time()
@@ -164,8 +164,8 @@ if __name__ == "__main__":
         test_subscription_cleanup_order()
         test_individual_unsubscribe()
 
-        print("\n🎯 測試總結：")
-        print("   ✅ 新的清理順序：取消訂閱 → 登出 → 等待 → 清理任務")
+        print("\n🎯 測試總結:")
+        print("   ✅ 新的清理順序:取消訂閱 → 登出 → 等待 → 清理任務")
         print("   ✅ 確保 API 訂閱在登錄狀態下正確取消")
         print("   ✅ 避免了登出後無法取消訂閱的問題")
 

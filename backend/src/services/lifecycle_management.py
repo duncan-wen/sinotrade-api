@@ -93,7 +93,7 @@ class LifecycleManager:
         登出 Shioaji 服務
 
         Args:
-            force: 是否強制登出（忽略錯誤）
+            force: 是否強制登出(忽略錯誤)
 
         Returns:
             bool: 登出是否成功
@@ -112,7 +112,7 @@ class LifecycleManager:
             return self._safe_logout()
 
     def _safe_logout(self) -> bool:
-        """安全登出（處理錯誤但不忽略）"""
+        """安全登出(處理錯誤但不忽略)"""
         try:
             logger.info("🔐 正在安全登出 Shioaji...")
 
@@ -139,11 +139,11 @@ class LifecycleManager:
             return False
 
     def _force_logout(self) -> bool:
-        """強制登出（忽略所有錯誤）"""
+        """強制登出(忽略所有錯誤)"""
         logger.info("🚨 正在強制登出 Shioaji...")
 
         try:
-            # 嘗試調用取消訂閱回調（如果存在）
+            # 嘗試調用取消訂閱回調(如果存在)
             if self._unsubscribe_callback and self.active_subscriptions:
                 try:
                     logger.debug("🔄 嘗試通過回調批量取消訂閱...")
@@ -165,7 +165,7 @@ class LifecycleManager:
                 try:
                     self.api.logout()
                 except Exception as e:
-                    logger.warning(f"強制登出時 API 錯誤（已忽略）: {e}")
+                    logger.warning(f"強制登出時 API 錯誤(已忽略): {e}")
 
             # 重置狀態
             self._reset_state()
@@ -304,10 +304,10 @@ class LifecycleManager:
         logger.info(f"✅ 已清理 {task_count} 個任務")
 
     def _force_cleanup_all(self) -> None:
-        """強制清理所有資源（忽略錯誤）"""
+        """強制清理所有資源(忽略錯誤)"""
         try:
             self.active_subscriptions.clear()
-            logger.debug("強制清理：已清空訂閱集合")
+            logger.debug("強制清理:已清空訂閱集合")
         except Exception as e:
             logger.warning(f"強制清理訂閱時出錯: {e}")
 
@@ -316,7 +316,7 @@ class LifecycleManager:
                 if not task.done():
                     task.cancel()
             self.pending_tasks.clear()
-            logger.debug("強制清理：已清空任務集合")
+            logger.debug("強制清理:已清空任務集合")
         except Exception as e:
             logger.warning(f"強制清理任務時出錯: {e}")
 
@@ -324,4 +324,4 @@ class LifecycleManager:
         """重置內部狀態"""
         self._is_logged_in = False
         self._is_initialized = False
-        # 注意：不重置 _is_destroyed,因為銷毀是不可逆的
+        # 注意:不重置 _is_destroyed,因為銷毀是不可逆的

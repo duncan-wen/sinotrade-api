@@ -39,7 +39,7 @@ interface RankingTableProps {
   onRowClick?: (item: ScannerData, index: number) => void
   /** 是否可點擊 */
   clickable?: boolean
-  /** 起始索引（用於分頁顯示正確的排名） */
+  /** 起始索引(用於分頁顯示正確的排名) */
   startIndex?: number
 }
 
@@ -124,7 +124,7 @@ export const RankingTable: React.FC<RankingTableProps> = ({
    */
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
-      // 同一欄位：null -> desc -> asc -> null
+      // 同一欄位:null -> desc -> asc -> null
       if (sortDirection === null) {
         setSortDirection('desc')
       } else if (sortDirection === 'desc') {

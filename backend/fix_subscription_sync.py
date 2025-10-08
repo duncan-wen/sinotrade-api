@@ -20,11 +20,9 @@ def check_subscription_sync():
     manager_symbols = set(subscription_manager.shioaji_subscriptions)
     service_symbols = set(shioaji_service.active_subscriptions)
 
-
     if manager_symbols == service_symbols:
         return True
     else:
-
         only_in_manager = manager_symbols - service_symbols
         only_in_service = service_symbols - manager_symbols
 
@@ -67,7 +65,7 @@ def safe_cleanup_all():
         if not is_synced:
             pass
 
-        # 2. 執行 Shioaji 服務清理（取消實際 API 訂閱）
+        # 2. 執行 Shioaji 服務清理(取消實際 API 訂閱)
         shioaji_service.force_cleanup_for_restart()
 
         # 3. 清理管理器記錄
@@ -97,7 +95,6 @@ def main():
             return
 
     check_subscription_sync()
-
 
     choice = input("\n請選擇 (1-4): ").strip()
 

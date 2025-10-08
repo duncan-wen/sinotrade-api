@@ -33,7 +33,7 @@ def test_lifecycle_management():
     print()
 
     # 3. 測試確保登錄
-    print("3. 測試確保登錄（應該跳過重複登錄）")
+    print("3. 測試確保登錄(應該跳過重複登錄)")
     ensure_result = shioaji_service.ensure_logged_in()
     print(f"   確保登錄結果: {'✅ 成功' if ensure_result else '❌ 失敗'}")
     print()
@@ -71,11 +71,9 @@ def test_lifecycle_management():
     print()
 
     # 8. 測試銷毀後的操作
-    print("8. 測試銷毀後的操作（應該失敗）")
+    print("8. 測試銷毀後的操作(應該失敗)")
     login_after_destroy = shioaji_service.login()
-    print(
-        f"   銷毀後登錄結果: {'✅ 成功' if login_after_destroy else '❌ 失敗（預期）'}"
-    )
+    print(f"   銷毀後登錄結果: {'✅ 成功' if login_after_destroy else '❌ 失敗(預期)'}")
     print()
 
     print("=" * 60)
@@ -84,7 +82,7 @@ def test_lifecycle_management():
 
 def test_usage_api_after_lifecycle():
     """測試在生命週期管理後是否能正常調用 usage API"""
-    print("\n🔍 測試使用量 API（在生命週期測試後）")
+    print("\n🔍 測試使用量 API(在生命週期測試後)")
     print("-" * 40)
 
     try:

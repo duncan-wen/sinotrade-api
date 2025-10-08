@@ -35,7 +35,7 @@ def test_service_status():
             for i, callback in enumerate(shioaji_service.quote_callbacks):
                 print(f"     {i + 1}. {callback.__name__}")
         else:
-            print("   ⚠️ 沒有註冊的回調函數！")
+            print("   ⚠️ 沒有註冊的回調函數!")
 
         print("\n2. 訂閱管理器狀態:")
         status = subscription_manager.get_subscription_status()
@@ -51,7 +51,7 @@ def test_service_status():
         if manager_symbols == service_symbols:
             print("   ✅ 兩個系統同步")
         else:
-            print("   🚨 兩個系統不同步！")
+            print("   🚨 兩個系統不同步!")
             print(f"   僅在管理器中: {sorted(manager_symbols - service_symbols)}")
             print(f"   僅在服務中: {sorted(service_symbols - manager_symbols)}")
 
@@ -161,7 +161,7 @@ def test_socketio_broadcaster():
             "timestamp": str(datetime.now()),
         }
 
-        # 測試廣播（這不會實際發送,因為沒有連接的客戶端）
+        # 測試廣播(這不會實際發送,因為沒有連接的客戶端)
         try:
             broadcaster.broadcast_tick_data(mock_tick_data)
             print("✅ 廣播方法調用成功")
@@ -178,7 +178,7 @@ def test_socketio_broadcaster():
         print(f"廣播器回調註冊狀態: {'✅ 已註冊' if is_registered else '❌ 未註冊'}")
 
         if not is_registered:
-            print("   這可能是 WebSocket 數據問題的原因！")
+            print("   這可能是 WebSocket 數據問題的原因!")
             print("   嘗試重新註冊...")
             shioaji_service.add_quote_callback(broadcast_method)
             print("   ✅ 重新註冊完成")

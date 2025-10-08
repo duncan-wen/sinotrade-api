@@ -2,11 +2,12 @@
 
 import asyncio
 from datetime import datetime
+from typing import Any
 
 from src.services.shioaji_service import shioaji_service
 
 
-async def test_options_functionality():
+async def test_options_functionality() -> None:
     """測試台指選擇權功能"""
 
     print("=" * 60)
@@ -25,8 +26,19 @@ async def test_options_functionality():
         # 2. 檢查可用的選擇權合約
         print("\n📊 2. 檢查可用的選擇權合約...")
 
-        option_types = ["TX1", "TX2", "TXO", "TX4", "TXY", "TXU"]
-        available_options = {}
+        option_types = [
+            "TXO",
+            "TX1",
+            "TX2",
+            "TX4",
+            "TX5",
+            "TXU",
+            "TXV",
+            "TXX",
+            "TXY",
+            "TXZ",
+        ]
+        available_options: dict[str, dict[str, Any]] = {}
 
         for opt_type in option_types:
             try:
@@ -50,7 +62,7 @@ async def test_options_functionality():
                         print(
                             f"      - {contract_name}: {getattr(contract, 'code', 'N/A')}"
                         )
-                    except:
+                    except Exception:
                         continue
 
             except Exception as e:
@@ -76,7 +88,7 @@ async def test_options_functionality():
                     if contracts:
                         test_symbols.append(contracts[0])  # 取第一個合約
                         break
-                except:
+                except Exception:
                     continue
 
         for symbol in test_symbols:
@@ -174,7 +186,7 @@ async def test_options_functionality():
             print(f"⚠️ 清理過程出現問題: {e}")
 
 
-def test_contract_access():
+def test_contract_access() -> None:
     """簡單測試合約存取"""
 
     print("\n🔍 快速合約存取測試...")
@@ -183,7 +195,7 @@ def test_contract_access():
         print("❌ 無法登入服務")
         return
 
-    option_types = ["TX1", "TX2", "TXO", "TX4", "TXY", "TXU"]
+    option_types = ["TX1", "TX2", "TXO", "TX4", "TX5", "TXY", "TXU"]
 
     for opt_type in option_types:
         try:

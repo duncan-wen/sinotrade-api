@@ -198,8 +198,8 @@ const SimpleApiTest: React.FC = () => {
                 <p
                   className={`font-medium ${
                     stockQuote.data.change >= 0
-                      ? 'text-red-600'  // 漲：紅色
-                      : 'text-green-600'  // 跌：綠色
+                      ? 'text-red-600' // 漲:紅色
+                      : 'text-green-600' // 跌:綠色
                   }`}
                 >
                   {stockQuote.data.change >= 0 ? '+' : ''}
@@ -235,8 +235,8 @@ const SimpleApiTest: React.FC = () => {
                         <p
                           className={`text-sm ${
                             quote.change >= 0
-                              ? 'text-red-600'  // 漲：紅色
-                              : 'text-green-600'  // 跌：綠色
+                              ? 'text-red-600' // 漲:紅色
+                              : 'text-green-600' // 跌:綠色
                           }`}
                         >
                           {quote.change >= 0 ? '+' : ''}

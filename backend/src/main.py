@@ -55,7 +55,7 @@ async def lifespan(app: FastAPI):
             logger.info(f"[SYNC] 服務實際的訂閱: {sorted(service_symbols)}")
 
             if manager_symbols != service_symbols:
-                logger.warning("[SYNC] 檢測到訂閱不同步！")
+                logger.warning("[SYNC] 檢測到訂閱不同步!")
                 logger.warning(
                     f"[SYNC] 僅在管理器中: {sorted(manager_symbols - service_symbols)}"
                 )
@@ -63,11 +63,11 @@ async def lifespan(app: FastAPI):
                     f"[SYNC] 僅在服務中: {sorted(service_symbols - manager_symbols)}"
                 )
 
-            # 2. 使用統一的強制清理方法（以實際 API 訂閱為準）
+            # 2. 使用統一的強制清理方法(以實際 API 訂閱為準)
             shioaji_service.force_cleanup_for_restart()
             logger.info("[SUCCESS] Shioaji 服務統一清理完成")
 
-            # 3. 清理訂閱管理器記錄（在 Shioaji 清理後）
+            # 3. 清理訂閱管理器記錄(在 Shioaji 清理後)
             symbols_to_cleanup = subscription_manager.cleanup_all_subscriptions()
             logger.info(
                 f"[CLEANUP] 訂閱管理器清理完成,共清理 {len(symbols_to_cleanup)} 個商品記錄"
@@ -140,7 +140,7 @@ app.add_middleware(
         "http://localhost:3001",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
-    ],  # 前端開發服務器（支援多個端口）
+    ],  # 前端開發服務器(支援多個端口)
     allow_credentials=True,
     allow_methods=["*"],  # 允許所有 HTTP 方法,包括 OPTIONS
     allow_headers=["*"],  # 允許所有請求頭

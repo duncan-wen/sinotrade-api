@@ -294,7 +294,7 @@ class KlineSocketIOService {
       this.connect()
     }
 
-    console.log(`✅ ${symbol} 訂閱完成，當前訂閱數:`, this.subscriptions.size)
+    console.log(`✅ ${symbol} 訂閱完成,當前訂閱數:`, this.subscriptions.size)
   }
 
   /**
@@ -344,7 +344,7 @@ class KlineSocketIOService {
         }
 
         console.log(
-          `✅ ${symbol} 訂閱取消，剩餘訂閱數:`,
+          `✅ ${symbol} 訂閱取消,剩餘訂閱數:`,
           this.subscriptions.size
         )
       }

@@ -122,7 +122,7 @@ def test_connection_release():
             retry_connections = get_connection_count()
             print(f"   重新登錄後連線數: {retry_connections}")
         else:
-            print("   ❌ 重新登錄失敗（可能仍達到連線限制）")
+            print("   ❌ 重新登錄失敗(可能仍達到連線限制)")
         print()
 
     else:
@@ -167,7 +167,7 @@ if __name__ == "__main__":
         test_connection_release()
         test_multiple_cleanup_cycles()
 
-        print("🎯 測試總結：")
+        print("🎯 測試總結:")
         print("   - 如果重新登錄成功,說明清理邏輯有效")
         print("   - 如果出現 'Too Many Connections',說明需要等待更長時間")
         print("   - 在實際開發中,建議在檔案修改間隔間留出足夠時間")

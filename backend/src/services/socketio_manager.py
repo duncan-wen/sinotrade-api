@@ -108,7 +108,7 @@ class SocketIOTickBroadcaster:
 
         subscribers = subscription_manager.get_subscribers(mapped_symbol)
         if not subscribers:
-            logger.debug(f"⚠️ {mapped_symbol} 沒有訂閱者，跳過廣播")
+            logger.debug(f"⚠️ {mapped_symbol} 沒有訂閱者,跳過廣播")
             return True  # 沒有訂閱者不算錯誤
 
         subscriber_list = list(subscribers)

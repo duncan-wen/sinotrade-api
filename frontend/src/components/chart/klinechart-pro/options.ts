@@ -29,7 +29,7 @@ export type IndicatorType = 'main' | 'sub'
 
 /**
 🔍 [number] 的作用
-這是從 timeIntervalOptions 數組中提取每個元素類型的語法：
+這是從 timeIntervalOptions 數組中提取每個元素類型的語法:
 typeof timeIntervalOptions - 獲取數組的類型
 [number] - 訪問數組中任意一個元素的類型
 ['value'] - 從該元素中提取 value 屬性的類型

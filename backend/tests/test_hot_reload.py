@@ -88,7 +88,7 @@ finally:
 
     print("✅ Hot Reload 測試完成")
     print()
-    print("📝 說明：")
+    print("📝 說明:")
     print("   - 在真實的 FastAPI 開發環境中,uvicorn 會在檔案變更時")
     print("   - 自動重啟服務,此時我們的清理邏輯會被觸發")
     print("   - 確保連線被正確釋放,避免達到連線數限制")

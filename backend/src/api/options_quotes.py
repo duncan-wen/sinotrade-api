@@ -13,7 +13,7 @@ router = APIRouter(prefix="/options", tags=["台指選擇權報價"])
 @router.get("/contracts/filtered")
 async def get_filtered_option_contracts(
     option_types: str = Query(
-        default="TXO", description="選擇權類型,逗號分隔 (如: TX1,TX2,TXO 或 TXO)"
+        default="TXO", description="選擇權類型,逗號分隔 (如: TXO,TX1,TX2 或 TXO)"
     ),
     target_months: str = Query(
         default="202509,202510", description="目標月份,逗號分隔 (如: 202509,202510)"
@@ -36,7 +36,7 @@ async def get_filtered_option_contracts(
     根據指定的選擇權類型、目標月份和期貨價格範圍,返回符合條件的合約
 
     Args:
-        option_types: 選擇權類型,逗號分隔 (TX1,TX2,TXO,TX4,TXY,TXU)
+        option_types: 選擇權類型,逗號分隔 (TXO,TX1,TX2,TX4,TX5,TXU,TXV,TXX,TXY,TXZ)
         target_months: 目標月份,逗號分隔 (202509,202510)
         price_range: 上下價格範圍 (點數)
         futures_symbol: 期貨合約代號
@@ -48,7 +48,18 @@ async def get_filtered_option_contracts(
 
         # 解析選擇權類型
         option_type_list = [t.strip().upper() for t in option_types.split(",")]
-        valid_types = ["TX1", "TX2", "TXO", "TX4", "TXY", "TXU"]
+        valid_types = [
+            "TXO",
+            "TX1",
+            "TX2",
+            "TX4",
+            "TX5",
+            "TXU",
+            "TXV",
+            "TXX",
+            "TXY",
+            "TXZ",
+        ]
 
         for opt_type in option_type_list:
             if opt_type not in valid_types:
@@ -304,7 +315,7 @@ async def get_option_strikes(
     獲取指定選擇權類型的履約價清單
 
     Args:
-        option_type: 選擇權類型 (TX1, TX2, TXO, TX4, TXY, TXU)
+        option_type: 選擇權類型 (TXO, TX1, TX2, TX4, TX5, TXU, TXV, TXX, TXY, TXZ)
         call_put: 買權(C/call)或賣權(P/put)
         limit: 返回數量限制
     """
@@ -313,7 +324,18 @@ async def get_option_strikes(
             raise HTTPException(status_code=503, detail="Shioaji 服務未登錄")
 
         option_type = option_type.upper()
-        if option_type not in ["TX1", "TX2", "TXO", "TX4", "TXY", "TXU"]:
+        if option_type not in [
+            "TXO",
+            "TX1",
+            "TX2",
+            "TX4",
+            "TX5",
+            "TXU",
+            "TXV",
+            "TXX",
+            "TXY",
+            "TXZ",
+        ]:
             raise HTTPException(status_code=400, detail="不支援的選擇權類型")
 
         # 標準化買賣權標識
@@ -410,7 +432,7 @@ async def get_option_contract_details(option_type: str, contract_symbol: str):
     獲取指定選擇權合約的詳細資訊
 
     Args:
-        option_type: 選擇權類型 (TX1, TX2, TXO, TX4, TXY, TXU)
+        option_type: 選擇權類型 (TXO, TX1, TX2, TX4, TX5, TXU, TXV, TXX, TXY, TXZ)
         contract_symbol: 合約代號 (如: TX120251025250C)
     """
     try:
@@ -418,7 +440,18 @@ async def get_option_contract_details(option_type: str, contract_symbol: str):
             raise HTTPException(status_code=503, detail="Shioaji 服務未登錄")
 
         option_type = option_type.upper()
-        if option_type not in ["TX1", "TX2", "TXO", "TX4", "TXY", "TXU"]:
+        if option_type not in [
+            "TXO",
+            "TX1",
+            "TX2",
+            "TX4",
+            "TX5",
+            "TXU",
+            "TXV",
+            "TXX",
+            "TXY",
+            "TXZ",
+        ]:
             raise HTTPException(status_code=400, detail="不支援的選擇權類型")
 
         try:
@@ -509,7 +542,7 @@ async def get_option_contract_details(option_type: str, contract_symbol: str):
 async def subscribe_option_quote(
     option_code: str = Query(..., description="選擇權合約代碼"),
     option_type: str = Query(
-        ..., description="選擇權類型 (TX1, TX2, TXO, TX4, TXY, TXU)"
+        ..., description="選擇權類型 (TX1, TX2, TXO, TX4, TX5, TXY, TXU)"
     ),
 ):
     """
@@ -524,7 +557,18 @@ async def subscribe_option_quote(
             raise HTTPException(status_code=503, detail="Shioaji 服務未登錄")
 
         option_type = option_type.upper()
-        if option_type not in ["TX1", "TX2", "TXO", "TX4", "TXY", "TXU"]:
+        if option_type not in [
+            "TXO",
+            "TX1",
+            "TX2",
+            "TX4",
+            "TX5",
+            "TXU",
+            "TXV",
+            "TXX",
+            "TXY",
+            "TXZ",
+        ]:
             raise HTTPException(status_code=400, detail="不支援的選擇權類型")
 
         # 嘗試獲取合約
@@ -614,7 +658,18 @@ async def get_option_historical_data(
             raise HTTPException(status_code=503, detail="Shioaji 服務未登錄")
 
         option_type = option_type.upper()
-        if option_type not in ["TX1", "TX2", "TXO", "TX4", "TXY", "TXU"]:
+        if option_type not in [
+            "TXO",
+            "TX1",
+            "TX2",
+            "TX4",
+            "TX5",
+            "TXU",
+            "TXV",
+            "TXX",
+            "TXY",
+            "TXZ",
+        ]:
             raise HTTPException(status_code=400, detail="不支援的選擇權類型")
 
         # 獲取歷史 K 線數據
@@ -655,7 +710,18 @@ async def get_option_subscription_status():
             for sub in shioaji_service.active_subscriptions
             if any(
                 opt_type in sub
-                for opt_type in ["TX1", "TX2", "TXO", "TX4", "TXY", "TXU"]
+                for opt_type in [
+                    "TXO",
+                    "TX1",
+                    "TX2",
+                    "TX4",
+                    "TX5",
+                    "TXU",
+                    "TXV",
+                    "TXX",
+                    "TXY",
+                    "TXZ",
+                ]
             )
         ]
 

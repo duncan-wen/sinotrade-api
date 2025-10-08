@@ -15,7 +15,7 @@ def get_api_usage() -> UsageStats:
     獲取 Shioaji API 使用量統計
 
     Returns:
-        UsageStats: API 使用量統計資料,包含：
+        UsageStats: API 使用量統計資料,包含:
         - connections: 連接次數
         - bytes_used: 已使用流量 (MB)
         - bytes_limit: 流量限制 (MB)
@@ -50,16 +50,16 @@ def get_api_usage() -> UsageStats:
         raise
     except RuntimeError as e:
         logger.error(f"❌ 服務錯誤: {e}")
-        raise HTTPException(status_code=503, detail=str(e))
+        raise HTTPException(status_code=503, detail=str(e)) from e
     except Exception as e:
         logger.error(f"❌ 未知錯誤: {e}")
-        raise HTTPException(status_code=500, detail="內部服務器錯誤")
+        raise HTTPException(status_code=500, detail="內部服務器錯誤") from e
 
 
 @router.get("/usage/summary")
 def get_usage_summary() -> dict:
     """
-    獲取 API 使用量摘要（簡化版本）
+    獲取 API 使用量摘要(簡化版本)
 
     Returns:
         dict: 簡化的使用量摘要

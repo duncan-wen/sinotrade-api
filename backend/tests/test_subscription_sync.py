@@ -60,14 +60,14 @@ def test_subscription_sync():
         print()
 
         # 3. 模擬直接調用 shioaji_service 的情況
-        print("3. 模擬直接調用 shioaji_service（繞過 subscription_manager）")
+        print("3. 模擬直接調用 shioaji_service(繞過 subscription_manager)")
         direct_symbol = "2454"
         print(f"   直接訂閱 {direct_symbol}...")
 
         success = shioaji_service.subscribe_quote(direct_symbol)
         print(f"   直接訂閱結果: {'✅' if success else '❌'}")
 
-        print("\n   直接調用後的狀態（應該出現不同步）:")
+        print("\n   直接調用後的狀態(應該出現不同步):")
         print_sync_status()
         check_sync_status()
         print()
@@ -100,11 +100,11 @@ def test_subscription_sync():
         print(f"   服務記錄: {sorted(service_symbols)}")
 
         if manager_symbols != service_symbols:
-            print("   🚨 檢測到不同步！")
+            print("   🚨 檢測到不同步!")
             print(f"   僅在管理器中: {sorted(manager_symbols - service_symbols)}")
             print(f"   僅在服務中: {sorted(service_symbols - manager_symbols)}")
 
-            print("\n   建議的清理策略：")
+            print("\n   建議的清理策略:")
             print("   1. 以 shioaji_service 的實際訂閱為準")
             print("   2. 取消所有實際的 API 訂閱")
             print("   3. 清理管理器記錄")
@@ -140,7 +140,7 @@ def check_sync_status():
     if manager_symbols == service_symbols:
         print("   ✅ 兩個系統同步")
     else:
-        print("   🚨 兩個系統不同步！")
+        print("   🚨 兩個系統不同步!")
         if manager_symbols - service_symbols:
             print(f"   僅在管理器中: {sorted(manager_symbols - service_symbols)}")
         if service_symbols - manager_symbols:
@@ -169,7 +169,7 @@ def test_cleanup_with_sync_check():
         service_symbols = set(shioaji_service.active_subscriptions)
 
         if manager_symbols != service_symbols:
-            print("檢測到訂閱不同步！")
+            print("檢測到訂閱不同步!")
             print(f"僅在管理器中: {sorted(manager_symbols - service_symbols)}")
             print(f"僅在服務中: {sorted(service_symbols - manager_symbols)}")
 
@@ -190,7 +190,7 @@ if __name__ == "__main__":
         test_subscription_sync()
         test_cleanup_with_sync_check()
 
-        print("\n🎯 測試總結：")
+        print("\n🎯 測試總結:")
         print("   ⚠️ subscription_manager 和 shioaji_service 維護獨立的訂閱記錄")
         print("   ⚠️ 直接調用 shioaji_service 會導致不同步")
         print("   ✅ 新的清理邏輯會檢測並報告不同步問題")

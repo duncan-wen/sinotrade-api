@@ -102,7 +102,7 @@ export function useOptionsQuotes(options: UseOptionsQuotesOptions = {}) {
     }))
   }, [])
 
-  // 設置選擇權合約（不使用 WebSocket 訂閱）
+  // 設置選擇權合約(不使用 WebSocket 訂閱)
   const subscribeToOptions = useCallback(
     (contracts: OptionContract[]) => {
       if (!enabled || contracts.length === 0) return
@@ -116,7 +116,7 @@ export function useOptionsQuotes(options: UseOptionsQuotesOptions = {}) {
       }))
 
       console.log(
-        '📊 [useOptionsQuotes] 設置選擇權合約（不使用 WebSocket）:',
+        '📊 [useOptionsQuotes] 設置選擇權合約(不使用 WebSocket):',
         symbols.length
       )
     },
@@ -160,7 +160,7 @@ export function useOptionsQuotes(options: UseOptionsQuotesOptions = {}) {
   // 瀏覽器關閉或頁面跳轉時清理數據
   useEffect(() => {
     const handleBeforeUnload = () => {
-      console.log('📊 [useOptionsQuotes] 頁面卸載，清理選擇權報價數據')
+      console.log('📊 [useOptionsQuotes] 頁面卸載,清理選擇權報價數據')
       unsubscribeFromOptions()
       mountedRef.current = false
     }
@@ -194,7 +194,7 @@ export function useOptionsQuotes(options: UseOptionsQuotesOptions = {}) {
     [state.quotes]
   )
 
-  // 生成模擬報價數據（在實際 WebSocket 連接前使用）
+  // 生成模擬報價數據(在實際 WebSocket 連接前使用)
   const generateMockQuote = useCallback(
     (contract: OptionContract): OptionQuote => {
       const basePrice = Math.random() * 200 + 50
@@ -262,7 +262,7 @@ export function useOptionsQuotes(options: UseOptionsQuotesOptions = {}) {
   useEffect(() => {
     return () => {
       mountedRef.current = false
-      // 清理時直接取消訂閱，不依賴 state
+      // 清理時直接取消訂閱,不依賴 state
       websocketService.unsubscribe(subscriberIdRef.current)
     }
   }, [])
@@ -285,7 +285,7 @@ export function useOptionsQuotes(options: UseOptionsQuotesOptions = {}) {
     getQuote,
     getQuotes,
 
-    // 模擬數據方法（開發測試用）
+    // 模擬數據方法(開發測試用)
     generateMockQuote,
     generateMockQuotes,
 

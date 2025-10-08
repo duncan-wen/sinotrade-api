@@ -28,12 +28,16 @@ import type { OptionQuote } from '@/types/api'
 
 // 選擇權類型選項
 const OPTION_TYPES = [
-  { value: 'TX1', label: 'TX1 - 臺指選擇權 (週一到期)' },
-  { value: 'TX2', label: 'TX2 - 臺指選擇權 (週二到期)' },
-  { value: 'TXO', label: 'TXO - 臺指選擇權 (週三到期)' },
-  { value: 'TX4', label: 'TX4 - 臺指選擇權 (週四到期)' },
-  { value: 'TXY', label: 'TXY - 臺指選擇權 (週五到期)' },
-  { value: 'TXU', label: 'TXU - 臺指選擇權 (月選)' },
+  { value: 'TXO', label: 'TXO - 臺指選擇權 (月到期/第三週三)' },
+  { value: 'TX1', label: 'TX1 - 臺指選擇權 (第一週週三到期)' },
+  { value: 'TX2', label: 'TX2 - 臺指選擇權 (第二週週三到期)' },
+  { value: 'TX4', label: 'TX4 - 臺指選擇權 (第四週週三到期)' },
+  { value: 'TX5', label: 'TX5 - 臺指選擇權 (第五週週三到期)' },
+  { value: 'TXU', label: 'TXU - 臺指選擇權 (第一週週五到期)' },
+  { value: 'TXV', label: 'TXV - 臺指選擇權 (第二週週五到期)' },
+  { value: 'TXX', label: 'TXX - 臺指選擇權 (第三週週五到期)' },
+  { value: 'TXY', label: 'TXY - 臺指選擇權 (第四週週五到期)' },
+  { value: 'TXZ', label: 'TXZ - 臺指選擇權 (第五週週五到期)' },
 ]
 
 // 合約資訊界面
@@ -88,7 +92,7 @@ interface FilteredContractsResponse {
   timestamp: string
 }
 
-// 工具函數：計算本月和下個月的YYYYMM格式
+// 工具函數:計算本月和下個月的YYYYMM格式
 const getCurrentAndNextMonth = () => {
   const now = new Date()
   const currentYear = now.getFullYear()
@@ -146,13 +150,13 @@ export default function OptionsContractSelectorTable({
     enabled: true,
   })
 
-  // 追踪期貨價格百位數變化，自動重新載入合約
+  // 追踪期貨價格百位數變化,自動重新載入合約
   const lastHundredsRef = useRef<number | null>(null)
   const lastReloadTimeRef = useRef<number>(0)
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
   const priceStabilityCountRef = useRef<number>(0)
 
-  // 測試模式：手動調整期貨價格（僅用於測試百位數變化）
+  // 測試模式:手動調整期貨價格(僅用於測試百位數變化)
   const [testMode, setTestMode] = useState(false)
   const [testPrice, setTestPrice] = useState<number>(26021)
 
@@ -174,7 +178,7 @@ export default function OptionsContractSelectorTable({
 
       setContractsData(response)
 
-      // 合約載入成功後，訂閱即時報價
+      // 合約載入成功後,訂閱即時報價
       if (response.success) {
         const allContracts = [
           ...response.option_contracts.all_call_options,
@@ -182,7 +186,7 @@ export default function OptionsContractSelectorTable({
         ]
 
         if (allContracts.length > 0) {
-          // 只生成基於期貨現價 ±600 範圍的模擬報價，不使用 WebSocket
+          // 只生成基於期貨現價 ±600 範圍的模擬報價,不使用 WebSocket
           console.log(
             '📊 [OptionsContractSelectorTable] 生成基於期貨現價的選擇權報價'
           )
@@ -197,7 +201,7 @@ export default function OptionsContractSelectorTable({
     }
   }, [selectedOptionType, targetMonths, generateMockQuotes])
 
-  // 🛡️ 防抖動：延遲執行合約重載
+  // 🛡️ 防抖動:延遲執行合約重載
   const debouncedLoadContracts = useCallback(
     (newHundreds: number, price: number) => {
       // 清除之前的計時器
@@ -205,7 +209,7 @@ export default function OptionsContractSelectorTable({
         clearTimeout(debounceTimerRef.current)
       }
 
-      // 設置新的計時器（2秒防抖）
+      // 設置新的計時器(2秒防抖)
       debounceTimerRef.current = setTimeout(() => {
         const now = Date.now()
         const timeSinceLastReload = now - lastReloadTimeRef.current
@@ -214,7 +218,7 @@ export default function OptionsContractSelectorTable({
         // 檢查是否滿足重載條件
         if (timeSinceLastReload >= minReloadInterval) {
           console.log(
-            `📊 [防抖重載] 百位數穩定在 ${newHundreds}，執行合約重載 (價格: ${price}) ${testMode ? '[測試模式]' : ''}`
+            `📊 [防抖重載] 百位數穩定在 ${newHundreds},執行合約重載 (價格: ${price}) ${testMode ? '[測試模式]' : ''}`
           )
 
           // 更新記錄
@@ -229,7 +233,7 @@ export default function OptionsContractSelectorTable({
             (minReloadInterval - timeSinceLastReload) / 1000
           )
           console.log(
-            `📊 [防抖跳過] 距離上次重載不足5秒，還需等待 ${remainingTime} 秒`
+            `📊 [防抖跳過] 距離上次重載不足5秒,還需等待 ${remainingTime} 秒`
           )
         }
       }, 2000) // 2秒防抖延遲
@@ -241,7 +245,7 @@ export default function OptionsContractSelectorTable({
   useEffect(() => {
     if (selectedOptionType) {
       console.log(
-        '📊 [OptionsContractSelectorTable] 選擇權類型變更，重新載入合約:',
+        '📊 [OptionsContractSelectorTable] 選擇權類型變更,重新載入合約:',
         selectedOptionType
       )
 
@@ -260,7 +264,7 @@ export default function OptionsContractSelectorTable({
     }
   }, [selectedOptionType, loadOptionContracts])
 
-  // 🕐 監聽期貨價格百位數變化，自動重新載入合約（含防抖動）
+  // 🕐 監聽期貨價格百位數變化,自動重新載入合約(含防抖動)
   useEffect(() => {
     // 使用測試價格或真實期貨價格
     const currentPrice = testMode ? testPrice : futuresPrice
@@ -269,7 +273,7 @@ export default function OptionsContractSelectorTable({
     // 計算當前百位數 (例如: 26022 -> 260, 25999 -> 259)
     const currentHundreds = Math.floor(currentPrice / 100)
 
-    // 如果是第一次載入價格，記錄百位數
+    // 如果是第一次載入價格,記錄百位數
     if (lastHundredsRef.current === null) {
       lastHundredsRef.current = currentHundreds
       lastReloadTimeRef.current = Date.now()
@@ -285,10 +289,10 @@ export default function OptionsContractSelectorTable({
         `📊 [百位數變化] ${lastHundredsRef.current} -> ${currentHundreds} (價格: ${currentPrice}) ${testMode ? '[測試模式]' : ''}`
       )
 
-      // 🛡️ 防抖動：使用延遲執行，避免震盪
+      // 🛡️ 防抖動:使用延遲執行,避免震盪
       debouncedLoadContracts(currentHundreds, currentPrice)
     } else {
-      // 百位數相同，增加穩定性計數
+      // 百位數相同,增加穩定性計數
       priceStabilityCountRef.current += 1
     }
   }, [futuresPrice, testPrice, testMode, contractsData, debouncedLoadContracts])
@@ -317,12 +321,10 @@ export default function OptionsContractSelectorTable({
     [getQuote]
   )
 
-  // 🧹 頁面卸載時清理訂閱（瀏覽器關閉或頁面跳轉）
+  // 🧹 頁面卸載時清理訂閱(瀏覽器關閉或頁面跳轉)
   useEffect(() => {
     const handleBeforeUnload = () => {
-      console.log(
-        '📊 [OptionsContractSelectorTable] 頁面卸載，清理期貨價格訂閱'
-      )
+      console.log('📊 [OptionsContractSelectorTable] 頁面卸載,清理期貨價格訂閱')
       // 清理防抖計時器
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current)

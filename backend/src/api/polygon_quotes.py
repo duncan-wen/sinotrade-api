@@ -36,6 +36,7 @@ def get_polygon_quote(symbol: str) -> Quote | None:
                 ask_volume=0,
                 volume=0,
                 avg_price=0,
+                underlying_price=None,
             )
         return quote
     except Exception as e:
@@ -53,6 +54,7 @@ def get_polygon_quote(symbol: str) -> Quote | None:
             ask_volume=0,
             volume=0,
             avg_price=0,
+            underlying_price=None,
         )
 
 
@@ -268,7 +270,7 @@ def get_polygon_api_info() -> dict[str, Any]:
 
 
 @router.get("/api-usage")
-async def get_api_usage():
+async def get_api_usage() -> dict[str, Any]:
     """
     獲取 Polygon.io API 使用狀態
 

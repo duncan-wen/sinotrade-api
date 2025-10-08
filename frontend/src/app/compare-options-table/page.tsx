@@ -95,7 +95,7 @@ export default function CompareOptionsTablePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className="font-semibold text-blue-600 mb-2">
-                CSS Grid 版本適合：
+                CSS Grid 版本適合:
               </h3>
               <ul className="space-y-1 text-sm">
                 <li>• 需要完全自定義的視覺設計</li>
@@ -106,7 +106,7 @@ export default function CompareOptionsTablePage() {
             </div>
             <div>
               <h3 className="font-semibold text-green-600 mb-2">
-                Table 版本適合：
+                Table 版本適合:
               </h3>
               <ul className="space-y-1 text-sm">
                 <li>• 需要標準表格功能 (排序、篩選)</li>

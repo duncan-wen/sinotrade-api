@@ -69,7 +69,7 @@ class ShioajiService:
         try:
             logger.info("🔄 [DEV] 執行開發環境強制清理...")
 
-            # 1. 最優先：取消所有 API 訂閱（在登錄狀態下）
+            # 1. 最優先:取消所有 API 訂閱(在登錄狀態下)
             if hasattr(self, "active_subscriptions") and self.active_subscriptions:
                 if hasattr(self, "lifecycle") and self.lifecycle.is_logged_in():
                     sub_count = len(self.active_subscriptions)
@@ -82,13 +82,13 @@ class ShioajiService:
                     logger.warning("⚠️ 服務未登錄,無法正確取消 API 訂閱,僅清理本地記錄")
                     self.active_subscriptions.clear()
 
-            # 2. 登出（釋放連線）
+            # 2. 登出(釋放連線)
             if hasattr(self, "lifecycle") and self.lifecycle.is_logged_in():
                 logger.info("🔐 強制登出以釋放連線...")
                 self.lifecycle.logout(force=True)
                 logger.info("✅ 登出完成")
 
-                # 3. 等待連線釋放（給伺服器一點時間處理）
+                # 3. 等待連線釋放(給伺服器一點時間處理)
                 logger.info("⏳ 等待連線釋放...")
                 import time
 
@@ -190,7 +190,7 @@ class ShioajiService:
                 logger.error("登錄失敗, 無法初始化")
                 return False
 
-            # 🔥 修復：設置 Shioaji 事件回調處理器
+            # 🔥 修復:設置 Shioaji 事件回調處理器
             logger.info("[INIT] 設置 Shioaji 事件回調處理器...")
             self._setup_callbacks()
             logger.info("[INIT] Shioaji 事件回調處理器設置完成")
@@ -238,7 +238,7 @@ class ShioajiService:
             symbol: 商品代號 (如: TXFR1, 2330)
 
         Returns:
-            當前價格，失敗時返回 None
+            當前價格,失敗時返回 None
         """
         if not self.ensure_logged_in():
             logger.error("登錄失敗, 無法獲取當前價格")
@@ -924,7 +924,18 @@ class ShioajiService:
 
         try:
             # 4. 嘗試選擇權合約 - 支援各種台指選擇權類型
-            option_types = ["TX1", "TX2", "TXO", "TX4", "TXY", "TXU"]
+            option_types = [
+                "TXO",
+                "TX1",
+                "TX2",
+                "TX4",
+                "TX5",
+                "TXU",
+                "TXV",
+                "TXX",
+                "TXY",
+                "TXZ",
+            ]
 
             for opt_type in option_types:
                 if opt_type in symbol:
@@ -943,7 +954,21 @@ class ShioajiService:
                         continue
 
             # 如果上面方法失敗, 嘗試傳統方式
-            if any(opt in symbol for opt in ["TXO", "TX1", "TX2", "TX4", "TXY", "TXU"]):
+            if any(
+                opt in symbol
+                for opt in [
+                    "TXO",
+                    "TX1",
+                    "TX2",
+                    "TX4",
+                    "TX5",
+                    "TXU",
+                    "TXV",
+                    "TXX",
+                    "TXY",
+                    "TXZ",
+                ]
+            ):
                 contract = self.api.Contracts.Options[symbol]
                 if contract:
                     logger.info(f"✅ 獲取選擇權合約 (傳統方式): {contract.symbol}")
@@ -1363,7 +1388,7 @@ class ShioajiService:
                     logger.error(f"轉換排行資料失敗: {scanner}, 錯誤: {e}")
                     continue
 
-            # 過濾成交量太小的股票（總成交量 > 500）
+            # 過濾成交量太小的股票(總成交量 > 500)
             original_count = len(scanner_data_list)
             scanner_data_list = [
                 data for data in scanner_data_list if data.total_volume > 500
@@ -1372,7 +1397,7 @@ class ShioajiService:
             if filtered_count > 0:
                 logger.info(f"🔍 過濾掉 {filtered_count} 筆成交量 ≤ 500 的資料")
 
-            logger.info(f"📊 過濾完成，剩餘 {len(scanner_data_list)} 筆數據")
+            logger.info(f"📊 過濾完成,剩餘 {len(scanner_data_list)} 筆數據")
 
             # 根據排序模式進行自定義排序
             scanner_data_list = self._apply_custom_sorting(
@@ -1449,7 +1474,7 @@ class ShioajiService:
         """
 
         def get_change_percent(item: ScannerData) -> float:
-            return item.change_percent
+            return item.change_percent  # type: ignore[return-value]
 
         if sorting_mode == SortingMode.GAIN_DESC:
             # 漲幅由大到小: API 已用 ascending=True 排序, 直接取前 N 筆
@@ -1688,7 +1713,7 @@ shioaji_service = ShioajiService()
 def cleanup_shioaji_service() -> None:
     """
     統一的 Shioaji 服務清理函數
-    適用於所有退出場景：正常退出、Ctrl+C、SIGTERM、hot reload
+    適用於所有退出場景:正常退出、Ctrl+C、SIGTERM、hot reload
     """
     try:
         logger.info("🔧 [CLEANUP] 開始全域清理 Shioaji 服務...")
@@ -1707,7 +1732,7 @@ def cleanup_shioaji_service() -> None:
         # 不拋出異常,確保程序能正常退出
 
 
-def signal_handler(signum: int, frame) -> None:
+def signal_handler(signum: int, frame: Any) -> None:
     """
     信號處理器 - 處理 Ctrl+C (SIGINT) 和 SIGTERM
     確保在任何情況下都能正確清理資源

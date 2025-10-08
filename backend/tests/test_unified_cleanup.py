@@ -44,7 +44,7 @@ def test_unified_cleanup_logic():
 
         # 2. 測試統一清理方法
         print("2. 測試統一清理方法 force_cleanup_for_restart()")
-        print("   這個方法現在用於所有退出場景：")
+        print("   這個方法現在用於所有退出場景:")
         print("   - FastAPI shutdown")
         print("   - Ctrl+C 信號")
         print("   - 程序正常退出")
@@ -127,7 +127,7 @@ def test_cleanup_vs_force_cleanup():
 
     try:
         # 測試舊的 cleanup 方法
-        print("測試舊的 cleanup() 方法（僅清理,不登出）:")
+        print("測試舊的 cleanup() 方法(僅清理,不登出):")
 
         # 先登錄
         shioaji_service.login()
@@ -143,12 +143,12 @@ def test_cleanup_vs_force_cleanup():
         print(
             f"  清理後 - 登錄: {shioaji_service.is_logged_in()}, 訂閱: {len(shioaji_service.active_subscriptions)}"
         )
-        print("  📝 注意：舊方法不會登出,只是清理資源")
+        print("  📝 注意:舊方法不會登出,只是清理資源")
 
         print()
 
         # 現在測試新方法
-        print("測試新的 force_cleanup_for_restart() 方法（清理+登出）:")
+        print("測試新的 force_cleanup_for_restart() 方法(清理+登出):")
         shioaji_service.subscribe_quote("2317")  # 重新添加訂閱
 
         print(
@@ -160,7 +160,7 @@ def test_cleanup_vs_force_cleanup():
         print(
             f"  清理後 - 登錄: {shioaji_service.is_logged_in()}, 訂閱: {len(shioaji_service.active_subscriptions)}"
         )
-        print("  📝 注意：新方法會完全清理並登出")
+        print("  📝 注意:新方法會完全清理並登出")
 
     except Exception as e:
         print(f"比較測試出錯: {e}")
@@ -171,11 +171,11 @@ if __name__ == "__main__":
         test_unified_cleanup_logic()
         test_cleanup_vs_force_cleanup()
 
-        print("\n🎯 測試總結：")
-        print("   ✅ 統一清理邏輯：所有退出場景都使用 force_cleanup_for_restart()")
-        print("   ✅ 正確順序：取消訂閱 → 登出 → 等待 → 清理任務")
-        print("   ✅ 避免重複操作：不再在 main.py 中手動取消訂閱")
-        print("   ✅ 連線數管理：確保每次退出都正確釋放連線")
+        print("\n🎯 測試總結:")
+        print("   ✅ 統一清理邏輯:所有退出場景都使用 force_cleanup_for_restart()")
+        print("   ✅ 正確順序:取消訂閱 → 登出 → 等待 → 清理任務")
+        print("   ✅ 避免重複操作:不再在 main.py 中手動取消訂閱")
+        print("   ✅ 連線數管理:確保每次退出都正確釋放連線")
 
     except Exception as e:
         print(f"❌ 測試失敗: {e}")

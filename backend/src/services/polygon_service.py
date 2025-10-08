@@ -5,11 +5,11 @@ import time
 from datetime import datetime, timedelta
 from typing import Any
 
-import pytz
+import pytz  # type: ignore[import-untyped]
 from dotenv import load_dotenv
 from loguru import logger
-from polygon import RESTClient
-from polygon.rest.models import Sort, TickerTypes
+from polygon import RESTClient  # type: ignore[import-untyped]
+from polygon.rest.models import Sort, TickerTypes  # type: ignore[import-untyped]
 
 from src.models.domain import Quote
 
@@ -100,7 +100,9 @@ class PolygonService:
         if self.request_count >= self.max_requests_per_minute - 1:
             logger.warning("⚠️ 接近 API 請求限制!建議暫停新的 API 調用")
 
-    def _retry_request(self, func, *args, max_retries: int = 3, **kwargs):
+    def _retry_request(
+        self, func: Any, *args: Any, max_retries: int = 3, **kwargs: Any
+    ) -> Any:
         """
         重試機制處理 429 錯誤
 
@@ -167,11 +169,13 @@ class PolygonService:
             )
 
             # 調用 Polygon.io API (使用重試機制)
-            def get_aggs():
-                aggs = []
+            def get_aggs() -> list[Any]:
+                aggs: list[Any] = []
                 logger.info(
                     f"🔍 獲取 Polygon.io K線數據: {symbol} {multiplier} {timespan} ({start_date} ~ {end_date} {limit})"
                 )
+                if not self.client:
+                    return aggs
                 for agg in self.client.list_aggs(
                     ticker=symbol,
                     multiplier=multiplier,
@@ -292,13 +296,17 @@ class PolygonService:
             logger.info(f"📊 獲取即時報價: {symbol}")
 
             # 獲取最新交易 (使用重試機制)
-            def get_last_trade_data():
+            def get_last_trade_data() -> Any:
+                if not self.client:
+                    return None
                 return self.client.get_last_trade(ticker=symbol)
 
             last_trade = self._retry_request(get_last_trade_data)
 
             # 獲取最新報價 (使用重試機制)
-            def get_last_quote_data():
+            def get_last_quote_data() -> Any:
+                if not self.client:
+                    return None
                 return self.client.get_last_quote(ticker=symbol)
 
             last_quote = self._retry_request(get_last_quote_data)
@@ -339,7 +347,9 @@ class PolygonService:
 
         try:
 
-            def get_status():
+            def get_status() -> Any:
+                if not self.client:
+                    return None
                 return self.client.get_market_status()
 
             status = self._retry_request(get_status)
@@ -393,8 +403,10 @@ class PolygonService:
         try:
             logger.info(f"🔍 搜尋股票: {query}")
 
-            def search_ticker_data():
-                tickers = []
+            def search_ticker_data() -> list[dict[str, Any]]:
+                tickers: list[dict[str, Any]] = []
+                if not self.client:
+                    return tickers
                 for ticker in self.client.list_tickers(
                     search=query,
                     type_=TickerTypes.CS,  # Common Stock

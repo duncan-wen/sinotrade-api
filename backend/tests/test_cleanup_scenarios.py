@@ -93,7 +93,7 @@ def test_emergency_logout():
         print("   執行緊急登出...")
         shioaji_service._emergency_logout()
 
-        # 檢查結果（注意：緊急登出只登出 API,不改變 lifecycle 狀態）
+        # 檢查結果(注意:緊急登出只登出 API,不改變 lifecycle 狀態)
         print("   緊急登出完成")
 
     except Exception as e:
@@ -118,7 +118,7 @@ def test_ctrl_c_simulation():
         print(f"   活躍訂閱: {len(shioaji_service.active_subscriptions)} 個")
 
         print("   模擬發送 SIGINT 信號...")
-        print("   注意：這會觸發程序退出,請觀察清理日志")
+        print("   注意:這會觸發程序退出,請觀察清理日志")
 
         # 這會觸發我們的信號處理器
         os.kill(os.getpid(), signal.SIGINT)
@@ -157,7 +157,7 @@ def test_connection_limit_scenario():
             if usage_stats.status == "success" and usage_stats.connections is not None:
                 print(f"   登錄後連線數: {usage_stats.connections}")
 
-        # 強制清理（確保登出）
+        # 強制清理(確保登出)
         print("   執行強制清理以釋放連線...")
         shioaji_service.force_cleanup_for_restart()
 
@@ -186,7 +186,7 @@ def main():
     test_emergency_logout()
     test_connection_limit_scenario()
 
-    print("⚠️  最後測試：Ctrl+C 信號處理")
+    print("⚠️  最後測試:Ctrl+C 信號處理")
     print("   這個測試會導致程序退出,請觀察清理日誌")
     print("   按 Enter 繼續...")
     input()

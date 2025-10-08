@@ -33,7 +33,7 @@ def test_shioaji_service_attributes():
         print(f"   lifecycle.is_destroyed(): {is_destroyed}")
 
         print("3. 測試 lifecycle 回調設置")
-        # 測試回調設置（不實際設置,只檢查屬性存在）
+        # 測試回調設置(不實際設置,只檢查屬性存在)
         callback_exists = hasattr(shioaji_service.lifecycle, "_unsubscribe_callback")
         print(f"   _unsubscribe_callback 屬性存在: {callback_exists}")
 
@@ -139,7 +139,7 @@ def test_lifecycle_manager_callback():
 
         print("2. 測試強制登出邏輯...")
 
-        # 檢查屬性訪問是否正確（不實際執行登出）
+        # 檢查屬性訪問是否正確(不實際執行登出)
         has_callback = shioaji_service.lifecycle._unsubscribe_callback is not None
         has_subscriptions = len(shioaji_service.active_subscriptions) > 0
 
@@ -191,7 +191,7 @@ if __name__ == "__main__":
     print(f"測試結果: ✅ {passed} 個通過, ❌ {failed} 個失敗")
 
     if failed == 0:
-        print("🎉 所有屬性修復都已驗證正確！")
+        print("🎉 所有屬性修復都已驗證正確!")
     else:
         print("⚠️ 還有一些問題需要解決")
 

@@ -73,7 +73,7 @@ export interface KLineData {
 
 interface KLineChartProProps {
   symbol: string
-  symbolName?: string // 股票名稱（如：台積電、南亞科）
+  symbolName?: string // 股票名稱(如:台積電、南亞科)
   className?: string
   height?: number
   width?: number
@@ -188,11 +188,11 @@ class ProfessionalChart {
       clearTimeout(this.dragTimeout)
     }
 
-    // 6秒後如果沒有新的拖曳動作，認為用戶停止查看歷史
+    // 6秒後如果沒有新的拖曳動作,認為用戶停止查看歷史
     this.dragTimeout = setTimeout(() => {
       console.log('📊 用戶停止查看歷史數據')
       this.isUserViewingHistory = false
-      // 注意：不自動回到實時模式，讓用戶手動決定
+      // 注意:不自動回到實時模式,讓用戶手動決定
     }, 6000)
   }
 
@@ -317,16 +317,16 @@ class ProfessionalChart {
   // 載入歷史數據
   async loadData() {
     try {
-      // 根據時間週期調整數據量：短週期需要更多數據
+      // 根據時間週期調整數據量:短週期需要更多數據
       const limitMap: Record<string, number> = {
-        '1m': 500, // 1分鐘：500根 ≈ 8小時
-        '5m': 500, // 5分鐘：500根 ≈ 2天
-        '15m': 500, // 15分鐘：500根 ≈ 5天
-        '30m': 300, // 30分鐘：300根 ≈ 6天
-        '60m': 300, // 1小時：300根 ≈ 12天
+        '1m': 500, // 1分鐘:500根 ≈ 8小時
+        '5m': 500, // 5分鐘:500根 ≈ 2天
+        '15m': 500, // 15分鐘:500根 ≈ 5天
+        '30m': 300, // 30分鐘:300根 ≈ 6天
+        '60m': 300, // 1小時:300根 ≈ 12天
         '1h': 300,
-        '1d': 200, // 日線：200根 ≈ 8個月
-        '1w': 200, // 週線：200根 ≈ 4年
+        '1d': 200, // 日線:200根 ≈ 8個月
+        '1w': 200, // 週線:200根 ≈ 4年
       }
       const limit = limitMap[this.interval] || 300
 
@@ -516,13 +516,13 @@ class ProfessionalChart {
         }
       }
 
-      // 🔑 關鍵改進：優先使用 updateData 而不是 applyNewData
+      // 🔑 關鍵改進:優先使用 updateData 而不是 applyNewData
       if (typeof this.chart.updateData === 'function') {
-        // 使用 updateData 只更新最後一根K線，不會重置位置
+        // 使用 updateData 只更新最後一根K線,不會重置位置
         this.chart.updateData(klineData)
         console.log('✅ 使用 updateData 更新最後一根K線')
       } else if (typeof this.chart.applyNewData === 'function') {
-        // 如果沒有 updateData，則使用 applyNewData
+        // 如果沒有 updateData,則使用 applyNewData
         this.chart.applyNewData(this.klineDataCache)
         console.log('⚠️ 使用 applyNewData 更新完整數據')
       } else if (typeof this.chart.loadData === 'function') {
@@ -540,7 +540,7 @@ class ProfessionalChart {
           console.log('📊 自動滾動到最新位置')
         }
       } else {
-        console.log('📊 用戶正在查看歷史，不自動滾動')
+        console.log('📊 用戶正在查看歷史,不自動滾動')
       }
     } catch (error) {
       console.error('❌ 數據更新失敗:', error)

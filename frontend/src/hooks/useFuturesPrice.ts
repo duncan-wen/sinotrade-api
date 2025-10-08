@@ -29,7 +29,7 @@ export function useFuturesPrice(options: UseFuturesPriceOptions = {}) {
 
   const mountedRef = useRef(true)
 
-  // 🎯 簡化版：直接處理價格更新
+  // 🎯 簡化版:直接處理價格更新
   const handleKlineMessage = useCallback((message: KlineMessage) => {
     if (!mountedRef.current) return
 
@@ -45,7 +45,7 @@ export function useFuturesPrice(options: UseFuturesPriceOptions = {}) {
       newPrice = Number(lastKline.close)
     }
 
-    // ✅ 直接更新價格，不需要 K 線處理
+    // ✅ 直接更新價格,不需要 K 線處理
     if (newPrice && mountedRef.current) {
       setState((prev) => ({
         ...prev,

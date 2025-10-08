@@ -27,9 +27,7 @@ export default function TestChartSwitcherPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             📊 智能圖表系統測試
           </h1>
-          <p className="text-gray-600">
-            測試不同的圖表顯示方案，優化數據使用量
-          </p>
+          <p className="text-gray-600">測試不同的圖表顯示方案,優化數據使用量</p>
         </div>
 
         {/* 股票選擇器 */}
@@ -64,19 +62,19 @@ export default function TestChartSwitcherPage() {
             <div className="p-4 bg-green-50 rounded-lg">
               <h3 className="font-medium text-green-800 mb-2">⚡ 即時圖表</h3>
               <p className="text-sm text-green-700">
-                使用自有後端數據，適合短週期（1分、5分）的即時分析
+                使用自有後端數據,適合短週期(1分、5分)的即時分析
               </p>
             </div>
             <div className="p-4 bg-blue-50 rounded-lg">
               <h3 className="font-medium text-blue-800 mb-2">📊 TradingView</h3>
               <p className="text-sm text-blue-700">
-                嵌入第三方圖表，適合日線圖，節省數據傳輸
+                嵌入第三方圖表,適合日線圖,節省數據傳輸
               </p>
             </div>
             <div className="p-4 bg-purple-50 rounded-lg">
               <h3 className="font-medium text-purple-800 mb-2">🔗 外部連結</h3>
               <p className="text-sm text-purple-700">
-                跳轉到 Yahoo 股市，獲得最完整的技術分析
+                跳轉到 Yahoo 股市,獲得最完整的技術分析
               </p>
             </div>
           </div>

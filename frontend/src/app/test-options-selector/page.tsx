@@ -35,7 +35,7 @@ export default function TestOptionsSelector() {
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold">選擇權合約選擇器測試</h1>
         <p className="text-gray-600">
-          測試選擇權合約選擇元件，可選擇不同類型的選擇權並查看本月和下個月的周選合約
+          測試選擇權合約選擇元件,可選擇不同類型的選擇權並查看本月和下個月的周選合約
         </p>
       </div>
 
@@ -187,29 +187,29 @@ export default function TestOptionsSelector() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div>
-                <strong>1. 選擇選擇權類型：</strong>
+                <strong>1. 選擇選擇權類型:</strong>
                 <p className="text-gray-600 ml-4">
-                  從下拉選單中選擇要查看的選擇權類型 (TX1, TX2, TXO, TX4, TXY,
-                  TXU)
+                  從下拉選單中選擇要查看的選擇權類型 (TXO, TX1, TX2, TX4, TX5,
+                  TXU, TXV, TXX, TXY, TXZ)
                 </p>
               </div>
 
               <div>
-                <strong>2. 查看合約列表：</strong>
+                <strong>2. 查看合約列表:</strong>
                 <p className="text-gray-600 ml-4">
-                  系統會自動載入本月和下個月的周選合約，按買權和賣權分類顯示
+                  系統會自動載入本月和下個月的周選合約,按買權和賣權分類顯示
                 </p>
               </div>
 
               <div>
-                <strong>3. 選擇合約：</strong>
+                <strong>3. 選擇合約:</strong>
                 <p className="text-gray-600 ml-4">
                   點擊任一合約卡片即可查看詳細資訊
                 </p>
               </div>
 
               <div>
-                <strong>4. 合約資訊：</strong>
+                <strong>4. 合約資訊:</strong>
                 <p className="text-gray-600 ml-4">
                   包含履約價、到期日、價內外狀態等重要資訊
                 </p>

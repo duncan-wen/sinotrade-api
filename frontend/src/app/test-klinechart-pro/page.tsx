@@ -39,7 +39,7 @@ export default function TestKLineChartProPage() {
   )
   const [apiError, setApiError] = useState<string | null>(null)
 
-  // 預設股票代號列表（稍後會用 API 獲取名稱）
+  // 預設股票代號列表(稍後會用 API 獲取名稱)
   const defaultSymbols = ['TXFR2', 'TXFR1', 'MXFR1', '2408', '2330', '2317']
   const [symbols, setSymbols] = useState<SymbolOption[]>(
     defaultSymbols.map((s) => ({ value: s, label: s, loading: true }))
@@ -52,7 +52,7 @@ export default function TestKLineChartProPage() {
         const updatedSymbols = await Promise.all(
           defaultSymbols.map(async (symbolCode) => {
             try {
-              // 使用相對路徑，讓 Next.js rewrites 處理代理
+              // 使用相對路徑,讓 Next.js rewrites 處理代理
               const response = await fetch(`/api/contract-info/${symbolCode}`)
 
               if (!response.ok) {

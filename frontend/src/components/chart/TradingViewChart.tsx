@@ -2,14 +2,14 @@
 
 /**
  * TradingView 嵌入式圖表組件
- * 支持台股日線圖，減少後端數據負擔
+ * 支持台股日線圖,減少後端數據負擔
  */
 
 import React, { useEffect, useRef } from 'react'
 
 interface TradingViewChartProps {
-  symbol: string // 台股代碼，如 "6901"
-  interval?: string // 時間週期："D" | "W" | "M" | "1" | "5" | "15" | "30" | "60" | "240"
+  symbol: string // 台股代碼,如 "6901"
+  interval?: string // 時間週期:"D" | "W" | "M" | "1" | "5" | "15" | "30" | "60" | "240"
   theme?: 'light' | 'dark'
   width?: number
   height?: number
