@@ -627,6 +627,7 @@ export default function RankingPage() {
                       <div className="flex-1 overflow-hidden">
                         <iframe
                           src={`https://histock.tw/stock/tchart.aspx?no=${selectedStock.code.replace(/\.(TW|TWE)$/, '')}`}
+                          // src={`https://www.cmoney.tw/finance/${selectedStock.code.replace(/\.(TW|TWE)$/, '')}/technicalanalysis`}
                           className="w-full h-full border-0"
                           title="HiStock 技術分析"
                         />

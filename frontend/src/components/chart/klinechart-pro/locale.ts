@@ -56,6 +56,6 @@ export const DEFAULT_LOCALE = LOCALES.ZH_TW
 // UI語言選項配置
 export const languageOptions = [
   { value: LOCALES.ZH_TW, label: '繁中', flag: '🇹🇼' },
-  { value: 'zh-CN', label: '简中', flag: '🇨🇳' },
+  // { value: 'zh-CN', label: '简中', flag: '🇨🇳' },
   { value: 'en-US', label: 'EN', flag: '🇺🇸' },
 ] as const

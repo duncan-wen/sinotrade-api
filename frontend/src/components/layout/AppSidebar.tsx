@@ -68,19 +68,20 @@ const data = {
         },
         {
           title: '台指期',
-          url: '/test-klinechart-pro',
+          url: '/tw-futures',
           icon: CandlestickChart,
+        },
+        {
+          title: '台股排行榜',
+          url: '/ranking',
+          icon: TrendingUp,
         },
         {
           title: '美股專區',
           url: '/us-stocks',
           icon: Globe,
         },
-        {
-          title: '投資組合',
-          url: '/portfolio',
-          icon: PieChart,
-        },
+
         {
           title: '市場數據',
           url: '/market-data',
@@ -107,14 +108,14 @@ const data = {
           icon: History,
         },
         {
+          title: '投資組合',
+          url: '/portfolio',
+          icon: PieChart,
+        },
+        {
           title: '資金管理',
           url: '/funds',
           icon: DollarSign,
-        },
-        {
-          title: '排行榜',
-          url: '/ranking',
-          icon: TrendingUp,
         },
       ],
     },
