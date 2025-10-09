@@ -21,6 +21,7 @@ import {
   User,
   LogOut,
   ChevronUp,
+  CandlestickChart,
 } from 'lucide-react'
 
 import {
@@ -51,8 +52,8 @@ import { Badge } from '@/components/ui/badge'
 // 主要導航項目
 const data = {
   user: {
-    name: 'Duncan Chen',
-    email: 'duncan@sinotrade.com',
+    name: 'Katy Li',
+    email: 'katy0408@gmail.com',
     avatar: '/avatars/shadcn.jpg',
   },
   navMain: [
@@ -64,6 +65,11 @@ const data = {
           url: '/',
           icon: Home,
           isActive: true,
+        },
+        {
+          title: '台指期',
+          url: '/test-klinechart-pro',
+          icon: CandlestickChart,
         },
         {
           title: '美股專區',
@@ -160,7 +166,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <BarChart3 className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">SinoTrade</span>
+                  <span className="truncate font-semibold">DKTrade</span>
                   <span className="truncate text-xs">投資交易平台</span>
                 </div>
               </a>
@@ -286,7 +292,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <a href="/profile">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={data.user.avatar} alt={data.user.name} />
-                  <AvatarFallback className="rounded-lg">DC</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">KL</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">

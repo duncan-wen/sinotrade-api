@@ -36,6 +36,11 @@ import {
   X,
 } from 'lucide-react'
 import KLineChartPro from '@/components/chart/KLineChartPro'
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable'
 
 /**
  * 排行榜圖標映射
@@ -522,8 +527,8 @@ export default function RankingPage() {
                 <li>🆕 可開啟漲跌幅篩選,只顯示 ±1%~3.5% 範圍內的股票</li>
                 <li>點擊股票項目可查看即時 K線圖(1分/5分/15分鐘)</li>
                 <li className="font-medium text-blue-600">
-                  💡 查看日線圖請點擊「查看日線圖」按鈕,直接開啟 Wantgoo
-                  玩股網完整技術線圖(節省 API 流量)
+                  💡 K線圖雙視窗：左側即時K線圖 + 右側HiStock技術圖，
+                  可拖動中間分隔線調整比例
                 </li>
                 <li>漲跌幅以前一交易日收盤價為基準計算</li>
                 <li>成交量和成交金額為當日累計數據</li>
@@ -532,34 +537,20 @@ export default function RankingPage() {
           </CardContent>
         </Card>
 
-        {/* K線圖 Modal */}
+        {/* K線圖 Modal - 全螢幕雙畫面 */}
         {isChartDialogOpen && selectedStock && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="relative w-[95vw] h-[90vh] bg-white dark:bg-gray-900 rounded-lg shadow-2xl overflow-hidden">
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm">
+            <div className="relative w-full h-full bg-white dark:bg-gray-900">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b">
                 <h2 className="text-xl font-semibold">
-                  {selectedStock.code} {selectedStock.name} - 即時K線圖
+                  {selectedStock.code} {selectedStock.name} - K線圖雙視窗
                 </h2>
 
                 <div className="flex items-center gap-2">
-                  {/* 查看日線圖按鈕 */}
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => {
-                      const cleanCode = selectedStock.code.replace(
-                        /\.(TW|TWE)$/,
-                        ''
-                      )
-                      const wantgooUrl = `https://www.wantgoo.com/stock/${cleanCode}/technical-chart`
-                      window.open(wantgooUrl, '_blank', 'noopener,noreferrer')
-                    }}
-                    className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    查看日線圖
-                  </Button>
+                  <div className="text-sm text-muted-foreground">
+                    💡 拖動中間分隔線調整視窗比例
+                  </div>
 
                   {/* 關閉按鈕 */}
                   <Button
@@ -573,17 +564,76 @@ export default function RankingPage() {
                 </div>
               </div>
 
-              {/* Content */}
-              <div className="p-4 h-[calc(100%-60px)]">
-                <KLineChartPro
-                  symbol={selectedStock.code}
-                  symbolName={selectedStock.name}
-                  interval="5m"
-                  height={700}
-                  enableRealtime={true}
-                  mainIndicators={['MA', 'BOLL']}
-                  subIndicators={['MACD', 'KD']}
-                />
+              {/* Resizable Content */}
+              <div className="h-[calc(100%-60px)]">
+                <ResizablePanelGroup
+                  direction="horizontal"
+                  className="h-full w-full"
+                >
+                  {/* 左側面板 - 即時K線圖 */}
+                  <ResizablePanel defaultSize={50} minSize={20}>
+                    <div className="flex flex-col h-full">
+                      <div className="p-2 border-b bg-gray-50 dark:bg-gray-800">
+                        <h3 className="text-sm font-medium">
+                          即時K線圖 (1分/5分/15分鐘)
+                        </h3>
+                      </div>
+                      <div className="flex-1 p-4 overflow-auto">
+                        <KLineChartPro
+                          symbol={selectedStock.code}
+                          symbolName={selectedStock.name}
+                          interval="5m"
+                          height={700}
+                          enableRealtime={true}
+                          mainIndicators={['MA', 'BOLL']}
+                          subIndicators={['MACD', 'KD']}
+                        />
+                      </div>
+                    </div>
+                  </ResizablePanel>
+
+                  {/* 可拖動的分隔線 */}
+                  <ResizableHandle withHandle />
+
+                  {/* 右側面板 - 日線圖 (HiStock) */}
+                  <ResizablePanel defaultSize={50} minSize={20}>
+                    <div className="flex flex-col h-full">
+                      <div className="p-2 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
+                        <h3 className="text-sm font-medium">
+                          日線圖 (HiStock 嗨投資)
+                        </h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const cleanCode = selectedStock.code.replace(
+                              /\.(TW|TWE)$/,
+                              ''
+                            )
+                            const histockUrl = `https://histock.tw/stock/tchart.aspx?no=${cleanCode}`
+                            //https://www.cmoney.tw/finance/2330/technicalanalysis
+                            window.open(
+                              histockUrl,
+                              '_blank',
+                              'noopener,noreferrer'
+                            )
+                          }}
+                          className="gap-1 h-7 text-xs"
+                        >
+                          <BarChart3 className="h-3 w-3" />
+                          新視窗開啟
+                        </Button>
+                      </div>
+                      <div className="flex-1 overflow-hidden">
+                        <iframe
+                          src={`https://histock.tw/stock/tchart.aspx?no=${selectedStock.code.replace(/\.(TW|TWE)$/, '')}`}
+                          className="w-full h-full border-0"
+                          title="HiStock 技術分析"
+                        />
+                      </div>
+                    </div>
+                  </ResizablePanel>
+                </ResizablePanelGroup>
               </div>
             </div>
           </div>

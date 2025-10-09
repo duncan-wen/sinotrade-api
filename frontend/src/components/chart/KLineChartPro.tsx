@@ -23,6 +23,7 @@ import {
   KlineMessage,
   TickData,
 } from '@/services/klineSocketIO'
+import { Separator } from '@/components/ui/separator'
 import {
   zhTWLocale,
   LOCALES,
@@ -1162,7 +1163,7 @@ export default function KLineChartProComponent({
                 { value: '5m', label: '5分' },
                 { value: '15m', label: '15分' },
                 { value: '60m', label: '1小時' },
-                { value: '1d', label: '日線' },
+                // { value: '1d', label: '日線' },
                 // { value: '1w', label: '週線' },
                 // { value: '1M', label: '月線' },
               ].map((item) => (
@@ -1181,7 +1182,8 @@ export default function KLineChartProComponent({
             </div>
 
             {/* 指標切換按鈕 */}
-            <div className="flex space-x-1 border-l pl-4">
+            <Separator orientation="vertical" className="h-6" />
+            <div className="flex space-x-1">
               {indicatorOptions.map((item) => {
                 const isActive = activeIndicators.has(item.name)
                 return (
@@ -1221,7 +1223,8 @@ export default function KLineChartProComponent({
             </div>
 
             {/* 語言切換按鈕 */}
-            <div className="flex space-x-1 border-l pl-4">
+            <Separator orientation="vertical" className="h-6" />
+            <div className="flex space-x-1">
               {languageOptions.map((item) => (
                 <ChartButton
                   key={item.value}
@@ -1242,34 +1245,37 @@ export default function KLineChartProComponent({
 
             {/* 🔧 連接控制按鈕 */}
             {enableRealtime && (
-              <div className="flex space-x-1 border-l pl-4">
-                <ChartButton
-                  variant="action"
-                  title="手動重新連接 Socket.IO"
-                  onClick={handleManualReconnect}
-                  className={`flex items-center space-x-1 ${
-                    !connectionStatus.connected
-                      ? 'bg-red-100 hover:bg-red-200 text-red-700'
-                      : 'bg-gray-100 hover:bg-gray-200'
-                  }`}
-                >
-                  <span>🔄</span>
-                  <span>重連</span>
-                </ChartButton>
-
-                {connectionStatus.lastError && (
+              <>
+                <Separator orientation="vertical" className="h-6" />
+                <div className="flex space-x-1">
                   <ChartButton
                     variant="action"
-                    title={`錯誤信息: ${connectionStatus.lastError}`}
-                    onClick={() => {
-                      console.log('連接錯誤:', connectionStatus.lastError)
-                    }}
-                    className="bg-yellow-100 hover:bg-yellow-200 text-yellow-700"
+                    title="手動重新連接 Socket.IO"
+                    onClick={handleManualReconnect}
+                    className={`flex items-center space-x-1 ${
+                      !connectionStatus.connected
+                        ? 'bg-red-100 hover:bg-red-200 text-red-700'
+                        : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
                   >
-                    ⚠️
+                    <span>🔄</span>
+                    <span>重連</span>
                   </ChartButton>
-                )}
-              </div>
+
+                  {connectionStatus.lastError && (
+                    <ChartButton
+                      variant="action"
+                      title={`錯誤信息: ${connectionStatus.lastError}`}
+                      onClick={() => {
+                        console.log('連接錯誤:', connectionStatus.lastError)
+                      }}
+                      className="bg-yellow-100 hover:bg-yellow-200 text-yellow-700"
+                    >
+                      ⚠️
+                    </ChartButton>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>

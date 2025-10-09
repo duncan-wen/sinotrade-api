@@ -97,7 +97,7 @@ export default function Home() {
             {
               title: '今日損益',
               description: 'Today P&L',
-              value: '+$1,250',
+              value: '+$45,837,250',
               change: '已實現',
               changePercent: '',
               up: true,
