@@ -29,11 +29,14 @@ import {
 import {
   RefreshCw,
   TrendingUp,
+  TrendingDown,
   BarChart3,
   DollarSign,
   Volume2,
   Activity,
   X,
+  Star,
+  StarOff,
 } from 'lucide-react'
 import KLineChartPro from '@/components/chart/KLineChartPro'
 import {
@@ -41,6 +44,15 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 
 /**
  * 排行榜圖標映射
@@ -112,6 +124,17 @@ const getSortingOptions = (scannerType: ScannerType) => {
 }
 
 /**
+ * 我的最愛股票介面定義
+ */
+interface FavoriteStock {
+  symbol: string
+  name: string
+  addedAt: string
+  category?: '台股' | '期貨' | '選擇權'
+  tag?: '多頭' | '空頭' | '觀察'
+}
+
+/**
  * 排行榜頁面
  */
 export default function RankingPage() {
@@ -135,6 +158,74 @@ export default function RankingPage() {
   // K線圖 Dialog 狀態
   const [isChartDialogOpen, setIsChartDialogOpen] = useState(false)
   const [selectedStock, setSelectedStock] = useState<ScannerData | null>(null)
+
+  // 加入最愛 Dialog 狀態
+  const [showAddDialog, setShowAddDialog] = useState(false)
+  const [selectedTag, setSelectedTag] = useState<'多頭' | '空頭' | '觀察'>(
+    '觀察'
+  )
+  const [favorites, setFavorites] = useState<FavoriteStock[]>([])
+
+  // 從 localStorage 載入我的最愛
+  React.useEffect(() => {
+    try {
+      const savedFavorites = localStorage.getItem('myFavoriteStocks')
+      if (savedFavorites) {
+        setFavorites(JSON.parse(savedFavorites))
+      }
+    } catch (error) {
+      console.error('載入我的最愛失敗:', error)
+    }
+  }, [])
+
+  // 儲存我的最愛到 localStorage
+  const saveFavorites = (newFavorites: FavoriteStock[]) => {
+    try {
+      localStorage.setItem('myFavoriteStocks', JSON.stringify(newFavorites))
+      setFavorites(newFavorites)
+    } catch (error) {
+      console.error('儲存我的最愛失敗:', error)
+    }
+  }
+
+  // 檢查是否已在我的最愛中
+  const isFavorite = (symbol: string) => {
+    return favorites.some((fav) => fav.symbol === symbol)
+  }
+
+  // 打開加入我的最愛對話框
+  const openAddToFavoritesDialog = () => {
+    if (!selectedStock) return
+    if (isFavorite(selectedStock.code)) {
+      alert('此股票已在我的最愛中')
+      return
+    }
+    setSelectedTag('觀察')
+    setShowAddDialog(true)
+  }
+
+  // 確認添加到我的最愛
+  const confirmAddToFavorites = () => {
+    if (!selectedStock) return
+
+    const newFavorite: FavoriteStock = {
+      symbol: selectedStock.code,
+      name: selectedStock.name || selectedStock.code,
+      addedAt: new Date().toISOString().split('T')[0],
+      category: '台股',
+      tag: selectedTag,
+    }
+
+    const newFavorites = [...favorites, newFavorite]
+    saveFavorites(newFavorites)
+    setShowAddDialog(false)
+  }
+
+  // 從我的最愛移除
+  const removeFromFavorites = (symbol: string) => {
+    const newFavorites = favorites.filter((fav) => fav.symbol !== symbol)
+    saveFavorites(newFavorites)
+  }
 
   // 獲取排行類型選項
   const { types: scannerTypes, isLoading: typesLoading } = useScannerTypes()
@@ -552,6 +643,34 @@ export default function RankingPage() {
                     💡 拖動中間分隔線調整視窗比例
                   </div>
 
+                  {/* 加入/移除最愛按鈕 */}
+                  <Button
+                    variant={
+                      isFavorite(selectedStock.code) ? 'destructive' : 'default'
+                    }
+                    size="sm"
+                    onClick={() => {
+                      if (isFavorite(selectedStock.code)) {
+                        removeFromFavorites(selectedStock.code)
+                      } else {
+                        openAddToFavoritesDialog()
+                      }
+                    }}
+                    className="gap-2 h-8"
+                  >
+                    {isFavorite(selectedStock.code) ? (
+                      <>
+                        <StarOff className="h-4 w-4" />
+                        取消最愛
+                      </>
+                    ) : (
+                      <>
+                        <Star className="h-4 w-4" />
+                        加入最愛
+                      </>
+                    )}
+                  </Button>
+
                   {/* 關閉按鈕 */}
                   <Button
                     variant="ghost"
@@ -639,6 +758,84 @@ export default function RankingPage() {
             </div>
           </div>
         )}
+
+        {/* 加入最愛對話框 */}
+        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>加入我的最愛</DialogTitle>
+              <DialogDescription>
+                將 <strong>{selectedStock?.code}</strong> ({selectedStock?.name}
+                ) 加入我的最愛
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="stock-symbol" className="text-right">
+                  股票代碼
+                </Label>
+                <Input
+                  id="stock-symbol"
+                  value={selectedStock?.code || ''}
+                  disabled
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="stock-name" className="text-right">
+                  股票名稱
+                </Label>
+                <Input
+                  id="stock-name"
+                  value={selectedStock?.name || ''}
+                  disabled
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="stock-tag" className="text-right">
+                  標籤
+                </Label>
+                <Select
+                  value={selectedTag}
+                  onValueChange={(value) =>
+                    setSelectedTag(value as '多頭' | '空頭' | '觀察')
+                  }
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="選擇標籤" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="多頭">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-green-600" />
+                        <span>多頭</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="空頭">
+                      <div className="flex items-center gap-2">
+                        <TrendingDown className="h-4 w-4 text-red-600" />
+                        <span>空頭</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="觀察">
+                      <div className="flex items-center gap-2">
+                        <Star className="h-4 w-4 text-gray-600" />
+                        <span>觀察</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                取消
+              </Button>
+              <Button onClick={confirmAddToFavorites}>確認加入</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   )

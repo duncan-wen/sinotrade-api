@@ -22,6 +22,7 @@ import {
   LogOut,
   ChevronUp,
   CandlestickChart,
+  Star,
 } from 'lucide-react'
 
 import {
@@ -75,6 +76,11 @@ const data = {
           title: '台股排行榜',
           url: '/ranking',
           icon: TrendingUp,
+        },
+        {
+          title: '自選股報價',
+          url: '/watchlist',
+          icon: Star,
         },
         {
           title: '美股專區',
