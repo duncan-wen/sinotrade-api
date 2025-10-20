@@ -11,6 +11,7 @@
 'use client'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
+import { MainLayout } from '@/components/layout/MainLayout'
 
 // 通用的超時 fetch 函數
 const fetchWithTimeout = async (
@@ -244,8 +245,8 @@ export default function USStocksPage() {
   }, [searchQuery, handleSearch])
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <MainLayout>
+      <div className="container mx-auto px-4 py-6">
         {/* 頁面標題 */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -436,6 +437,6 @@ export default function USStocksPage() {
           </div>
         </div>
       </div>
-    </div>
+    </MainLayout>
   )
 }

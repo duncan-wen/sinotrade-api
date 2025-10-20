@@ -44,6 +44,7 @@ interface RankingTableProps {
 }
 
 type SortKey =
+  | 'code'
   | 'close'
   | 'change_price'
   | 'change_percent'
@@ -146,6 +147,18 @@ export const RankingTable: React.FC<RankingTableProps> = ({
     if (!sortKey || !sortDirection) return data
 
     return [...data].sort((a, b) => {
+      // 處理代號排序（字串排序）
+      if (sortKey === 'code') {
+        const aCode = a.code
+        const bCode = b.code
+        if (sortDirection === 'asc') {
+          return aCode.localeCompare(bCode)
+        } else {
+          return bCode.localeCompare(aCode)
+        }
+      }
+
+      // 處理數字排序
       let aValue: number
       let bValue: number
 
@@ -252,7 +265,15 @@ export const RankingTable: React.FC<RankingTableProps> = ({
                   #
                 </TableHead>
                 <TableHead className="min-w-[80px] bg-background border-b-2">
-                  代號
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 p-0 hover:bg-transparent font-medium"
+                    onClick={() => handleSort('code')}
+                  >
+                    代號
+                    <SortIcon columnKey="code" />
+                  </Button>
                 </TableHead>
                 <TableHead className="min-w-[100px] bg-background border-b-2">
                   名稱

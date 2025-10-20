@@ -159,6 +159,20 @@ export default function RankingPage() {
   const [isChartDialogOpen, setIsChartDialogOpen] = useState(false)
   const [selectedStock, setSelectedStock] = useState<ScannerData | null>(null)
 
+  // 監聽 ESC 鍵關閉 K線圖 Modal
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isChartDialogOpen) {
+        setIsChartDialogOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isChartDialogOpen])
+
   // 加入最愛 Dialog 狀態
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [selectedTag, setSelectedTag] = useState<'多頭' | '空頭' | '觀察'>(
@@ -241,6 +255,9 @@ export default function RankingPage() {
 
   // 根據篩選條件過濾數據
   let filteredData = data
+
+  // 🔥 總量篩選 - 過濾掉總量 <= 800 的股票
+  filteredData = filteredData.filter((item) => item.total_volume > 800)
 
   // 量比篩選
   if (filterVolumeRatio) {
@@ -564,6 +581,9 @@ export default function RankingPage() {
                       <Badge variant="default">
                         {filteredData.length} / {data.length} 檔
                       </Badge>
+                      <Badge variant="outline" className="bg-orange-50">
+                        總量&gt;800
+                      </Badge>
                       {filterVolumeRatio && (
                         <Badge variant="outline">量比篩選</Badge>
                       )}
@@ -612,6 +632,9 @@ export default function RankingPage() {
               <h4 className="font-medium text-foreground">說明:</h4>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>每次抓取 200 筆數據,每頁顯示 35 筆</li>
+                <li className="font-medium text-orange-600">
+                  🔥 自動過濾：總量 &gt; 500 (低成交量股票已被過濾)
+                </li>
                 <li>表格可垂直滾動,表頭固定方便查看</li>
                 <li>可開啟/關閉自動更新(預設每30秒刷新一次)</li>
                 <li>可開啟量比篩選,只顯示量比 &gt; 1.5 的股票</li>

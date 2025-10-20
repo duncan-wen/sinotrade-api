@@ -50,10 +50,24 @@ export default function TaiwanFuturesPage() {
   const [apiError, setApiError] = useState<string | null>(null)
 
   // 控制右側 HiStock 期貨頁面是否顯示
-  const [showHiStockPanel, setShowHiStockPanel] = useState(true)
+  const [showHiStockPanel, setShowHiStockPanel] = useState(false)
+
+  // 監聽 ESC 鍵關閉 HiStock 面板
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showHiStockPanel) {
+        setShowHiStockPanel(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showHiStockPanel])
 
   // 預設股票代號列表(稍後會用 API 獲取名稱)
-  const defaultSymbols = ['TXFR2', 'TXFR1', 'MXFR1', '2408', '2330', '2317']
+  const defaultSymbols = ['TXFR1', 'TXFR2', 'MXFR1', '2408', '2330', '2317']
   const [symbols, setSymbols] = useState<SymbolOption[]>(
     defaultSymbols.map((s) => ({ value: s, label: s, loading: true }))
   )
