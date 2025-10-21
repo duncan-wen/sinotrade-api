@@ -105,6 +105,9 @@ class ProfessionalChart {
   private isUserViewingHistory: boolean = false // 用戶是否正在查看歷史數據
   private isRealTimeMode: boolean = true // 是否為實時模式
   private dragTimeout: NodeJS.Timeout | null = null // 拖曳停止檢測計時器
+  // 🆕 MA 扣抵標註管理
+  private maDeductionOverlays: Map<number, string> = new Map() // 存儲 MA 扣抵標註的 overlay ID
+  private showMADeductions: boolean = true // 是否顯示 MA 扣抵標註（預設啟用）
 
   constructor(container: HTMLElement, symbol: string, interval: string) {
     this.updateTheme(DEFAULT_THEME)
@@ -398,6 +401,12 @@ class ProfessionalChart {
         }
 
         console.log('✅ 數據載入完成:', klineData.length, '條')
+
+        // 🆕 如果 MA 扣抵標註已啟用，創建標註（初始載入模式）
+        if (this.showMADeductions) {
+          console.log('📊 數據載入完成後創建 MA 扣抵標註（初始載入）')
+          this.createMADeductionOverlays(true) // 傳入 true 表示初始載入
+        }
       }
     } catch (error) {
       console.error('❌ 數據載入失敗:', error)
@@ -543,6 +552,12 @@ class ProfessionalChart {
       } else {
         console.log('📊 用戶正在查看歷史,不自動滾動')
       }
+
+      // 🆕 如果 MA 扣抵標註已啟用，且是新 K 棒，則更新標註位置
+      if (this.showMADeductions && isNewKline) {
+        console.log('📊 新 K 棒產生，更新 MA 扣抵標註位置')
+        this.createMADeductionOverlays(false) // 傳入 false 因為新 K 棒已確定
+      }
     } catch (error) {
       console.error('❌ 數據更新失敗:', error)
       console.error('❌ 錯誤詳情:', error.message)
@@ -666,6 +681,12 @@ class ProfessionalChart {
     try {
       await this.loadData()
       console.log('✅ [KLineChart Pro] 間隔更新完成')
+
+      // 🆕 如果 MA 扣抵標註已啟用，重新創建標註（初始載入模式）
+      if (this.showMADeductions) {
+        console.log('📊 切換時區後重新創建 MA 扣抵標註（初始載入）')
+        this.createMADeductionOverlays(true) // 傳入 true 因為最後一根 K 棒還在成長中
+      }
     } catch (error) {
       console.error('❌ [KLineChart Pro] 間隔更新失敗:', error)
       throw error
@@ -803,6 +824,141 @@ class ProfessionalChart {
     return Array.from(this.activeIndicators)
   }
 
+  // 🆕 計算 MA 扣抵位置
+  private calculateMADeductions(
+    period: number,
+    isInitialLoad: boolean = false
+  ): Array<{ timestamp: number; value: number; label: string }> {
+    if (this.klineDataCache.length < period) {
+      return [] // 數據不足
+    }
+
+    const deductions: Array<{
+      timestamp: number
+      value: number
+      label: string
+    }> = []
+    const dataLength = this.klineDataCache.length
+
+    // 扣抵的定義：下一根 K 棒產生時，哪一根舊 K 棒會被剔除
+    // 例如 MA8：當前最後一根是 index=188（第 189 根 K 棒）
+    //           當前 MA8 使用：index 181-188（第 182-189 根 K 棒，共 8 根）
+    //           下一根 K 棒（index=189，第 190 根）產生時
+    //           新 MA8 將使用：index 182-189（第 183-190 根 K 棒，共 8 根）
+    //           所以 index=181（第 182 根 K 棒）會被扣抵
+
+    // 🔧 注意：初始載入時，最後一根 K 棒還在成長中（未完成），
+    //         所以要從倒數第二根開始計算扣抵位置
+    const lastIndex = isInitialLoad ? dataLength - 2 : dataLength - 1
+
+    if (lastIndex >= period) {
+      // 下一根 K 棒會扣抵的位置：lastIndex - period
+      const deductIndex = lastIndex - period
+      const deductKline = this.klineDataCache[deductIndex]
+
+      deductions.push({
+        timestamp: deductKline.timestamp, // 標註在即將被扣抵的 K 棒位置
+        value: deductKline.close, // 顯示該 K 棒的收盤價
+        label: `MA${period}扣抵\n${deductKline.close.toFixed(2)}`,
+      })
+    }
+
+    return deductions
+  }
+
+  // 🆕 顯示/隱藏 MA 扣抵標註
+  toggleMADeductions(show?: boolean) {
+    if (!this.chart) return
+
+    const shouldShow = show !== undefined ? show : !this.showMADeductions
+    this.showMADeductions = shouldShow
+
+    if (shouldShow) {
+      // 顯示扣抵標註（使用初始載入模式，因為最後一根 K 棒可能還在成長中）
+      this.createMADeductionOverlays(true)
+    } else {
+      // 隱藏扣抵標註
+      this.removeMADeductionOverlays()
+    }
+
+    return shouldShow
+  }
+
+  // 🆕 創建 MA 扣抵標註
+  private createMADeductionOverlays(isInitialLoad: boolean = false) {
+    if (!this.chart) return
+
+    // 清除舊的標註
+    this.removeMADeductionOverlays()
+
+    // 為 8MA, 21MA, 55MA 創建扣抵標註，使用與均線相同的顏色
+    const periods = [8, 21, 55]
+    const colors = [this.colors.ma8, this.colors.ma21, this.colors.ma55]
+
+    periods.forEach((period, index) => {
+      const deductions = this.calculateMADeductions(period, isInitialLoad)
+
+      deductions.forEach((deduction) => {
+        try {
+          const overlayId = this.chart.createOverlay({
+            name: 'simpleAnnotation',
+            extendData: deduction.label,
+            points: [
+              {
+                timestamp: deduction.timestamp,
+                value: deduction.value,
+              },
+            ],
+            styles: {
+              text: {
+                color: colors[index],
+                size: 10,
+                family: 'Arial',
+                weight: 'bold',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                borderColor: colors[index],
+                borderSize: 1,
+                borderRadius: 3,
+                paddingLeft: 4,
+                paddingRight: 4,
+                paddingTop: 2,
+                paddingBottom: 2,
+              },
+              point: {
+                color: colors[index],
+                size: 4,
+                activeColor: colors[index],
+                activeSize: 6,
+              },
+            },
+          })
+
+          if (overlayId) {
+            this.maDeductionOverlays.set(period, overlayId)
+          }
+        } catch (error) {
+          console.error(`創建 MA${period} 扣抵標註失敗:`, error)
+        }
+      })
+    })
+
+    console.log(`✅ 已創建 ${this.maDeductionOverlays.size} 個 MA 扣抵標註`)
+  }
+
+  // 🆕 移除 MA 扣抵標註
+  private removeMADeductionOverlays() {
+    if (!this.chart) return
+
+    try {
+      // 移除所有扣抵標註 overlay
+      this.chart.removeOverlay({ name: 'simpleAnnotation' })
+      this.maDeductionOverlays.clear()
+      console.log('✅ 已清除所有 MA 扣抵標註')
+    } catch (error) {
+      console.error('❌ 清除 MA 扣抵標註失敗:', error)
+    }
+  }
+
   // 🔧 簡化版指標移除 - 根據 KLineChart 官方文檔
   removeIndicatorSimple(indicatorName: string): boolean {
     if (!this.chart) return false
@@ -912,6 +1068,8 @@ export default function KLineChartProComponent({
   const [activeIndicators, setActiveIndicators] = useState<Set<string>>(
     new Set() // 🔧 初始化為空,將從圖表實例同步狀態
   )
+  // 🆕 MA 扣抵標註狀態
+  const [showMADeductions, setShowMADeductions] = useState(true) // 預設啟用
   const [connectionStatus, setConnectionStatus] = useState<{
     connected: boolean
     reconnectAttempts: number
@@ -1141,6 +1299,28 @@ export default function KLineChartProComponent({
 
           {/* 控制按鈕群 */}
           <div className="flex space-x-4">
+            {/* 🆕 MA 扣抵標註按鈕 */}
+            <ChartButton
+              variant="toggle"
+              isActive={showMADeductions}
+              title={`${showMADeductions ? '隱藏' : '顯示'} MA扣抵標註 (8/21/55)`}
+              onClick={() => {
+                if (chartInstanceRef.current) {
+                  const newState = chartInstanceRef.current.toggleMADeductions()
+                  setShowMADeductions(newState)
+                  console.log(`📊 MA扣抵標註 ${newState ? '顯示' : '隱藏'}`)
+                }
+              }}
+              className={`flex items-center space-x-1 ${
+                showMADeductions
+                  ? 'bg-purple-100 hover:bg-purple-200 text-purple-700'
+                  : 'bg-gray-100 hover:bg-gray-200'
+              }`}
+            >
+              <span>{showMADeductions ? '●' : '○'}</span>
+              <span>MA扣抵</span>
+            </ChartButton>
+
             {/* 🆕 回到實時按鈕 */}
             <ChartButton
               variant="action"

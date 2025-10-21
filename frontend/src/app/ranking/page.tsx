@@ -633,7 +633,7 @@ export default function RankingPage() {
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>每次抓取 200 筆數據,每頁顯示 35 筆</li>
                 <li className="font-medium text-orange-600">
-                  🔥 自動過濾：總量 &gt; 500 (低成交量股票已被過濾)
+                  🔥 自動過濾：總量 &gt; 800 (低成交量股票已被過濾)
                 </li>
                 <li>表格可垂直滾動,表頭固定方便查看</li>
                 <li>可開啟/關閉自動更新(預設每30秒刷新一次)</li>
