@@ -402,10 +402,10 @@ class ProfessionalChart {
 
         console.log('✅ 數據載入完成:', klineData.length, '條')
 
-        // 🆕 如果 MA 扣抵標註已啟用，創建標註（初始載入模式）
+        // 🆕 如果 MA 扣抵標註已啟用，創建標註
         if (this.showMADeductions) {
-          console.log('📊 數據載入完成後創建 MA 扣抵標註（初始載入）')
-          this.createMADeductionOverlays(true) // 傳入 true 表示初始載入
+          console.log('📊 數據載入完成後創建 MA 扣抵標註')
+          this.createMADeductionOverlays()
         }
       }
     } catch (error) {
@@ -556,7 +556,7 @@ class ProfessionalChart {
       // 🆕 如果 MA 扣抵標註已啟用，且是新 K 棒，則更新標註位置
       if (this.showMADeductions && isNewKline) {
         console.log('📊 新 K 棒產生，更新 MA 扣抵標註位置')
-        this.createMADeductionOverlays(false) // 傳入 false 因為新 K 棒已確定
+        this.createMADeductionOverlays()
       }
     } catch (error) {
       console.error('❌ 數據更新失敗:', error)
@@ -682,10 +682,10 @@ class ProfessionalChart {
       await this.loadData()
       console.log('✅ [KLineChart Pro] 間隔更新完成')
 
-      // 🆕 如果 MA 扣抵標註已啟用，重新創建標註（初始載入模式）
+      // 🆕 如果 MA 扣抵標註已啟用，重新創建標註
       if (this.showMADeductions) {
-        console.log('📊 切換時區後重新創建 MA 扣抵標註（初始載入）')
-        this.createMADeductionOverlays(true) // 傳入 true 因為最後一根 K 棒還在成長中
+        console.log('📊 切換時區後重新創建 MA 扣抵標註')
+        this.createMADeductionOverlays()
       }
     } catch (error) {
       console.error('❌ [KLineChart Pro] 間隔更新失敗:', error)
@@ -826,11 +826,10 @@ class ProfessionalChart {
 
   // 🆕 計算 MA 扣抵位置
   private calculateMADeductions(
-    period: number,
-    isInitialLoad: boolean = false
+    period: number
   ): Array<{ timestamp: number; value: number; label: string }> {
-    if (this.klineDataCache.length < period) {
-      return [] // 數據不足
+    if (this.klineDataCache.length < period + 1) {
+      return [] // 數據不足（需要 period + 1 根才能計算扣抵）
     }
 
     const deductions: Array<{
@@ -840,21 +839,46 @@ class ProfessionalChart {
     }> = []
     const dataLength = this.klineDataCache.length
 
-    // 扣抵的定義：下一根 K 棒產生時，哪一根舊 K 棒會被剔除
-    // 例如 MA8：當前最後一根是 index=188（第 189 根 K 棒）
-    //           當前 MA8 使用：index 181-188（第 182-189 根 K 棒，共 8 根）
-    //           下一根 K 棒（index=189，第 190 根）產生時
-    //           新 MA8 將使用：index 182-189（第 183-190 根 K 棒，共 8 根）
-    //           所以 index=181（第 182 根 K 棒）會被扣抵
+    // 扣抵的定義：MA 計算範圍中，即將被剔除的最舊那根 K 棒
+    //
+    // 重要：扣抵位置應該始終穩定，不隨當前 K 棒更新而跳動
+    //
+    // 正確的計算方式：
+    // - 總共有 N 根 K 棒（包括正在成長的最後一根）
+    // - MA8 使用最近 8 根完整 K 棒
+    // - 從最後一根**完整** K 棒（倒數第二根）開始，往前數第 8 根
+    // - 這第 8 根就是扣抵位置
+    //
+    // 例如：有 100 根 K 棒（index 0-99）
+    //      最後一根 index 99 還在成長中
+    //      最後一根完整 K 棒：index 98（第 1 根）
+    //      往前數第 2 根：index 97
+    //      往前數第 3 根：index 96
+    //      ...
+    //      往前數第 8 根：index 91
+    //      但測試顯示在第 9 根，表示應該是 index 90
+    //      公式：98 - 8 = 90
+    //            = (dataLength - 2) - period
+    //            = dataLength - period - 2
 
-    // 🔧 注意：初始載入時，最後一根 K 棒還在成長中（未完成），
-    //         所以要從倒數第二根開始計算扣抵位置
-    const lastIndex = isInitialLoad ? dataLength - 2 : dataLength - 1
+    const lastIndex = dataLength - 1
+    // 從倒數第二根（最後一根完整 K 棒）開始，往前數第 period 根
+    const deductIndex = dataLength - period - 2
 
-    if (lastIndex >= period) {
-      // 下一根 K 棒會扣抵的位置：lastIndex - period
-      const deductIndex = lastIndex - period
+    // 確保 deductIndex 在有效範圍內
+    if (deductIndex >= 0 && deductIndex < dataLength) {
       const deductKline = this.klineDataCache[deductIndex]
+
+      // 🔍 調試信息：驗證計算結果
+      const lastCompleteIndex = lastIndex - 1
+      const barsBack = lastCompleteIndex - deductIndex
+      console.log(
+        `📊 MA${period} 扣抵計算:`,
+        `總共 ${dataLength} 根,`,
+        `最後完整 K 棒 index=${lastCompleteIndex},`,
+        `扣抵 index=${deductIndex},`,
+        `往前第 ${barsBack} 根（不含起點）`
+      )
 
       deductions.push({
         timestamp: deductKline.timestamp, // 標註在即將被扣抵的 K 棒位置
@@ -874,8 +898,8 @@ class ProfessionalChart {
     this.showMADeductions = shouldShow
 
     if (shouldShow) {
-      // 顯示扣抵標註（使用初始載入模式，因為最後一根 K 棒可能還在成長中）
-      this.createMADeductionOverlays(true)
+      // 顯示扣抵標註
+      this.createMADeductionOverlays()
     } else {
       // 隱藏扣抵標註
       this.removeMADeductionOverlays()
@@ -885,7 +909,7 @@ class ProfessionalChart {
   }
 
   // 🆕 創建 MA 扣抵標註
-  private createMADeductionOverlays(isInitialLoad: boolean = false) {
+  private createMADeductionOverlays() {
     if (!this.chart) return
 
     // 清除舊的標註
@@ -896,7 +920,7 @@ class ProfessionalChart {
     const colors = [this.colors.ma8, this.colors.ma21, this.colors.ma55]
 
     periods.forEach((period, index) => {
-      const deductions = this.calculateMADeductions(period, isInitialLoad)
+      const deductions = this.calculateMADeductions(period)
 
       deductions.forEach((deduction) => {
         try {

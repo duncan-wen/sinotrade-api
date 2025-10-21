@@ -104,6 +104,7 @@ export const createChartStyles = (colors: ThemeColors) =>
         },
         text: {
           show: true,
+          style: 'fill', // 🆕 添加填充樣式以確保價位文字可見
           color: '#FFFFFF',
           size: 12,
           family: 'Helvetica Neue',
@@ -130,6 +131,7 @@ export const createChartStyles = (colors: ThemeColors) =>
         },
         text: {
           show: true,
+          style: 'fill', // 🆕 添加填充樣式以確保時間文字可見
           color: '#FFFFFF',
           size: 12,
           family: 'Helvetica Neue',
