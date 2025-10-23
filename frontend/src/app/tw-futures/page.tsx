@@ -140,7 +140,7 @@ export default function TaiwanFuturesPage() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="max-w-full mx-auto px-2 py-4 space-y-4">
         {/* 控制面板 */}
         <div className="bg-white rounded-lg border p-4 shadow-sm">
           <div className="flex items-center justify-between">
