@@ -370,7 +370,7 @@ export default function WatchlistPage() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="max-w-full mx-auto px-2 py-4 space-y-4">
         {/* 頁面標題和控制區 */}
         <div className="flex items-center justify-between">
           <div>
