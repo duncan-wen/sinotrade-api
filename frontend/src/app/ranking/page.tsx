@@ -139,8 +139,8 @@ interface FavoriteStock {
  */
 export default function RankingPage() {
   const [selectedScannerType, setSelectedScannerType] =
-    useState<ScannerType>('ChangePercentRank')
-  const [sortingMode, setSortingMode] = useState<SortingMode>('gain_asc')
+    useState<ScannerType>('AmountRank')
+  const [sortingMode, setSortingMode] = useState<SortingMode>('value_high_low')
 
   // 自動更新控制
   const [autoRefresh, setAutoRefresh] = useState(false)

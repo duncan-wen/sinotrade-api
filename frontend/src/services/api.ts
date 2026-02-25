@@ -352,6 +352,31 @@ class ApiService {
     return this.client.get('/api/options/contracts/filtered', params)
   }
 
+  // ==================== 研究分析 API ====================
+
+  /**
+   * 取得匯率與台股大盤連動分析
+   */
+  async getForexAnalysis(params: {
+    days?: number
+    corr_window?: number
+  }): Promise<{
+    price_data: { date: string; taiex: number | null; usd_twd: number | null }[]
+    corr_data: { date: string; correlation: number | null }[]
+    return_data: {
+      date: string
+      market: number | null
+      strategy: number | null
+    }[]
+    market_return_pct: number
+    strategy_return_pct: number
+    win_rate_pct: number
+    total_days: number
+    signal_days: number
+  }> {
+    return this.client.get('/api/forex/analysis', params)
+  }
+
   // ==================== 系統狀態 API ====================
 
   /**
