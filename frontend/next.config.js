@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
+
+// 後端 URL：從 .env.local 讀取 BACKEND_URL，找不到時 fallback 到 8000
+const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000'
+
 const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
@@ -13,7 +17,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
       },
     ]
   },

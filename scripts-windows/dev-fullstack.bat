@@ -1,28 +1,40 @@
 @echo off
 chcp 65001 >nul
-echo 🚀🎨 Starting Sinotrade Full-Stack Development Servers...
-echo.
-echo 📍 Frontend: http://localhost:3000
-echo 📍 Backend API: http://localhost:8000
-echo 📍 API Docs: http://localhost:8000/docs
-echo.
-echo Starting both Frontend and Backend servers...
-echo Press Ctrl+C to stop all servers
+
+REM 讀取 port 設定 (同時自動更新 .env.local)
+call "%~dp0config.bat"
+
+set ROOT_DIR=%~dp0..
+
+echo 🚀🎨 Starting Sinotrade Full-Stack...
+echo 📍 Frontend: http://localhost:%FRONTEND_PORT%
+echo 📍 Backend:  http://localhost:%BACKEND_PORT%
+echo 📍 API Docs: http://localhost:%BACKEND_PORT%/docs
 echo.
 
-REM Start backend in a new window
-start "Sinotrade Backend" cmd /k "cd backend && uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000"
+REM 寫入後端暫存 bat
+set TMP_BE=%TEMP%\sinotrade_backend.bat
+echo @echo off> "%TMP_BE%"
+echo cd /d "%ROOT_DIR%\backend">> "%TMP_BE%"
+echo uv run uvicorn src.main:app --reload --host 0.0.0.0 --port %BACKEND_PORT%>> "%TMP_BE%"
 
-REM Wait a moment for backend to start
+REM 寫入前端暫存 bat
+set TMP_FE=%TEMP%\sinotrade_frontend.bat
+echo @echo off> "%TMP_FE%"
+echo cd /d "%ROOT_DIR%\frontend">> "%TMP_FE%"
+echo pnpm dev -p %FRONTEND_PORT%>> "%TMP_FE%"
+
+REM 啟動後端
+start "Sinotrade Backend" cmd /k "%TMP_BE%"
+
+REM 等後端啟動
 timeout /t 3 /nobreak >nul
 
-REM Start frontend in a new window
-start "Sinotrade Frontend" cmd /k "cd frontend && pnpm dev"
+REM 啟動前端
+start "Sinotrade Frontend" cmd /k "%TMP_FE%"
 
-echo.
 echo ✅ Both servers are starting in separate windows
-echo 🔄 Frontend will be available at: http://localhost:3000
-echo 🔄 Backend API will be available at: http://localhost:8000
+echo 🔄 Frontend: http://localhost:%FRONTEND_PORT%
+echo 🔄 Backend:  http://localhost:%BACKEND_PORT%
 echo.
-echo Note: Close the individual server windows to stop them
 pause

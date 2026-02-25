@@ -1,17 +1,25 @@
 @echo off
 chcp 65001 >nul
-echo 🚀 Starting Sinotrade Backend Development Server...
-echo 📍 API Documentation: http://localhost:8000/docs
-echo 📍 API Root: http://localhost:8000
+
+REM 讀取 port 設定
+call "%~dp0config.bat"
+
+set ROOT_DIR=%~dp0..
+
+echo 🚀 Starting Sinotrade Backend on port %BACKEND_PORT%...
+echo 📍 API Root: http://localhost:%BACKEND_PORT%
+echo 📍 API Docs: http://localhost:%BACKEND_PORT%/docs
 echo.
 
-REM Start backend in a new window
-start "Sinotrade Backend" cmd /k "cd backend && uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000"
+REM 寫入暫存 bat，確保變數正確展開後再執行
+set TMP_BAT=%TEMP%\sinotrade_backend.bat
+echo @echo off> "%TMP_BAT%"
+echo cd /d "%ROOT_DIR%\backend">> "%TMP_BAT%"
+echo uv run uvicorn src.main:app --reload --host 0.0.0.0 --port %BACKEND_PORT%>> "%TMP_BAT%"
 
+start "Sinotrade Backend" cmd /k "%TMP_BAT%"
+
+echo ✅ Backend is starting in a new window
+echo 🔄 http://localhost:%BACKEND_PORT%
 echo.
-echo ✅ Backend server is starting in a new window
-echo 🔄 Backend API will be available at: http://localhost:8000
-echo 🔄 API Documentation will be available at: http://localhost:8000/docs
-echo.
-echo Note: Close the backend server window to stop it
 pause

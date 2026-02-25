@@ -9,7 +9,8 @@
  */
 
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Button } from '@/components/ui/button'
@@ -135,6 +136,10 @@ const INITIAL_FAVORITES: FavoriteStock[] = [
 ]
 
 export default function WatchlistPage() {
+  // URL 參數處理
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
   // 狀態管理
   const [favorites, setFavorites] = useState<FavoriteStock[]>(INITIAL_FAVORITES)
   const [currentSymbol, setCurrentSymbol] = useState('2330')
@@ -150,6 +155,54 @@ export default function WatchlistPage() {
     '觀察'
   )
   const isDesktop = useMediaQuery('(min-width: 768px)')
+
+  // 更新 URL query string
+  const updateUrlWithStock = useCallback(
+    (symbol: string) => {
+      const params = new URLSearchParams(searchParams.toString())
+      params.set('stockid', symbol)
+      router.replace(`/watchlist?${params.toString()}`, { scroll: false })
+    },
+    [searchParams, router]
+  )
+
+  // 從 URL query string 讀取股票代碼
+  useEffect(() => {
+    const stockIdFromUrl = searchParams.get('stockid')
+    if (stockIdFromUrl && stockIdFromUrl !== currentSymbol) {
+      // 嘗試在我的最愛中找到對應的股票名稱
+      const favoriteStock = favorites.find(
+        (fav) => fav.symbol === stockIdFromUrl
+      )
+      if (favoriteStock) {
+        setCurrentSymbol(stockIdFromUrl)
+        setCurrentName(favoriteStock.name)
+        setSearchInput(stockIdFromUrl)
+      } else {
+        // 如果不在最愛中，嘗試從 API 獲取名稱
+        setCurrentSymbol(stockIdFromUrl)
+        setCurrentName(stockIdFromUrl)
+        setSearchInput(stockIdFromUrl)
+        // 自動查詢股票資訊
+        fetchStockInfo(stockIdFromUrl)
+      }
+    }
+  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 獲取股票資訊（不更新 symbol，僅更新名稱）
+  const fetchStockInfo = async (symbol: string) => {
+    try {
+      const response = await fetch(`/api/contract-info/${symbol}`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.contract) {
+          setCurrentName(data.contract.name || symbol)
+        }
+      }
+    } catch (error) {
+      console.error('獲取股票資訊失敗:', error)
+    }
+  }
 
   // 從 localStorage 載入我的最愛（未來改為 Firebase）
   useEffect(() => {
@@ -232,23 +285,27 @@ export default function WatchlistPage() {
           setCurrentSymbol(searchInput)
           setCurrentName(data.contract.name || searchInput)
           setSymbolError(null)
+          updateUrlWithStock(searchInput) // 更新 URL
         } else {
           // API 找不到，但仍然顯示圖表
           setCurrentSymbol(searchInput)
           setCurrentName(searchInput)
           setSymbolError(`找不到 ${searchInput} 的資訊，但仍顯示圖表`)
+          updateUrlWithStock(searchInput) // 更新 URL
         }
       } else {
         // API 失敗，但仍然顯示圖表
         setCurrentSymbol(searchInput)
         setCurrentName(searchInput)
         setSymbolError('無法連接後端 API，顯示基本圖表')
+        updateUrlWithStock(searchInput) // 更新 URL
       }
     } catch (error) {
       console.error('查詢股票失敗:', error)
       setCurrentSymbol(searchInput)
       setCurrentName(searchInput)
       setSymbolError('查詢失敗，顯示基本圖表')
+      updateUrlWithStock(searchInput) // 更新 URL
     } finally {
       setIsLoadingSymbol(false)
     }
@@ -261,6 +318,7 @@ export default function WatchlistPage() {
     setSearchInput(stock.symbol)
     setSymbolError(null)
     setOpen(false)
+    updateUrlWithStock(stock.symbol) // 更新 URL
   }
 
   // 處理搜尋框 Enter 鍵
