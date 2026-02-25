@@ -1,5 +1,6 @@
 # src/main.py
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -8,14 +9,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_socketio import SocketManager
 from loguru import logger
 
-from src.api import options_quotes, orders, polygon_quotes, quotes, scanners, usage
+from src.api import (
+    forex_analysis,
+    options_quotes,
+    orders,
+    polygon_quotes,
+    quotes,
+    scanners,
+    usage,
+)
 from src.services.shioaji_service import shioaji_service
 from src.services.socketio_manager import SocketIOTickBroadcaster, setup_socketio_events
 from src.services.subscription_manager import subscription_manager
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     # Startup
     logger.info("[STARTUP] 應用啟動中...")
     try:
@@ -165,6 +174,7 @@ app.include_router(polygon_quotes.router, prefix="/api", tags=["Polygon.io"])
 app.include_router(scanners.router, prefix="/api", tags=["Scanners"])
 app.include_router(usage.router, prefix="/api", tags=["Usage"])
 app.include_router(options_quotes.router, prefix="/api", tags=["Options"])
+app.include_router(forex_analysis.router, prefix="/api", tags=["Research"])
 
 
 @app.get("/")

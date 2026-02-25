@@ -1,6 +1,7 @@
 import '../styles/globals.css'
 import StyledJsxRegistry from './registry'
 import { ThemeProvider } from '@/components/theme-provider'
+import { Providers } from './providers'
 
 export default function RootLayout({
   children,
@@ -22,14 +23,16 @@ export default function RootLayout({
         />
       </head>
       <body suppressHydrationWarning={true}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <StyledJsxRegistry>{children}</StyledJsxRegistry>
-        </ThemeProvider>
+        <Providers>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <StyledJsxRegistry>{children}</StyledJsxRegistry>
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   )
