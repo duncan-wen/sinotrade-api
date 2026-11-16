@@ -64,7 +64,7 @@ flowchart LR
 
 ---
 
-## 💡 技術亮點（面試可談）
+## 💡 技術亮點
 
 - **券商連線的生命週期管理**：Shioaji 有同時登入／訂閱數上限，開發時 `uvicorn --reload` 會不斷重啟，舊連線沒釋放就會被鎖。`LifecycleManager` 統一處理 *取消訂閱 → 登出 → 等待釋放 → 取消 pending task* 的順序，並在 FastAPI `lifespan`、`atexit`、`SIGINT/SIGTERM` 三個出口都掛上清理，失敗時再退回 emergency logout。
 - **跨執行緒事件橋接**：SDK callback 在非 async 執行緒執行，需要把資料轉交 asyncio loop 後才能 emit Socket.IO 事件。
