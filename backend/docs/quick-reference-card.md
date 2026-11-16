@@ -97,10 +97,10 @@ PAFX5       →   PAFR1
 
 ## 📞 快速測試
 
-### 前端測試頁面
+### 前端即時報價頁面
 
 ```bash
-http://localhost:3000/test-socketio
+http://localhost:3001/tw-futures
 ```
 
 ### API 文檔

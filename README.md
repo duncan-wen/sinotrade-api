@@ -128,7 +128,7 @@ sinotrade-api/
 │   └── pyproject.toml / uv.lock
 ├── frontend/
 │   └── src/
-│       ├── app/                    # Next.js App Router 頁面（test-* 為開發測試頁）
+│       ├── app/                    # Next.js App Router 頁面
 │       ├── components/             # chart/、ranking/、trading/、layout/、ui/
 │       ├── services/               # api.ts、klineSocketIO.ts、usStockSocketIO.ts
 │       ├── hooks/ store/ types/ utils/
@@ -212,7 +212,6 @@ uv run pytest tests --ignore=tests/integration
 - 期貨／選擇權下單尚未實作（目前僅股票模擬單）。
 - `smart_cache_service.py`（L1 記憶體 + L2 Redis）與 `websocket_optimizer.py` 為優化草案，尚未接上主流程。
 - `/portfolio`、`/backtesting` 頁面為預留路由。
-- 前端 `test-*` 頁面為開發期元件驗證頁。
 
 ---
 

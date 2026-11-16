@@ -392,7 +392,7 @@ export const PerformanceMonitor: React.FC = () => {
 npm install -g lighthouse artillery
 
 # 前端性能測試
-lighthouse http://localhost:3000/test-multi-timeframe --output json
+lighthouse http://localhost:3001/tw-futures --output json
 
 # API 壓力測試
 artillery quick --count 100 --num 10 http://localhost:8000/api/klines/TXFR1
@@ -453,7 +453,7 @@ pip install redis aioredis
 # 然後集成 smart_cache_service.py
 
 # 4. 測試效果
-# 訪問 http://localhost:3000/test-multi-timeframe
+# 訪問 http://localhost:3001/tw-futures
 # 觀察 Network 面板的響應時間變化
 ```
 

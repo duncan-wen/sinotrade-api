@@ -350,7 +350,7 @@ useEffect(() => {
 ```typescript
 // Playwright 測試範例
 test('K線圖響應式', async ({ page }) => {
-  await page.goto('/test-multi-timeframe')
+  await page.goto('/tw-futures')
 
   // 手機版測試
   await page.setViewportSize({ width: 375, height: 667 })

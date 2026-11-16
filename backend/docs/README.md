@@ -99,7 +99,7 @@ curl "http://localhost:8000/api/klines/CDFR1?interval=1d&limit=10"
 
 ### 3️⃣ 前端測試
 
-訪問:`http://localhost:3000/test-socketio`
+訪問:`http://localhost:3001/tw-futures`
 
 ## 📞 技術支援
 
