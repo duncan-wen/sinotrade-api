@@ -4,6 +4,20 @@
 
 > ⚠️ 本專案僅用於學習與研究，Shioaji 一律以 **模擬模式 (`simulation=True`)** 登入，不會下真實委託。
 
+## 🎬 Demo
+
+**台指期 1 分 K 即時跳動**：切換週期後先載入歷史 K 線，再由 Socket.IO 接續推送即時 tick
+
+![台指期 1 分 K 即時跳動](docs/assets/live-1m-kline.gif)
+
+**MA 扣抵價標記**：即時標出 MA8 / MA21 / MA55 的扣抵價位置，判斷均線後續方向
+
+![MA 扣抵](docs/assets/ma-deduction.gif)
+
+**匯率 vs. 大盤研究**：USD/TWD 與加權指數的滾動相關係數，並回測「台幣升值隔日買入大盤」策略
+
+![匯率大盤分析](docs/assets/forex-backtest.gif)
+
 ---
 
 ## ✨ 功能一覽
